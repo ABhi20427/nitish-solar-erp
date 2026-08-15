@@ -85,39 +85,39 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-slate-900 selection:bg-brand-purple selection:text-white font-sans antialiased overflow-x-hidden">
-      {/* Light Premium Navigation Bar Overlay */}
+    <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-brand-purple selection:text-white font-sans antialiased overflow-x-hidden">
+      {/* Light Premium Navigation Bar with Smooth Scroll Transition */}
       <PublicNavbar transparentOverlay lightTheme onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
-      {/* SECTION 1: BRIGHT CINEMATIC HERO (90-100vh) */}
-      <section className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-16 overflow-hidden bg-[#F7F7F5]">
-        {/* Full-bleed Bright Daylight Background Image */}
+      {/* SECTION 1: DRAMATIC CINEMATIC HERO (75-80% VISUALLY DOMINANT PHOTOGRAPH) */}
+      <section className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-16 overflow-hidden">
+        {/* Full-bleed Daylight Solar Infrastructure Background Photograph */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/hero_light.png"
             alt="nitish solar bright solar energy infrastructure"
             fill
             priority
-            className="object-cover object-center scale-105 filter brightness-95 opacity-90"
+            className="object-cover object-center scale-100 filter contrast-105 saturate-105"
           />
-          {/* Subtle White/Light Backdrop Gradient Overlay for Perfect Contrast */}
-          <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] via-transparent to-white/40" />
+          {/* Subtle localized dark gradient behind text ONLY for 100% readability while keeping 80% image completely unobstructed */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
           <div className="max-w-3xl space-y-8">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-slate-200/80 text-slate-800 text-xs font-semibold shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-brand-purple animate-ping" />
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-lg">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
               <span>Next-Generation Clean Energy Infrastructure</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-slate-900 leading-[1.08]">
-              Powering India’s Transition to <span className="text-brand-purple">Clean Solar Energy</span>
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08] drop-shadow-md">
+              Powering India’s Transition to <span className="text-amber-400">Clean Solar Energy</span>
             </h1>
 
-            <p className="text-base sm:text-xl text-slate-700 font-light leading-relaxed max-w-2xl">
-              <strong className="text-slate-900 font-semibold">nitish solar</strong> delivers turnkey solar infrastructure, smart energy storage, and high-efficiency rooftop systems for homes, commercial enterprises, and industrial complexes.
+            <p className="text-base sm:text-xl text-slate-100 font-light leading-relaxed max-w-2xl drop-shadow-sm">
+              <strong className="text-white font-semibold">nitish solar</strong> delivers turnkey solar infrastructure, smart energy storage, and high-efficiency rooftop systems for homes, commercial enterprises, and industrial complexes.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-4">
@@ -125,7 +125,7 @@ export default function HomePage() {
                 <Button
                   variant="accent"
                   size="lg"
-                  className="bg-brand-dark text-white hover:bg-slate-900 font-bold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 group"
+                  className="bg-white text-navy-950 hover:bg-amber-400 hover:text-navy-950 font-bold px-8 py-4 rounded-xl shadow-2xl transition-all duration-300 group border-0"
                   icon={<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 >
                   Explore Solutions
@@ -135,44 +135,44 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-slate-300 bg-white/90 backdrop-blur-md text-slate-900 hover:bg-white hover:border-slate-400 font-semibold px-8 py-4 rounded-xl shadow-sm transition-all duration-300"
+                  className="border-white/40 bg-black/30 backdrop-blur-md text-white hover:bg-white/20 hover:border-white/70 font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300"
                 >
                   Get a Quote
                 </Button>
               </Link>
             </div>
 
-            {/* Subtle Key Metrics Strip */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-12 border-t border-slate-300/70">
+            {/* Key Metrics Strip over Hero */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-12 border-t border-white/20">
               <div>
-                <span className="block text-2xl sm:text-3xl font-black text-slate-900">{TRUST_INDICATORS.installedCapacity}</span>
-                <span className="text-xs text-slate-600 font-medium">Installed Capacity</span>
+                <span className="block text-2xl sm:text-3xl font-black text-white drop-shadow-sm">{TRUST_INDICATORS.installedCapacity}</span>
+                <span className="text-xs text-slate-200 font-medium">Installed Capacity</span>
               </div>
               <div>
-                <span className="block text-2xl sm:text-3xl font-black text-brand-purple">{TRUST_INDICATORS.projectsDelivered}</span>
-                <span className="text-xs text-slate-600 font-medium">Projects Delivered</span>
+                <span className="block text-2xl sm:text-3xl font-black text-amber-400 drop-shadow-sm">{TRUST_INDICATORS.projectsDelivered}</span>
+                <span className="text-xs text-slate-200 font-medium">Projects Delivered</span>
               </div>
               <div>
-                <span className="block text-2xl sm:text-3xl font-black text-slate-900">{TRUST_INDICATORS.customersServed}</span>
-                <span className="text-xs text-slate-600 font-medium">Satisfied Clients</span>
+                <span className="block text-2xl sm:text-3xl font-black text-white drop-shadow-sm">{TRUST_INDICATORS.customersServed}</span>
+                <span className="text-xs text-slate-200 font-medium">Satisfied Clients</span>
               </div>
               <div>
-                <span className="block text-2xl sm:text-3xl font-black text-brand-blue">{TRUST_INDICATORS.yearsOfExperience}</span>
-                <span className="text-xs text-slate-600 font-medium">Industry Experience</span>
+                <span className="block text-2xl sm:text-3xl font-black text-amber-300 drop-shadow-sm">{TRUST_INDICATORS.yearsOfExperience}</span>
+                <span className="text-xs text-slate-200 font-medium">Industry Experience</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-slate-500 text-xs font-medium">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-slate-200 text-xs font-medium drop-shadow-md">
           <span className="uppercase tracking-widest text-[10px]">Scroll to Explore</span>
-          <ChevronDown className="w-4 h-4 animate-bounce text-brand-purple" />
+          <ChevronDown className="w-4 h-4 animate-bounce text-amber-400" />
         </div>
       </section>
 
-      {/* SECTION 2: EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") — WHITE */}
-      <section className="py-24 sm:py-32 bg-white text-slate-900 border-t border-slate-100">
+      {/* SECTION 2: EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") — PURE WHITE (#FFFFFF) */}
+      <section className="py-24 sm:py-32 bg-[#FFFFFF] text-[#111827] border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
@@ -180,13 +180,13 @@ export default function HomePage() {
               <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">
                 Editorial Overview
               </span>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[#111827] leading-tight">
                 Energy that works for tomorrow.
               </h2>
               <p className="text-slate-700 text-base sm:text-lg font-light leading-relaxed">
-                At <strong className="text-slate-900 font-semibold">nitish solar</strong>, we believe energy infrastructure should be built on uncompromised engineering precision, high-efficiency solar modules, and transparent financial returns.
+                At <strong className="text-[#111827] font-semibold">nitish solar</strong>, we believe energy infrastructure should be built on uncompromised engineering precision, high-efficiency solar modules, and transparent financial returns.
               </p>
-              <p className="text-slate-600 text-sm leading-relaxed">
+              <p className="text-slate-600 text-sm leading-relaxed font-light">
                 Whether deploying residential rooftop solar installations, commercial net-metered arrays, or utility-scale megawatt projects, our end-to-end EPC workflow ensures optimal tilt geometry, 3D shadow modeling, DISCOM grid synchronization, and 30-year linear performance guarantees.
               </p>
               <div className="pt-4">
@@ -199,7 +199,7 @@ export default function HomePage() {
 
             {/* Right Architectural Image */}
             <div className="lg:col-span-6">
-              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-slate-200 group">
+              <div className="relative rounded-2xl overflow-hidden shadow-xl border border-slate-200 group">
                 <div className="aspect-[4/3] relative">
                   <Image
                     src="/images/industrial_light.png"
@@ -219,12 +219,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 3: IMMERSIVE SOLAR SOLUTIONS — WARM OFF-WHITE (#F7F7F5) */}
-      <section className="py-24 bg-[#F7F7F5] text-slate-900 border-t border-slate-200/60">
+      {/* SECTION 3: IMMERSIVE SOLAR SOLUTIONS — WARM OFF-WHITE (#F5F6F3) */}
+      <section className="py-24 bg-[#F5F6F3] text-[#111827] border-t border-slate-200/70">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           <div className="max-w-3xl space-y-3">
             <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Turnkey Solar Solutions</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-3xl sm:text-5xl font-black text-[#111827] tracking-tight">
               Tailored Systems for Every Property Segment
             </h2>
             <p className="text-slate-600 text-sm sm:text-base font-light">
@@ -235,7 +235,7 @@ export default function HomePage() {
           {/* Large Editorial Visual Panels */}
           <div className="space-y-12">
             {/* Panel 1: Residential */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500 group">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500 group">
               <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:h-full min-h-[320px]">
                 <Image
                   src="/images/residential_light.png"
@@ -243,13 +243,12 @@ export default function HomePage() {
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white hidden lg:block" />
               </div>
               <div className="lg:col-span-5 p-8 sm:p-12 space-y-6">
                 <div className="w-12 h-12 rounded-xl bg-purple-50 text-brand-purple flex items-center justify-center border border-purple-100">
                   <HomeIcon className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">Residential Solar Systems</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#111827]">Residential Solar Systems</h3>
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
                   Rooftop solar solutions designed for luxury homes and housing societies. Cut monthly electricity bills by up to 90% while benefiting from PM Surya Ghar government subsidy support.
                 </p>
@@ -268,12 +267,12 @@ export default function HomePage() {
             </div>
 
             {/* Panel 2: Commercial */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-blue/40 transition-all duration-500 group">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-blue/40 transition-all duration-500 group">
               <div className="lg:col-span-5 p-8 sm:p-12 space-y-6 order-2 lg:order-1">
                 <div className="w-12 h-12 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center border border-blue-100">
                   <Building2 className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">Commercial Solar Infrastructure</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#111827]">Commercial Solar Infrastructure</h3>
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
                   Engineered for commercial offices, hospitals, hotels, educational institutions, and shopping complexes. Reduce operational electricity overheads and take advantage of 40% accelerated tax depreciation.
                 </p>
@@ -296,12 +295,11 @@ export default function HomePage() {
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-white hidden lg:block" />
               </div>
             </div>
 
             {/* Panel 3: Industrial */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-3xl border border-slate-200/80 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500 group">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500 group">
               <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:h-full min-h-[320px]">
                 <Image
                   src="/images/hero_light.png"
@@ -309,13 +307,12 @@ export default function HomePage() {
                   fill
                   className="object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-white hidden lg:block" />
               </div>
               <div className="lg:col-span-5 p-8 sm:p-12 space-y-6">
                 <div className="w-12 h-12 rounded-xl bg-purple-50 text-brand-purple flex items-center justify-center border border-purple-100">
                   <Factory className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-slate-900">Industrial & Utility Mega Projects</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#111827]">Industrial & Utility Mega Projects</h3>
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
                   For factories, manufacturing plants, cold storage facilities, and utility-scale solar farms. High-wattage bifacial N-type TOPCon modules engineered for continuous heavy industrial loads.
                 </p>
@@ -336,12 +333,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 4: WHY NITISH SOLAR (Corporate Statement) — WHITE */}
-      <section className="py-24 sm:py-32 bg-white text-slate-900 border-t border-slate-200/60 relative overflow-hidden">
+      {/* SECTION 4: WHY NITISH SOLAR (Corporate Statement) — PURE WHITE (#FFFFFF) */}
+      <section className="py-24 sm:py-32 bg-[#FFFFFF] text-[#111827] border-t border-slate-200/60 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Corporate Engineering Standard</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-3xl sm:text-5xl font-black text-[#111827] tracking-tight">
               Engineered for Maximum Yield. Built to Last Generations.
             </h2>
             <p className="text-slate-600 text-sm sm:text-base font-light">
@@ -374,11 +371,11 @@ export default function HomePage() {
             ].map((pillar) => {
               const Icon = pillar.icon;
               return (
-                <div key={pillar.title} className="bg-[#F7F7F5] p-8 rounded-2xl border border-slate-200/80 space-y-4 hover:border-brand-purple/40 transition-all duration-300 shadow-sm">
+                <div key={pillar.title} className="bg-[#F5F6F3] p-8 rounded-2xl border border-slate-200/80 space-y-4 hover:border-brand-purple/40 transition-all duration-300 shadow-sm">
                   <div className="w-12 h-12 rounded-xl bg-white text-brand-purple flex items-center justify-center border border-slate-200 shadow-xs">
                     <Icon className="w-6 h-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900">{pillar.title}</h3>
+                  <h3 className="text-xl font-bold text-[#111827]">{pillar.title}</h3>
                   <p className="text-xs text-slate-600 leading-relaxed font-light">{pillar.desc}</p>
                 </div>
               );
@@ -387,18 +384,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 5: SELECTED PROJECTS PORTFOLIO — NEUTRAL LIGHT GRAY (#F2F3F1) */}
-      <section className="py-24 bg-[#F2F3F1] text-slate-900 border-t border-slate-200/60">
+      {/* SECTION 5: SELECTED PROJECTS PORTFOLIO — NEUTRAL LIGHT GRAY (#ECEEEA) */}
+      <section className="py-24 bg-[#ECEEEA] text-[#111827] border-t border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div className="space-y-2">
               <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Project Portfolio</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight">
                 Featured Solar Infrastructure Executed by nitish solar
               </h2>
             </div>
             <Link href="/projects">
-              <Button variant="outline" className="border-slate-300 bg-white text-slate-900 hover:bg-slate-50 font-semibold" icon={<ArrowRight className="w-4 h-4" />}>
+              <Button variant="outline" className="border-slate-300 bg-white text-[#111827] hover:bg-slate-50 font-semibold" icon={<ArrowRight className="w-4 h-4" />}>
                 View All Projects
               </Button>
             </Link>
@@ -445,7 +442,7 @@ export default function HomePage() {
                     <span>{proj.location}</span>
                     <span className="font-bold text-brand-purple">{proj.size}</span>
                   </div>
-                  <h3 className="font-bold text-slate-900 text-base group-hover:text-brand-purple transition-colors flex items-center justify-between">
+                  <h3 className="font-bold text-[#111827] text-base group-hover:text-brand-purple transition-colors flex items-center justify-between">
                     {proj.title} <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-brand-purple shrink-0" />
                   </h3>
                 </div>
@@ -455,17 +452,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 6: SOLAR CALCULATOR & PROPOSAL REQUEST — WHITE */}
-      <section className="py-24 bg-white text-slate-900 border-t border-slate-200/60">
+      {/* SECTION 6: SOLAR CALCULATOR & PROPOSAL REQUEST — PURE WHITE (#FFFFFF) */}
+      <section className="py-24 bg-[#FFFFFF] text-[#111827] border-t border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#F7F7F5] rounded-3xl p-8 sm:p-12 border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#F5F6F3] rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-sm">
             <div className="lg:col-span-6 space-y-6">
               <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Financial ROI Estimator</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
+              <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight">
                 See what solar can do for your facility.
               </h2>
               <p className="text-slate-600 text-sm font-light leading-relaxed">
-                Adjust the interactive monthly electric bill slider to estimate system capacity sizing, annual financial savings, and subsidy eligibility for your <strong className="text-slate-900 font-semibold">nitish solar</strong> installation.
+                Adjust the interactive monthly electric bill slider to estimate system capacity sizing, annual financial savings, and subsidy eligibility for your <strong className="text-[#111827] font-semibold">nitish solar</strong> installation.
               </p>
 
               <div className="space-y-6 pt-2">
@@ -488,7 +485,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white p-4 rounded-2xl border border-slate-200 text-xs shadow-xs">
                   <div>
                     <span className="text-slate-500 block">Recommended Capacity:</span>
-                    <span className="text-lg font-black text-slate-900">{quickCalc.recommendedCapacityKw} kWp</span>
+                    <span className="text-lg font-black text-[#111827]">{quickCalc.recommendedCapacityKw} kWp</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block">Est. Annual Savings:</span>
@@ -500,7 +497,7 @@ export default function HomePage() {
                   </div>
                   <div>
                     <span className="text-slate-500 block">Payback Horizon:</span>
-                    <span className="text-sm font-bold text-slate-900">{quickCalc.paybackPeriodYears} Years</span>
+                    <span className="text-sm font-bold text-[#111827]">{quickCalc.paybackPeriodYears} Years</span>
                   </div>
                 </div>
               </div>
@@ -508,7 +505,7 @@ export default function HomePage() {
 
             {/* Right Quick Inquiry Form */}
             <div className="lg:col-span-6 bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 space-y-4 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+              <h3 className="text-xl font-bold text-[#111827] flex items-center gap-2">
                 <Send className="w-5 h-5 text-brand-purple" /> Request Custom System Proposal
               </h3>
               <p className="text-xs text-slate-500">
@@ -520,7 +517,7 @@ export default function HomePage() {
                   <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
-                  <h4 className="font-bold text-slate-900 text-base">Request Received</h4>
+                  <h4 className="font-bold text-[#111827] text-base">Request Received</h4>
                   <p className="text-xs text-slate-600">An engineer from nitish solar will contact you shortly.</p>
                   <Button variant="outline" size="sm" className="border-slate-300 text-slate-800" onClick={() => setFormSubmitted(false)}>
                     Submit Another Inquiry
@@ -536,7 +533,7 @@ export default function HomePage() {
                       placeholder="e.g. Rajesh Patil"
                       value={leadForm.name}
                       onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
-                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:border-brand-purple"
+                      className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[#111827] outline-none focus:border-brand-purple"
                     />
                   </div>
 
@@ -549,7 +546,7 @@ export default function HomePage() {
                         placeholder="+91 98765 43210"
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
-                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none focus:border-brand-purple"
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[#111827] outline-none focus:border-brand-purple"
                       />
                     </div>
                     <div>
@@ -557,7 +554,7 @@ export default function HomePage() {
                       <select
                         value={leadForm.propertyType}
                         onChange={(e) => setLeadForm({ ...leadForm, propertyType: e.target.value as any })}
-                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 outline-none"
+                        className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[#111827] outline-none"
                       >
                         <option value="COMMERCIAL">Commercial</option>
                         <option value="INDUSTRIAL">Industrial</option>
@@ -582,32 +579,32 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 7: FINAL BRIGHT CINEMATIC CONCLUSION CTA */}
-      <section className="relative py-28 sm:py-36 overflow-hidden bg-[#F7F7F5]">
+      {/* SECTION 7: FINAL CINEMATIC CONCLUSION CTA */}
+      <section className="relative py-28 sm:py-36 overflow-hidden">
         {/* Full-width Daylight Image Background */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/hero_light.png"
             alt="nitish solar clean energy future"
             fill
-            className="object-cover object-center filter brightness-95 opacity-80"
+            className="object-cover object-center filter brightness-95"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] via-white/90 to-white/70" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/30" />
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
-          <h2 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+          <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-md">
             Let’s build a cleaner energy future.
           </h2>
-          <p className="text-slate-700 text-base sm:text-xl font-light leading-relaxed max-w-2xl mx-auto">
-            Partner with <strong className="text-slate-900 font-semibold">nitish solar</strong> to transition your home, enterprise, or industrial complex to turnkey solar power.
+          <p className="text-slate-200 text-base sm:text-xl font-light leading-relaxed max-w-2xl mx-auto drop-shadow-sm">
+            Partner with <strong className="text-white font-semibold">nitish solar</strong> to transition your home, enterprise, or industrial complex to turnkey solar power.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <Link href="/quote">
               <Button
                 variant="accent"
                 size="lg"
-                className="bg-brand-dark text-white hover:bg-slate-900 font-bold px-8 py-4 rounded-xl text-base shadow-lg transition-all"
+                className="bg-white text-navy-950 hover:bg-amber-400 font-bold px-8 py-4 rounded-xl text-base shadow-2xl transition-all border-0"
                 icon={<ArrowRight className="w-5 h-5" />}
               >
                 Get a Quote
@@ -617,7 +614,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="border-slate-300 bg-white text-slate-900 hover:bg-slate-50 px-8 py-4 rounded-xl text-base font-semibold shadow-sm"
+                className="border-white/40 bg-black/30 backdrop-blur-md text-white hover:bg-white/20 px-8 py-4 rounded-xl text-base font-semibold shadow-lg"
               >
                 Speak with an Engineer
               </Button>

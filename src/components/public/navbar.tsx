@@ -38,25 +38,15 @@ export function PublicNavbar({
     { label: 'Contact', href: '/contact' },
   ];
 
-  let headerClass = 'sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-slate-800 text-white';
+  const isTopOverHero = transparentOverlay && !scrolled;
 
-  if (lightTheme) {
-    if (transparentOverlay) {
-      headerClass = `fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+  const headerClass = transparentOverlay
+    ? `fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200/80 text-slate-900 shadow-md py-0'
-          : 'bg-white/70 backdrop-blur-sm text-slate-900 border-b border-slate-200/60'
-      }`;
-    } else {
-      headerClass = 'sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 text-slate-900 shadow-sm';
-    }
-  } else if (transparentOverlay) {
-    headerClass = `fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-      scrolled
-        ? 'bg-brand-dark/95 backdrop-blur-md border-b border-slate-800 text-white shadow-2xl py-0'
-        : 'bg-gradient-to-b from-black/70 via-black/30 to-transparent text-white border-b border-white/10'
-    }`;
-  }
+          ? 'bg-white/95 backdrop-blur-md border-b border-slate-200/80 text-[#111827] shadow-sm py-0'
+          : 'bg-gradient-to-b from-black/60 via-black/20 to-transparent border-b border-transparent text-white py-1'
+      }`
+    : 'sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-slate-800 text-white';
 
   return (
     <header className={headerClass}>
@@ -64,25 +54,25 @@ export function PublicNavbar({
         <div className="flex items-center justify-between h-20">
           {/* Logo - nitish solar */}
           <Link href="/" className="hover:opacity-95 transition-opacity">
-            <BrandLogo variant="light" />
+            <BrandLogo variant={isTopOverHero ? 'light' : 'dark'} />
           </Link>
 
           {/* Desktop Links */}
-          <nav className={`hidden md:flex items-center gap-8 text-sm font-medium ${lightTheme ? 'text-slate-800' : 'text-slate-300'}`}>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
             {NAV_LINKS.map((link) => {
               const isActive = pathname === link.href;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`transition-colors ${
-                    isActive
-                      ? lightTheme
-                        ? 'text-brand-purple font-extrabold'
-                        : 'text-amber-400 font-bold'
-                      : lightTheme
-                      ? 'hover:text-brand-purple font-semibold text-slate-800'
-                      : 'hover:text-amber-300'
+                  className={`transition-colors duration-300 ${
+                    isTopOverHero
+                      ? isActive
+                        ? 'text-amber-400 font-extrabold'
+                        : 'text-white hover:text-amber-300 font-semibold'
+                      : isActive
+                      ? 'text-brand-purple font-extrabold'
+                      : 'text-[#111827] hover:text-brand-purple font-semibold'
                   }`}
                 >
                   {link.label}
@@ -91,8 +81,8 @@ export function PublicNavbar({
             })}
             <Link
               href="/calculator"
-              className={`transition-colors flex items-center gap-1 font-semibold ${
-                lightTheme ? 'text-brand-purple hover:text-brand-blue' : 'text-amber-400 hover:text-amber-300'
+              className={`transition-colors duration-300 flex items-center gap-1 font-semibold ${
+                isTopOverHero ? 'text-amber-400 hover:text-amber-300' : 'text-brand-purple hover:text-brand-blue'
               }`}
             >
               <Calculator className="w-4 h-4" />
@@ -106,13 +96,13 @@ export function PublicNavbar({
               <Button
                 variant="outline"
                 size="sm"
-                className={
-                  lightTheme
-                    ? 'border-slate-300 bg-white text-slate-800 hover:bg-slate-100 font-semibold'
-                    : 'border-slate-700 bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white'
-                }
+                className={`transition-all duration-300 ${
+                  isTopOverHero
+                    ? 'border-white/30 bg-black/30 backdrop-blur-md text-white hover:bg-white/20 font-semibold'
+                    : 'border-slate-300 bg-white text-[#111827] hover:bg-slate-100 font-semibold'
+                }`}
               >
-                <LayoutDashboard className={`w-4 h-4 ${lightTheme ? 'text-brand-purple' : 'text-amber-400'}`} />
+                <LayoutDashboard className={`w-4 h-4 ${isTopOverHero ? 'text-amber-400' : 'text-brand-purple'}`} />
                 ERP Login
               </Button>
             </Link>
