@@ -7,9 +7,25 @@ import { BrandLogo } from '@/components/public/brand-logo';
 import { Button } from '@/components/ui/button';
 import { Calculator, PhoneCall, LayoutDashboard, Menu, X, ArrowRight } from 'lucide-react';
 
-export function PublicNavbar({ onOpenQuoteModal }: { onOpenQuoteModal?: () => void }) {
+export function PublicNavbar({
+  onOpenQuoteModal,
+  transparentOverlay = false,
+}: {
+  onOpenQuoteModal?: () => void;
+  transparentOverlay?: boolean;
+}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
+
+  React.useEffect(() => {
+    if (!transparentOverlay) return;
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [transparentOverlay]);
 
   const NAV_LINKS = [
     { label: 'Home', href: '/' },
@@ -20,8 +36,16 @@ export function PublicNavbar({ onOpenQuoteModal }: { onOpenQuoteModal?: () => vo
     { label: 'Contact', href: '/contact' },
   ];
 
+  const headerClass = transparentOverlay
+    ? `fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? 'bg-brand-dark/95 backdrop-blur-md border-b border-slate-800 text-white shadow-2xl py-0'
+          : 'bg-gradient-to-b from-black/70 via-black/30 to-transparent text-white border-b border-white/10'
+      }`
+    : 'sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-slate-800 text-white';
+
   return (
-    <header className="sticky top-0 z-40 bg-brand-dark/95 backdrop-blur-md border-b border-slate-800 text-white">
+    <header className={headerClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Logo - nitish solar */}
