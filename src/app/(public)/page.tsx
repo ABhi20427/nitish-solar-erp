@@ -1,31 +1,24 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PublicNavbar } from '@/components/public/navbar';
 import { PublicFooter } from '@/components/public/footer';
 import { QuoteModal } from '@/components/public/quote-modal';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { calculateSolarSystem } from '@/lib/solar-calc';
 import { useSolarStore } from '@/lib/store-context';
 import {
-  Sun,
   Zap,
   Building2,
   Factory,
   Home as HomeIcon,
   ShieldCheck,
   Award,
-  TrendingUp,
   Calculator,
   ArrowRight,
   CheckCircle2,
-  Users,
-  Layers,
-  Sparkles,
-  Check,
   Send,
   ChevronDown,
   ArrowUpRight,
@@ -33,18 +26,28 @@ import {
   Activity,
 } from 'lucide-react';
 
-const TRUST_INDICATORS = {
-  projectsDelivered: '1,250+',
-  installedCapacity: '450+ MWp',
-  customersServed: '3,800+',
-  yearsOfExperience: '12+ Years',
-};
+const TRUST_INDICATORS = [
+  { val: '1,250+', label: 'Projects Delivered', desc: 'Turnkey rooftop and ground-mount installations across India.' },
+  { val: '450+ MWp', label: 'Installed Solar Capacity', desc: 'High-power utility and commercial grid-tie solar systems.' },
+  { val: '3,800+', label: 'Satisfied Clients', desc: 'Homeowners, corporate enterprises, and industrial facilities.' },
+  { val: '12+ Years', label: 'Engineering Experience', desc: 'Pioneering solar EPC excellence and DISCOM net metering.' },
+];
 
 export default function HomePage() {
   const { addLead } = useSolarStore();
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [quickBill, setQuickBill] = useState(25000);
   const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Sticky Scroll Step States
+  const [solutionsStep, setSolutionsStep] = useState(0);
+  const [projectsStep, setProjectsStep] = useState(0);
+  const [impactStep, setImpactStep] = useState(0);
+
+  // Section Refs
+  const solutionsRef = useRef<HTMLDivElement>(null);
+  const projectsRef = useRef<HTMLDivElement>(null);
+  const impactRef = useRef<HTMLDivElement>(null);
 
   // Quote Form State
   const [leadForm, setLeadForm] = useState({
@@ -60,6 +63,51 @@ export default function HomePage() {
   });
 
   const quickCalc = calculateSolarSystem({ monthlyBillAmount: quickBill });
+
+  // Scroll handler for sticky cinematic steps
+  useEffect(() => {
+    const handleScroll = () => {
+      // 1. Solutions Scroll Progress (3 steps)
+      if (solutionsRef.current) {
+        const rect = solutionsRef.current.getBoundingClientRect();
+        const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
+        if (totalDist > 0) {
+          const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
+          if (progress < 0.33) setSolutionsStep(0);
+          else if (progress < 0.66) setSolutionsStep(1);
+          else setSolutionsStep(2);
+        }
+      }
+
+      // 2. Projects Scroll Progress (3 steps)
+      if (projectsRef.current) {
+        const rect = projectsRef.current.getBoundingClientRect();
+        const totalDist = projectsRef.current.offsetHeight - window.innerHeight;
+        if (totalDist > 0) {
+          const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
+          if (progress < 0.33) setProjectsStep(0);
+          else if (progress < 0.66) setProjectsStep(1);
+          else setProjectsStep(2);
+        }
+      }
+
+      // 3. Impact Scroll Progress (4 steps)
+      if (impactRef.current) {
+        const rect = impactRef.current.getBoundingClientRect();
+        const totalDist = impactRef.current.offsetHeight - window.innerHeight;
+        if (totalDist > 0) {
+          const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
+          if (progress < 0.25) setImpactStep(0);
+          else if (progress < 0.5) setImpactStep(1);
+          else if (progress < 0.75) setImpactStep(2);
+          else setImpactStep(3);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,14 +132,70 @@ export default function HomePage() {
     setFormSubmitted(true);
   };
 
+  // Solutions Stories Data
+  const SOLUTIONS_STORIES = [
+    {
+      type: 'RESIDENTIAL SOLAR',
+      heading: 'Solar designed around the way you live.',
+      desc: 'Rooftop solar installations for luxury homes and housing societies. Reduce monthly electricity bills by up to 90% while benefiting from PM Surya Ghar government subsidy support.',
+      image: '/images/residential_light.png',
+      link: '/residential',
+      bullets: ['Net metering & DISCOM approval assistance', '25-Year linear module performance warranty', 'Smart mobile app generation telemetry'],
+      icon: HomeIcon,
+    },
+    {
+      type: 'COMMERCIAL SOLAR INFRASTRUCTURE',
+      heading: 'Energy infrastructure built for business.',
+      desc: 'Engineered for commercial office buildings, hospitals, hotels, schools, and shopping complexes. Slash operational electricity overheads and capitalize on 40% accelerated tax depreciation.',
+      image: '/images/industrial_light.png',
+      link: '/commercial',
+      bullets: ['40% Accelerated tax depreciation benefit', 'Non-penetrative ballast mounting structures', 'High financial return on investment (IRR)'],
+      icon: Building2,
+    },
+    {
+      type: 'INDUSTRIAL & UTILITY MEGA PROJECTS',
+      heading: 'Engineered for scale and performance.',
+      desc: 'For factories, manufacturing plants, cold storage units, and megawatt solar farms. High-power bifacial N-type TOPCon modules engineered for heavy 24/7 industrial loads.',
+      image: '/images/hero_light.png',
+      link: '/industrial',
+      bullets: ['11kV / 33kV HT grid synchronization', 'High-power bifacial solar modules', 'Open access & captive power procurement'],
+      icon: Factory,
+    },
+  ];
+
+  // Projects Stories Data
+  const PROJECT_STORIES = [
+    {
+      title: '1.2 MWp Industrial Rooftop Installation',
+      location: 'Chakan MIDC, Pune',
+      capacity: '1,200 kWp',
+      desc: 'Bifacial solar module installation powering continuous 24/7 manufacturing operations with 11kV grid synchronization.',
+      image: '/images/industrial_light.png',
+    },
+    {
+      title: '450 kWp Commercial HQ Rooftop System',
+      location: 'GIDC Industrial Park, Ahmedabad',
+      capacity: '450 kWp',
+      desc: 'Non-penetrative ballast framework solar system reducing corporate head office grid power draw by 75%.',
+      image: '/images/hero_light.png',
+    },
+    {
+      title: '25 kWp Modern Luxury Villa System',
+      location: 'Baner, Pune',
+      capacity: '25 kWp',
+      desc: 'Sleek dark solar rooftop array with smart lithium battery energy storage and zero grid interruption.',
+      image: '/images/residential_light.png',
+    },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-[#111827] selection:bg-brand-purple selection:text-white font-sans antialiased overflow-x-hidden">
-      {/* Light Premium Navigation Bar with Smooth Scroll Transition */}
+      {/* Dynamic Scroll Navigation Header */}
       <PublicNavbar transparentOverlay lightTheme onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
-      {/* SECTION 1: DRAMATIC CINEMATIC HERO (75-80% VISUALLY DOMINANT PHOTOGRAPH) */}
-      <section className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-16 overflow-hidden">
-        {/* Full-bleed Daylight Solar Infrastructure Background Photograph */}
+      {/* 1. HERO BACKGROUND (100VH CINEMATIC PHOTOGRAPH) */}
+      <section className="relative h-screen flex items-center justify-center overflow-hidden">
+        {/* Full-bleed Daylight Solar Infrastructure Background */}
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/hero_light.png"
@@ -100,12 +204,12 @@ export default function HomePage() {
             priority
             className="object-cover object-center scale-100 filter contrast-105 saturate-105"
           />
-          {/* Subtle localized dark gradient behind text ONLY for 100% readability while keeping 80% image completely unobstructed */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/35 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent" />
+          {/* Subtle localized dark gradient behind text ONLY for 100% readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/50 to-transparent" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16">
           <div className="max-w-3xl space-y-8">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-lg">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
@@ -125,7 +229,7 @@ export default function HomePage() {
                 <Button
                   variant="accent"
                   size="lg"
-                  className="bg-white text-navy-950 hover:bg-amber-400 hover:text-navy-950 font-bold px-8 py-4 rounded-xl shadow-2xl transition-all duration-300 group border-0"
+                  className="bg-white text-navy-950 hover:bg-amber-400 hover:text-navy-950 font-bold px-8 py-4 rounded-xl shadow-2xl transition-all duration-300 group border-0 text-base"
                   icon={<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 >
                   Explore Solutions
@@ -135,44 +239,24 @@ export default function HomePage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white/40 bg-black/30 backdrop-blur-md text-white hover:bg-white/20 hover:border-white/70 font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300"
+                  className="border-white/40 bg-black/30 backdrop-blur-md text-white hover:bg-white/20 hover:border-white/70 font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 text-base"
                 >
                   Get a Quote
                 </Button>
               </Link>
-            </div>
-
-            {/* Key Metrics Strip over Hero */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-12 border-t border-white/20">
-              <div>
-                <span className="block text-2xl sm:text-3xl font-black text-white drop-shadow-sm">{TRUST_INDICATORS.installedCapacity}</span>
-                <span className="text-xs text-slate-200 font-medium">Installed Capacity</span>
-              </div>
-              <div>
-                <span className="block text-2xl sm:text-3xl font-black text-amber-400 drop-shadow-sm">{TRUST_INDICATORS.projectsDelivered}</span>
-                <span className="text-xs text-slate-200 font-medium">Projects Delivered</span>
-              </div>
-              <div>
-                <span className="block text-2xl sm:text-3xl font-black text-white drop-shadow-sm">{TRUST_INDICATORS.customersServed}</span>
-                <span className="text-xs text-slate-200 font-medium">Satisfied Clients</span>
-              </div>
-              <div>
-                <span className="block text-2xl sm:text-3xl font-black text-amber-300 drop-shadow-sm">{TRUST_INDICATORS.yearsOfExperience}</span>
-                <span className="text-xs text-slate-200 font-medium">Industry Experience</span>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Scroll Indicator */}
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-slate-200 text-xs font-medium drop-shadow-md">
-          <span className="uppercase tracking-widest text-[10px]">Scroll to Explore</span>
+          <span className="uppercase tracking-widest text-[10px]">Scroll for Visual Journey</span>
           <ChevronDown className="w-4 h-4 animate-bounce text-amber-400" />
         </div>
       </section>
 
-      {/* SECTION 2: EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") — PURE WHITE (#FFFFFF) */}
-      <section className="py-24 sm:py-32 bg-[#FFFFFF] text-[#111827] border-t border-slate-100">
+      {/* 2. SECTION 2 — EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") */}
+      <section className="py-28 bg-white text-[#111827] border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
@@ -219,122 +303,91 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 3: IMMERSIVE SOLAR SOLUTIONS — WARM OFF-WHITE (#F5F6F3) */}
-      <section className="py-24 bg-[#F5F6F3] text-[#111827] border-t border-slate-200/70">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="max-w-3xl space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Turnkey Solar Solutions</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-[#111827] tracking-tight">
-              Tailored Systems for Every Property Segment
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base font-light">
-              From residential homes to commercial headquarters and manufacturing plants, explore customized solar installations engineered for maximum energy yield.
-            </p>
-          </div>
-
-          {/* Large Editorial Visual Panels */}
-          <div className="space-y-12">
-            {/* Panel 1: Residential */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500 group">
-              <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:h-full min-h-[320px]">
-                <Image
-                  src="/images/residential_light.png"
-                  alt="nitish solar residential solar villa"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-              <div className="lg:col-span-5 p-8 sm:p-12 space-y-6">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 text-brand-purple flex items-center justify-center border border-purple-100">
-                  <HomeIcon className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#111827]">Residential Solar Systems</h3>
-                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
-                  Rooftop solar solutions designed for luxury homes and housing societies. Cut monthly electricity bills by up to 90% while benefiting from PM Surya Ghar government subsidy support.
-                </p>
-                <ul className="space-y-2 text-xs text-slate-600">
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Net metering & DISCOM approval assistance</li>
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> 25-Year linear module performance warranty</li>
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> Smart mobile app generation monitoring</li>
-                </ul>
-                <div className="pt-2">
-                  <Link href="/residential" className="inline-flex items-center gap-2 text-sm font-bold text-brand-purple hover:text-brand-blue transition-colors group/btn">
-                    <span>Explore Residential Solar</span>
-                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
+      {/* 3. SECTION 3 — SOLAR SOLUTIONS (PINNED 300VH CINEMATIC STORYTELLING) */}
+      <section ref={solutionsRef} className="relative h-[300vh] bg-[#F5F6F3]">
+        <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+          {/* Background Images Crossfade */}
+          {SOLUTIONS_STORIES.map((story, idx) => (
+            <div
+              key={story.type}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                solutionsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
+            >
+              <Image src={story.image} alt={story.heading} fill className="object-cover object-center filter brightness-90 scale-105 transition-transform duration-1000" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
             </div>
+          ))}
 
-            {/* Panel 2: Commercial */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-blue/40 transition-all duration-500 group">
-              <div className="lg:col-span-5 p-8 sm:p-12 space-y-6 order-2 lg:order-1">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center border border-blue-100">
-                  <Building2 className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#111827]">Commercial Solar Infrastructure</h3>
-                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
-                  Engineered for commercial offices, hospitals, hotels, educational institutions, and shopping complexes. Reduce operational electricity overheads and take advantage of 40% accelerated tax depreciation.
-                </p>
-                <ul className="space-y-2 text-xs text-slate-600">
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" /> 40% Accelerated tax depreciation benefit</li>
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" /> Non-penetrative ballast mounting frames</li>
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" /> High financial internal rate of return (IRR)</li>
-                </ul>
-                <div className="pt-2">
-                  <Link href="/commercial" className="inline-flex items-center gap-2 text-sm font-bold text-brand-blue hover:text-brand-purple transition-colors group/btn">
-                    <span>Explore Commercial Solar</span>
-                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
-              <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:h-full min-h-[320px] order-1 lg:order-2">
-                <Image
-                  src="/images/industrial_light.png"
-                  alt="nitish solar commercial rooftop"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-            </div>
+          {/* Sticky Foreground Content Story Overlay */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
+            {SOLUTIONS_STORIES.map((story, idx) => {
+              const Icon = story.icon;
+              const isActive = solutionsStep === idx;
+              return (
+                <div
+                  key={story.type}
+                  className={`transition-all duration-700 max-w-2xl space-y-6 ${
+                    isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-8 absolute pointer-events-none'
+                  }`}
+                >
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
+                    <Icon className="w-4 h-4" />
+                    <span>Story 0{idx + 1} — {story.type}</span>
+                  </div>
 
-            {/* Panel 3: Industrial */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500 group">
-              <div className="lg:col-span-7 relative aspect-[16/10] lg:aspect-auto lg:h-full min-h-[320px]">
-                <Image
-                  src="/images/hero_light.png"
-                  alt="nitish solar industrial mega solar farm"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                  <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+                    {story.heading}
+                  </h2>
+
+                  <p className="text-slate-200 text-sm sm:text-lg font-light leading-relaxed drop-shadow-sm">
+                    {story.desc}
+                  </p>
+
+                  <ul className="space-y-2 text-xs sm:text-sm text-slate-200 pt-2">
+                    {story.bullets.map((b) => (
+                      <li key={b} className="flex items-center gap-2.5">
+                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="pt-4">
+                    <Link href={story.link}>
+                      <Button
+                        variant="accent"
+                        size="lg"
+                        className="bg-white text-navy-950 hover:bg-amber-400 font-bold px-8 py-3.5 rounded-xl text-sm shadow-xl transition-all border-0"
+                        icon={<ArrowRight className="w-4 h-4" />}
+                      >
+                        Explore {story.type.split(' ')[0]} Solar
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Story Navigation Indicator Dots */}
+            <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
+              {SOLUTIONS_STORIES.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSolutionsStep(idx)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    solutionsStep === idx ? 'bg-amber-400 scale-125 ring-4 ring-white/20' : 'bg-white/40 hover:bg-white/70'
+                  }`}
+                  title={`Go to Story ${idx + 1}`}
                 />
-              </div>
-              <div className="lg:col-span-5 p-8 sm:p-12 space-y-6">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 text-brand-purple flex items-center justify-center border border-purple-100">
-                  <Factory className="w-6 h-6" />
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold text-[#111827]">Industrial & Utility Mega Projects</h3>
-                <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-light">
-                  For factories, manufacturing plants, cold storage facilities, and utility-scale solar farms. High-wattage bifacial N-type TOPCon modules engineered for continuous heavy industrial loads.
-                </p>
-                <ul className="space-y-2 text-xs text-slate-600">
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" /> 11kV / 33kV HT grid synchronization</li>
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" /> High-power bifacial solar modules</li>
-                  <li className="flex items-center gap-2.5"><CheckCircle2 className="w-4 h-4 text-purple-600 shrink-0" /> Open access & captive solar power procurement</li>
-                </ul>
-                <div className="pt-2">
-                  <Link href="/industrial" className="inline-flex items-center gap-2 text-sm font-bold text-brand-purple hover:text-brand-blue transition-colors group/btn">
-                    <span>Explore Industrial Solar</span>
-                    <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
-                  </Link>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* SECTION 4: WHY NITISH SOLAR (Corporate Statement) — PURE WHITE (#FFFFFF) */}
-      <section className="py-24 sm:py-32 bg-[#FFFFFF] text-[#111827] border-t border-slate-200/60 relative overflow-hidden">
+      {/* 4. SECTION 4 — WHY NITISH SOLAR (CORPORATE STATEMENT) — PURE WHITE */}
+      <section className="py-28 bg-white text-[#111827] border-t border-slate-200/60 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Corporate Engineering Standard</span>
@@ -384,76 +437,100 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 5: SELECTED PROJECTS PORTFOLIO — NEUTRAL LIGHT GRAY (#ECEEEA) */}
-      <section className="py-24 bg-[#ECEEEA] text-[#111827] border-t border-slate-200/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Project Portfolio</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-[#111827] tracking-tight">
-                Featured Solar Infrastructure Executed by nitish solar
-              </h2>
+      {/* 5. SECTION 5 — PROJECTS (PINNED 250VH CINEMATIC SCROLL) */}
+      <section ref={projectsRef} className="relative h-[250vh] bg-[#ECEEEA]">
+        <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+          {/* Background Images Crossfade */}
+          {PROJECT_STORIES.map((proj, idx) => (
+            <div
+              key={proj.title}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                projectsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
+              }`}
+            >
+              <Image src={proj.image} alt={proj.title} fill className="object-cover object-center filter brightness-85 scale-105 transition-transform duration-1000" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
             </div>
-            <Link href="/projects">
-              <Button variant="outline" className="border-slate-300 bg-white text-[#111827] hover:bg-slate-50 font-semibold" icon={<ArrowRight className="w-4 h-4" />}>
-                View All Projects
-              </Button>
-            </Link>
-          </div>
+          ))}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                title: '1.2 MWp Industrial Rooftop Installation',
-                location: 'Chakan MIDC, Pune',
-                size: '1,200 kWp',
-                image: '/images/industrial_light.png',
-                type: 'Industrial Project',
-              },
-              {
-                title: '450 kWp Commercial HQ Rooftop System',
-                location: 'GIDC, Ahmedabad',
-                size: '450 kWp',
-                image: '/images/hero_light.png',
-                type: 'Commercial Project',
-              },
-              {
-                title: '25 kWp Modern Luxury Villa System',
-                location: 'Baner, Pune',
-                size: '25 kWp',
-                image: '/images/residential_light.png',
-                type: 'Residential Project',
-              },
-            ].map((proj) => (
-              <div key={proj.title} className="group rounded-2xl overflow-hidden border border-slate-200/80 bg-white shadow-sm hover:shadow-md hover:border-brand-purple/40 transition-all duration-500">
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <Image
-                    src={proj.image}
-                    alt={proj.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md text-brand-purple text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-slate-200 shadow-sm">
-                    {proj.type}
+          {/* Sticky Foreground Content Story Overlay */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
+            {PROJECT_STORIES.map((proj, idx) => {
+              const isActive = projectsStep === idx;
+              return (
+                <div
+                  key={proj.title}
+                  className={`transition-all duration-700 max-w-2xl space-y-4 ${
+                    isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-8 absolute pointer-events-none'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-xs font-mono font-bold uppercase tracking-widest border border-white/20">
+                      Project Showcase 0{idx + 1}
+                    </span>
+                    <span className="text-amber-400 font-bold text-sm font-mono">{proj.capacity}</span>
                   </div>
-                </div>
-                <div className="p-6 space-y-2">
-                  <div className="flex justify-between items-center text-xs text-slate-500">
-                    <span>{proj.location}</span>
-                    <span className="font-bold text-brand-purple">{proj.size}</span>
-                  </div>
-                  <h3 className="font-bold text-[#111827] text-base group-hover:text-brand-purple transition-colors flex items-center justify-between">
-                    {proj.title} <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-brand-purple shrink-0" />
+
+                  <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-md">
+                    {proj.title}
                   </h3>
+
+                  <p className="text-amber-300 font-mono text-xs uppercase tracking-widest">{proj.location}</p>
+
+                  <p className="text-slate-200 text-sm sm:text-base font-light leading-relaxed max-w-xl">
+                    {proj.desc}
+                  </p>
+
+                  <div className="pt-4">
+                    <Link href="/projects">
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        className="border-white/40 bg-black/30 backdrop-blur-md text-white hover:bg-white/20 font-semibold px-6 py-3 rounded-xl text-sm"
+                        icon={<ArrowUpRight className="w-4 h-4" />}
+                      >
+                        Explore Project Portfolio
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* SECTION 6: SOLAR CALCULATOR & PROPOSAL REQUEST — PURE WHITE (#FFFFFF) */}
-      <section className="py-24 bg-[#FFFFFF] text-[#111827] border-t border-slate-200/60">
+      {/* 6. SECTION 6 — IMPACT SECTION (PINNED 200VH PROGRESSIVE NUMBERS) */}
+      <section ref={impactRef} className="relative h-[200vh] bg-black text-white">
+        <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+          <Image src="/images/hero_light.png" alt="nitish solar energy impact" fill className="object-cover object-center filter brightness-50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/80" />
+
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20 w-full">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-6">Proved Turnkey Track Record</span>
+            {TRUST_INDICATORS.map((metric, idx) => {
+              const isActive = impactStep === idx;
+              return (
+                <div
+                  key={metric.label}
+                  className={`transition-all duration-700 space-y-4 ${
+                    isActive ? 'opacity-100 scale-100 relative' : 'opacity-0 scale-90 absolute pointer-events-none'
+                  }`}
+                >
+                  <span className="text-5xl sm:text-8xl font-black text-white tracking-tight drop-shadow-lg block font-mono">
+                    {metric.val}
+                  </span>
+                  <h3 className="text-xl sm:text-3xl font-bold text-amber-400 tracking-tight">{metric.label}</h3>
+                  <p className="text-slate-300 text-sm sm:text-base font-light max-w-lg mx-auto">{metric.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 7. SECTION 7 — SOLAR CALCULATOR & PROPOSAL REQUEST — PURE WHITE */}
+      <section className="py-28 bg-white text-[#111827] border-t border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#F5F6F3] rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-sm">
             <div className="lg:col-span-6 space-y-6">
@@ -579,7 +656,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* SECTION 7: FINAL CINEMATIC CONCLUSION CTA */}
+      {/* 8. SECTION 8 — FINAL CINEMATIC CONCLUSION CTA */}
       <section className="relative py-28 sm:py-36 overflow-hidden">
         {/* Full-width Daylight Image Background */}
         <div className="absolute inset-0 z-0">
