@@ -1,0 +1,285 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      String   @default("SALES_EXECUTIVE") // SUPER_ADMIN, ADMIN, SALES_MANAGER, SALES_EXECUTIVE, PROJECT_MANAGER, FINANCE, VIEWER
+  phone     String?
+  avatarUrl String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedLeads     Lead[]           @relation("SalesExecutiveLeads")
+  managedProjects   Project[]        @relation("ProjectManagerProjects")
+  assignedFollowUps FollowUp[]
+  auditLogs         AuditLog[]
+}
+
+model Product {
+  id              String      @id @default(uuid())
+  name            String
+  sku             String      @unique
+  type            String      // SOLAR_PANEL, INVERTER, BATTERY_STORAGE, MOUNTING_STRUCTURE, BOS_CABLE_SWITCHGEAR, MONITORING_SYSTEM
+  brand           String
+  specifications  String      // JSON string of specs
+  unitPrice       Float
+  pricePerWatt    Float?
+  stockQuantity   Int         @default(0)
+  warrantyYears   Int         @default(25)
+  imageUrl        String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  quotationItems QuotationItem[]
+  orderItems     OrderItem[]
+}
+
+model Lead {
+  id                String       @id @default(uuid())
+  leadNumber        String       @unique
+  fullName          String
+  email             String
+  phone             String
+  companyName       String?
+  customerType      String       @default("RESIDENTIAL") // RESIDENTIAL, COMMERCIAL, INDUSTRIAL, GOVERNMENT
+  address           String
+  city              String
+  state             String
+  pinCode           String
+  monthlyBillAmount Float
+  proposedCapacityKw Float?
+  roofType          String?
+  roofAreaSqFt      Float?
+  status            String       @default("NEW") // NEW, CONTACTED, SURVEY_SCHEDULED, PROPOSAL_SENT, NEGOTIATING, WON, LOST
+  priority          String       @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  source            String       @default("Website Quote")
+  notes             String?
+  assignedToId      String?
+  assignedTo        User?        @relation("SalesExecutiveLeads", fields: [assignedToId], references: [id])
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  customer          Customer?
+  siteSurveys       SiteSurvey[]
+  quotations        Quotation[]
+  followUps         FollowUp[]
+}
+
+model Customer {
+  id             String      @id @default(uuid())
+  customerNumber String      @unique
+  leadId         String?     @unique
+  lead           Lead?       @relation(fields: [leadId], references: [id])
+  fullName       String
+  email          String
+  phone          String
+  companyName    String?
+  customerType   String
+  address        String
+  city           String
+  state          String
+  pinCode        String
+  discomName     String?
+  consumerNumber String?
+  sanctionedLoadKw Float?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  quotations     Quotation[]
+  orders         Order[]
+  projects       Project[]
+  invoices       Invoice[]
+}
+
+model SiteSurvey {
+  id                String   @id @default(uuid())
+  surveyNumber      String   @unique
+  leadId            String
+  lead              Lead     @relation(fields: [leadId], references: [id])
+  scheduledDate     DateTime
+  completedDate     DateTime?
+  surveyorName      String
+  roofLengthFt      Float
+  roofWidthFt       Float
+  roofAreaSqFt      Float
+  roofTiltAngle     Float
+  azimuthDirection  String
+  shadingFactorPct  Float
+  structureType     String
+  meterType         String
+  discomConnection  String
+  cableDistanceMeters Float
+  notes             String?
+  status            String   @default("COMPLETED")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Quotation {
+  id                 String    @id @default(uuid())
+  quotationNumber    String    @unique
+  leadId             String?
+  lead               Lead?     @relation(fields: [leadId], references: [id])
+  customerId         String?
+  customer           Customer? @relation(fields: [customerId], references: [id])
+  systemCapacityKw   Float
+  subtotalAmount     Float
+  subsidyAmount      Float     @default(0)
+  taxAmount          Float
+  totalAmount        Float
+  paybackPeriodYears Float
+  annualSavingsEst   Float
+  status             String    @default("DRAFT") // DRAFT, SENT, APPROVED, REJECTED, EXPIRED
+  validUntil         DateTime
+  termsAndConditions String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  items              QuotationItem[]
+  order              Order?
+}
+
+model QuotationItem {
+  id          String    @id @default(uuid())
+  quotationId String
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Int
+  unitPrice   Float
+  totalPrice  Float
+}
+
+model Order {
+  id               String    @id @default(uuid())
+  orderNumber      String    @unique
+  quotationId      String    @unique
+  quotation        Quotation @relation(fields: [quotationId], references: [id])
+  customerId       String
+  customer         Customer  @relation(fields: [customerId], references: [id])
+  totalAmount      Float
+  status           String    @default("CONFIRMED") // PENDING, CONFIRMED, IN_PROGRESS, DELIVERED, COMPLETED, CANCELLED
+  orderDate        DateTime  @default(now())
+  expectedDelivery DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  items            OrderItem[]
+  project          Project?
+  invoices         Invoice[]
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+}
+
+model Project {
+  id               String   @id @default(uuid())
+  projectNumber    String   @unique
+  orderId          String   @unique
+  order            Order    @relation(fields: [orderId], references: [id])
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id])
+  projectManagerId String?
+  projectManager   User?    @relation("ProjectManagerProjects", fields: [projectManagerId], references: [id])
+  systemSizeKw     Float
+  siteAddress      String
+  status           String   @default("ENGINEERING_DESIGN")
+  progressPct      Int      @default(10)
+  startDate        DateTime @default(now())
+  targetDate       DateTime?
+  completionDate   DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  milestones       ProjectMilestone[]
+  invoices         Invoice[]
+}
+
+model ProjectMilestone {
+  id          String    @id @default(uuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  sequence    Int
+  status      String    @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, DELAYED
+  dueDate     DateTime?
+  completedAt DateTime?
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  invoiceNumber String   @unique
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  orderId       String?
+  order         Order?   @relation(fields: [orderId], references: [id])
+  projectId     String?
+  project       Project? @relation(fields: [projectId], references: [id])
+  subtotal      Float
+  taxAmount     Float
+  totalAmount   Float
+  paidAmount    Float    @default(0)
+  balanceAmount Float
+  status        String   @default("ISSUED") // DRAFT, ISSUED, PARTIALLY_PAID, PAID, OVERDUE, CANCELLED
+  dueDate       DateTime
+  issueDate     DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  payments      Payment[]
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  receiptNumber String   @unique
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+  amount        Float
+  paymentDate   DateTime @default(now())
+  paymentMethod String   @default("BANK_TRANSFER")
+  referenceNo   String?
+  notes         String?
+  createdAt     DateTime @default(now())
+}
+
+model FollowUp {
+  id          String    @id @default(uuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  title       String
+  notes       String?
+  dueDate     DateTime
+  isCompleted Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  module    String
+  details   String
+  timestamp DateTime @default(now())
+}
