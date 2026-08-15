@@ -319,8 +319,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECTION 3 — SOLAR SOLUTIONS (COMPACT 180VH PINNED CINEMATIC STORYTELLING) */}
-      <section ref={solutionsRef} className="relative h-[180vh] bg-[#F5F6F3]">
+      {/* 3. SECTION 3 — SOLAR SOLUTIONS (COMPACT 145VH PINNED CINEMATIC STORYTELLING) */}
+      <section ref={solutionsRef} className="relative h-[145vh] bg-[#F5F6F3]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
           <div className="absolute inset-0 z-0">
@@ -461,8 +461,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. SECTION 5 — PROJECTS (COMPACT 170VH PINNED CINEMATIC SCROLL) */}
-      <section ref={projectsRef} className="relative h-[170vh] bg-[#ECEEEA]">
+      {/* 5. SECTION 5 — PROJECTS (COMPACT 135VH PINNED CINEMATIC SCROLL) */}
+      <section ref={projectsRef} className="relative h-[135vh] bg-[#ECEEEA]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
           <div className="absolute inset-0 z-0">
@@ -532,8 +532,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. SECTION 6 — IMPACT SECTION (COMPACT 150VH PINNED PROGRESSIVE NUMBERS) */}
-      <section ref={impactRef} className="relative h-[150vh] bg-black text-white">
+      {/* 6. SECTION 6 — IMPACT SECTION (COMPACT 120VH PINNED PROGRESSIVE NUMBERS) */}
+      <section ref={impactRef} className="relative h-[120vh] bg-black text-white">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 z-0">
             <Image
