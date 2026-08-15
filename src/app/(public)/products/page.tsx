@@ -90,7 +90,7 @@ export default function ProductsPage() {
               <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-slate-500 block uppercase font-bold">Turnkey Price</span>
-                  <span className="text-lg font-black text-brand-dark">₹{product.unitPrice.toLocaleString()}</span>
+                  <span className="text-lg font-black text-brand-dark">₹{new Intl.NumberFormat('en-IN').format(product.unitPrice)}</span>
                 </div>
                 <Link href="/quote">
                   <Button variant="accent" size="sm" className="bg-gradient-to-r from-brand-purple to-brand-blue text-white font-bold" icon={<ArrowRight className="w-3.5 h-3.5" />}>

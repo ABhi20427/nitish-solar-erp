@@ -14,7 +14,6 @@ import {
   Building2,
   Factory,
   Home as HomeIcon,
-  ShieldCheck,
   Award,
   Calculator,
   ArrowRight,
@@ -32,6 +31,12 @@ const TRUST_INDICATORS = [
   { val: '3,800+', label: 'Satisfied Clients', desc: 'Homeowners, corporate enterprises, and industrial facilities.' },
   { val: '12+ Years', label: 'Engineering Experience', desc: 'Pioneering solar EPC excellence and DISCOM net metering.' },
 ];
+
+// Deterministic Number Formatter to guarantee 100% hydration match between Node SSR and browser client
+function formatIndianNumber(val: number): string {
+  if (typeof val !== 'number' || isNaN(val)) return '0';
+  return new Intl.NumberFormat('en-IN').format(val);
+}
 
 export default function HomePage() {
   const { addLead } = useSolarStore();
@@ -64,45 +69,45 @@ export default function HomePage() {
 
   const quickCalc = calculateSolarSystem({ monthlyBillAmount: quickBill });
 
-  // Passive Scroll handler - state updates only when step changes
+  // Dynamic Scroll progress handler - recalculates based on actual section scroll distance
   useEffect(() => {
     const handleScroll = () => {
-      // 1. Solutions Scroll Progress (3 steps)
+      // 1. Solutions Scroll Progress (3 stories mapped over 180vh)
       if (solutionsRef.current) {
         const rect = solutionsRef.current.getBoundingClientRect();
         const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
         if (totalDist > 0) {
-          const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
+          const progress = Math.max(0, Math.min(0.99, -rect.top / totalDist));
           let nextStep = 0;
-          if (progress < 0.33) nextStep = 0;
-          else if (progress < 0.66) nextStep = 1;
+          if (progress < 0.35) nextStep = 0;
+          else if (progress < 0.7) nextStep = 1;
           else nextStep = 2;
 
           setSolutionsStep((prev) => (prev !== nextStep ? nextStep : prev));
         }
       }
 
-      // 2. Projects Scroll Progress (3 steps)
+      // 2. Projects Scroll Progress (3 stories mapped over 170vh)
       if (projectsRef.current) {
         const rect = projectsRef.current.getBoundingClientRect();
         const totalDist = projectsRef.current.offsetHeight - window.innerHeight;
         if (totalDist > 0) {
-          const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
+          const progress = Math.max(0, Math.min(0.99, -rect.top / totalDist));
           let nextStep = 0;
-          if (progress < 0.33) nextStep = 0;
-          else if (progress < 0.66) nextStep = 1;
+          if (progress < 0.35) nextStep = 0;
+          else if (progress < 0.7) nextStep = 1;
           else nextStep = 2;
 
           setProjectsStep((prev) => (prev !== nextStep ? nextStep : prev));
         }
       }
 
-      // 3. Impact Scroll Progress (4 steps)
+      // 3. Impact Scroll Progress (4 steps mapped over 150vh)
       if (impactRef.current) {
         const rect = impactRef.current.getBoundingClientRect();
         const totalDist = impactRef.current.offsetHeight - window.innerHeight;
         if (totalDist > 0) {
-          const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
+          const progress = Math.max(0, Math.min(0.99, -rect.top / totalDist));
           let nextStep = 0;
           if (progress < 0.25) nextStep = 0;
           else if (progress < 0.5) nextStep = 1;
@@ -212,11 +217,11 @@ export default function HomePage() {
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center scale-100 filter contrast-105 saturate-105"
+            className="object-cover object-center filter contrast-105 saturate-105"
           />
           {/* Subtle localized dark gradient behind text ONLY */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/50 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent" />
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16">
@@ -266,7 +271,7 @@ export default function HomePage() {
       </section>
 
       {/* 2. SECTION 2 — EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") */}
-      <section className="py-28 bg-white text-[#111827] border-t border-slate-100">
+      <section className="py-20 bg-white text-[#111827] border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
@@ -283,7 +288,7 @@ export default function HomePage() {
               <p className="text-slate-600 text-sm leading-relaxed font-light">
                 Whether deploying residential rooftop solar installations, commercial net-metered arrays, or utility-scale megawatt projects, our end-to-end EPC workflow ensures optimal tilt geometry, 3D shadow modeling, DISCOM grid synchronization, and 30-year linear performance guarantees.
               </p>
-              <div className="pt-4">
+              <div className="pt-2">
                 <Link href="/about" className="inline-flex items-center gap-2 text-sm font-bold text-brand-purple hover:text-brand-blue transition-colors group">
                   <span>Discover nitish solar's Engineering Philosophy</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -314,15 +319,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECTION 3 — SOLAR SOLUTIONS (PINNED 300VH CINEMATIC STORYTELLING) */}
-      <section ref={solutionsRef} className="relative h-[300vh] bg-[#F5F6F3]">
+      {/* 3. SECTION 3 — SOLAR SOLUTIONS (COMPACT 180VH PINNED CINEMATIC STORYTELLING) */}
+      <section ref={solutionsRef} className="relative h-[180vh] bg-[#F5F6F3]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
           <div className="absolute inset-0 z-0">
             {SOLUTIONS_STORIES.map((story, idx) => (
               <div
                 key={story.type}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                className={`absolute inset-0 transition-opacity duration-700 ease-out ${
                   solutionsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
               >
@@ -331,7 +336,7 @@ export default function HomePage() {
                   alt={story.heading}
                   fill
                   sizes="100vw"
-                  className="object-cover object-center filter brightness-90 scale-105 transition-transform duration-1000"
+                  className="object-cover object-center filter brightness-90 scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
               </div>
@@ -346,8 +351,8 @@ export default function HomePage() {
               return (
                 <div
                   key={story.type}
-                  className={`transition-all duration-700 max-w-2xl space-y-6 ${
-                    isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-8 absolute pointer-events-none'
+                  className={`transition-all duration-700 ease-out max-w-2xl space-y-6 ${
+                    isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-6 absolute pointer-events-none'
                   }`}
                 >
                   <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
@@ -372,12 +377,12 @@ export default function HomePage() {
                     ))}
                   </ul>
 
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <Link href={story.link}>
                       <Button
                         variant="accent"
                         size="lg"
-                        className="bg-white text-navy-950 hover:bg-amber-400 font-bold px-8 py-3.5 rounded-xl text-sm shadow-xl transition-all border-0"
+                        className="bg-white text-navy-950 hover:bg-amber-400 font-bold px-8 py-3 rounded-xl text-sm shadow-xl transition-all border-0"
                         icon={<ArrowRight className="w-4 h-4" />}
                       >
                         Explore {story.type.split(' ')[0]} Solar
@@ -406,8 +411,8 @@ export default function HomePage() {
       </section>
 
       {/* 4. SECTION 4 — WHY NITISH SOLAR (CORPORATE STATEMENT) — PURE WHITE */}
-      <section className="py-28 bg-white text-[#111827] border-t border-slate-200/60 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-16">
+      <section className="py-20 bg-white text-[#111827] border-t border-slate-200/60 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-bold uppercase tracking-widest text-brand-purple block">Corporate Engineering Standard</span>
             <h2 className="text-3xl sm:text-5xl font-black text-[#111827] tracking-tight">
@@ -418,7 +423,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
               {
                 title: 'Turnkey Engineering',
@@ -443,7 +448,7 @@ export default function HomePage() {
             ].map((pillar) => {
               const Icon = pillar.icon;
               return (
-                <div key={pillar.title} className="bg-[#F5F6F3] p-8 rounded-2xl border border-slate-200/80 space-y-4 hover:border-brand-purple/40 transition-all duration-300 shadow-sm">
+                <div key={pillar.title} className="bg-[#F5F6F3] p-6 sm:p-8 rounded-2xl border border-slate-200/80 space-y-4 hover:border-brand-purple/40 transition-all duration-300 shadow-sm">
                   <div className="w-12 h-12 rounded-xl bg-white text-brand-purple flex items-center justify-center border border-slate-200 shadow-xs">
                     <Icon className="w-6 h-6" />
                   </div>
@@ -456,15 +461,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 5. SECTION 5 — PROJECTS (PINNED 250VH CINEMATIC SCROLL) */}
-      <section ref={projectsRef} className="relative h-[250vh] bg-[#ECEEEA]">
+      {/* 5. SECTION 5 — PROJECTS (COMPACT 170VH PINNED CINEMATIC SCROLL) */}
+      <section ref={projectsRef} className="relative h-[170vh] bg-[#ECEEEA]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
           <div className="absolute inset-0 z-0">
             {PROJECT_STORIES.map((proj, idx) => (
               <div
                 key={proj.title}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                className={`absolute inset-0 transition-opacity duration-700 ease-out ${
                   projectsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
                 }`}
               >
@@ -473,7 +478,7 @@ export default function HomePage() {
                   alt={proj.title}
                   fill
                   sizes="100vw"
-                  className="object-cover object-center filter brightness-85 scale-105 transition-transform duration-1000"
+                  className="object-cover object-center filter brightness-85 scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
               </div>
@@ -487,8 +492,8 @@ export default function HomePage() {
               return (
                 <div
                   key={proj.title}
-                  className={`transition-all duration-700 max-w-2xl space-y-4 ${
-                    isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-8 absolute pointer-events-none'
+                  className={`transition-all duration-700 ease-out max-w-2xl space-y-4 ${
+                    isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-6 absolute pointer-events-none'
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -508,7 +513,7 @@ export default function HomePage() {
                     {proj.desc}
                   </p>
 
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <Link href="/projects">
                       <Button
                         variant="outline"
@@ -527,8 +532,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 6. SECTION 6 — IMPACT SECTION (PINNED 200VH PROGRESSIVE NUMBERS) */}
-      <section ref={impactRef} className="relative h-[200vh] bg-black text-white">
+      {/* 6. SECTION 6 — IMPACT SECTION (COMPACT 150VH PINNED PROGRESSIVE NUMBERS) */}
+      <section ref={impactRef} className="relative h-[150vh] bg-black text-white">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 z-0">
             <Image
@@ -548,8 +553,8 @@ export default function HomePage() {
               return (
                 <div
                   key={metric.label}
-                  className={`transition-all duration-700 space-y-4 ${
-                    isActive ? 'opacity-100 scale-100 relative' : 'opacity-0 scale-90 absolute pointer-events-none'
+                  className={`transition-all duration-700 ease-out space-y-4 ${
+                    isActive ? 'opacity-100 scale-100 relative' : 'opacity-0 scale-95 absolute pointer-events-none'
                   }`}
                 >
                   <span className="text-5xl sm:text-8xl font-black text-white tracking-tight drop-shadow-lg block font-mono">
@@ -565,7 +570,7 @@ export default function HomePage() {
       </section>
 
       {/* 7. SECTION 7 — SOLAR CALCULATOR & PROPOSAL REQUEST — PURE WHITE */}
-      <section className="py-28 bg-white text-[#111827] border-t border-slate-200/60">
+      <section className="py-20 bg-white text-[#111827] border-t border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#F5F6F3] rounded-3xl p-8 sm:p-12 border border-slate-200/90 shadow-sm">
             <div className="lg:col-span-6 space-y-6">
@@ -581,7 +586,7 @@ export default function HomePage() {
                 <div>
                   <div className="flex justify-between items-center text-sm font-semibold mb-2">
                     <span className="text-slate-700">Monthly Electric Bill</span>
-                    <span className="text-xl font-black text-brand-purple">₹{quickBill.toLocaleString()}</span>
+                    <span className="text-xl font-black text-brand-purple">₹{formatIndianNumber(quickBill)}</span>
                   </div>
                   <input
                     type="range"
@@ -601,11 +606,11 @@ export default function HomePage() {
                   </div>
                   <div>
                     <span className="text-slate-500 block">Est. Annual Savings:</span>
-                    <span className="text-lg font-black text-emerald-600">₹{quickCalc.annualSavingsEst.toLocaleString()}</span>
+                    <span className="text-lg font-black text-emerald-600">₹{formatIndianNumber(quickCalc.annualSavingsEst)}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block">Est. Subsidy / Benefit:</span>
-                    <span className="text-sm font-bold text-brand-purple">₹{quickCalc.subsidyEstimate.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-brand-purple">₹{formatIndianNumber(quickCalc.subsidyEstimate)}</span>
                   </div>
                   <div>
                     <span className="text-slate-500 block">Payback Horizon:</span>
@@ -692,7 +697,7 @@ export default function HomePage() {
       </section>
 
       {/* 8. SECTION 8 — FINAL CINEMATIC CONCLUSION CTA */}
-      <section className="relative py-28 sm:py-36 overflow-hidden">
+      <section className="relative py-24 sm:py-28 overflow-hidden">
         {/* Full-width Daylight Image Background */}
         <div className="absolute inset-0 z-0">
           <Image

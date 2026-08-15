@@ -86,7 +86,7 @@ export default function SolarCalculatorPage() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-semibold text-slate-700">Monthly Electricity Bill (₹)</span>
-                    <span className="text-lg font-bold text-brand-purple">₹{monthlyBill.toLocaleString()}</span>
+                    <span className="text-lg font-bold text-brand-purple">₹{new Intl.NumberFormat('en-IN').format(monthlyBill)}</span>
                   </div>
                   <input
                     type="range"
@@ -141,11 +141,11 @@ export default function SolarCalculatorPage() {
                   <div className="grid grid-cols-2 gap-4 border-t border-slate-800 pt-4 text-xs">
                     <div>
                       <span className="text-slate-400 block">Est. Annual Generation:</span>
-                      <span className="text-base font-black text-emerald-400">{calcResult.annualGenerationKwh.toLocaleString()} kWh</span>
+                      <span className="text-base font-black text-emerald-400">{new Intl.NumberFormat('en-IN').format(calcResult.annualGenerationKwh)} kWh</span>
                     </div>
                     <div>
                       <span className="text-slate-400 block">Est. Annual Savings:</span>
-                      <span className="text-base font-black text-emerald-400">₹{calcResult.annualSavingsEst.toLocaleString()}</span>
+                      <span className="text-base font-black text-emerald-400">₹{new Intl.NumberFormat('en-IN').format(calcResult.annualSavingsEst)}</span>
                     </div>
                   </div>
                 </div>
