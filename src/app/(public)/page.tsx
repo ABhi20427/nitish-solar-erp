@@ -39,7 +39,7 @@ export default function HomePage() {
   const [quickBill, setQuickBill] = useState(25000);
   const [formSubmitted, setFormSubmitted] = useState(false);
 
-  // Sticky Scroll Step States
+  // Deterministic Initial Scroll Step States
   const [solutionsStep, setSolutionsStep] = useState(0);
   const [projectsStep, setProjectsStep] = useState(0);
   const [impactStep, setImpactStep] = useState(0);
@@ -64,7 +64,7 @@ export default function HomePage() {
 
   const quickCalc = calculateSolarSystem({ monthlyBillAmount: quickBill });
 
-  // Scroll handler for sticky cinematic steps
+  // Passive Scroll handler - state updates only when step changes
   useEffect(() => {
     const handleScroll = () => {
       // 1. Solutions Scroll Progress (3 steps)
@@ -73,9 +73,12 @@ export default function HomePage() {
         const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
         if (totalDist > 0) {
           const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
-          if (progress < 0.33) setSolutionsStep(0);
-          else if (progress < 0.66) setSolutionsStep(1);
-          else setSolutionsStep(2);
+          let nextStep = 0;
+          if (progress < 0.33) nextStep = 0;
+          else if (progress < 0.66) nextStep = 1;
+          else nextStep = 2;
+
+          setSolutionsStep((prev) => (prev !== nextStep ? nextStep : prev));
         }
       }
 
@@ -85,9 +88,12 @@ export default function HomePage() {
         const totalDist = projectsRef.current.offsetHeight - window.innerHeight;
         if (totalDist > 0) {
           const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
-          if (progress < 0.33) setProjectsStep(0);
-          else if (progress < 0.66) setProjectsStep(1);
-          else setProjectsStep(2);
+          let nextStep = 0;
+          if (progress < 0.33) nextStep = 0;
+          else if (progress < 0.66) nextStep = 1;
+          else nextStep = 2;
+
+          setProjectsStep((prev) => (prev !== nextStep ? nextStep : prev));
         }
       }
 
@@ -97,10 +103,13 @@ export default function HomePage() {
         const totalDist = impactRef.current.offsetHeight - window.innerHeight;
         if (totalDist > 0) {
           const progress = Math.max(0, Math.min(1, -rect.top / totalDist));
-          if (progress < 0.25) setImpactStep(0);
-          else if (progress < 0.5) setImpactStep(1);
-          else if (progress < 0.75) setImpactStep(2);
-          else setImpactStep(3);
+          let nextStep = 0;
+          if (progress < 0.25) nextStep = 0;
+          else if (progress < 0.5) nextStep = 1;
+          else if (progress < 0.75) nextStep = 2;
+          else nextStep = 3;
+
+          setImpactStep((prev) => (prev !== nextStep ? nextStep : prev));
         }
       }
     };
@@ -202,9 +211,10 @@ export default function HomePage() {
             alt="nitish solar bright solar energy infrastructure"
             fill
             priority
+            sizes="100vw"
             className="object-cover object-center scale-100 filter contrast-105 saturate-105"
           />
-          {/* Subtle localized dark gradient behind text ONLY for 100% readability */}
+          {/* Subtle localized dark gradient behind text ONLY */}
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
           <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/50 to-transparent" />
         </div>
@@ -289,6 +299,7 @@ export default function HomePage() {
                     src="/images/industrial_light.png"
                     alt="nitish solar architectural engineering"
                     fill
+                    sizes="(max-width: 1024px) 100vw, 50vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
@@ -307,17 +318,25 @@ export default function HomePage() {
       <section ref={solutionsRef} className="relative h-[300vh] bg-[#F5F6F3]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
-          {SOLUTIONS_STORIES.map((story, idx) => (
-            <div
-              key={story.type}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                solutionsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-            >
-              <Image src={story.image} alt={story.heading} fill className="object-cover object-center filter brightness-90 scale-105 transition-transform duration-1000" />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
-            </div>
-          ))}
+          <div className="absolute inset-0 z-0">
+            {SOLUTIONS_STORIES.map((story, idx) => (
+              <div
+                key={story.type}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  solutionsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                }`}
+              >
+                <Image
+                  src={story.image}
+                  alt={story.heading}
+                  fill
+                  sizes="100vw"
+                  className="object-cover object-center filter brightness-90 scale-105 transition-transform duration-1000"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
+              </div>
+            ))}
+          </div>
 
           {/* Sticky Foreground Content Story Overlay */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
@@ -441,17 +460,25 @@ export default function HomePage() {
       <section ref={projectsRef} className="relative h-[250vh] bg-[#ECEEEA]">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
-          {PROJECT_STORIES.map((proj, idx) => (
-            <div
-              key={proj.title}
-              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                projectsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
-              }`}
-            >
-              <Image src={proj.image} alt={proj.title} fill className="object-cover object-center filter brightness-85 scale-105 transition-transform duration-1000" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-            </div>
-          ))}
+          <div className="absolute inset-0 z-0">
+            {PROJECT_STORIES.map((proj, idx) => (
+              <div
+                key={proj.title}
+                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                  projectsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
+                }`}
+              >
+                <Image
+                  src={proj.image}
+                  alt={proj.title}
+                  fill
+                  sizes="100vw"
+                  className="object-cover object-center filter brightness-85 scale-105 transition-transform duration-1000"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+              </div>
+            ))}
+          </div>
 
           {/* Sticky Foreground Content Story Overlay */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
@@ -503,8 +530,16 @@ export default function HomePage() {
       {/* 6. SECTION 6 — IMPACT SECTION (PINNED 200VH PROGRESSIVE NUMBERS) */}
       <section ref={impactRef} className="relative h-[200vh] bg-black text-white">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
-          <Image src="/images/hero_light.png" alt="nitish solar energy impact" fill className="object-cover object-center filter brightness-50" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/80" />
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="/images/hero_light.png"
+              alt="nitish solar energy impact"
+              fill
+              sizes="100vw"
+              className="object-cover object-center filter brightness-50"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/80" />
+          </div>
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20 w-full">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-400 block mb-6">Proved Turnkey Track Record</span>
@@ -664,6 +699,7 @@ export default function HomePage() {
             src="/images/hero_light.png"
             alt="nitish solar clean energy future"
             fill
+            sizes="100vw"
             className="object-cover object-center filter brightness-95"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/30" />

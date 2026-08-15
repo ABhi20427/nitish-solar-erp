@@ -62,6 +62,7 @@ export default function SolutionsPage() {
               src="/images/residential_light.png"
               alt="nitish solar residential solar rooftop"
               fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
@@ -74,6 +75,7 @@ export default function SolutionsPage() {
               src="/images/industrial_light.png"
               alt="nitish solar commercial rooftop array"
               fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
@@ -130,6 +132,7 @@ export default function SolutionsPage() {
               src="/images/hero_light.png"
               alt="nitish solar industrial mega solar farm"
               fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
