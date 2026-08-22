@@ -198,12 +198,12 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 selection:bg-amber-500 selection:text-slate-950 font-sans antialiased overflow-x-hidden cinematic-scroll-container">
+    <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 selection:bg-amber-500 selection:text-slate-950 font-sans antialiased overflow-x-hidden">
       {/* Dynamic Scroll Navigation Header */}
       <PublicNavbar transparentOverlay lightTheme onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
       {/* 1. HERO BACKGROUND (100VH / 100SVH / 100DVH FULL-SCREEN CINEMATIC) */}
-      <section className="relative min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center overflow-hidden cinematic-snap-start">
+      <section className="relative min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center overflow-hidden snap-start-always">
         {/* Full-bleed Daylight Solar Infrastructure Background */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -315,7 +315,7 @@ export default function HomePage() {
       </section>
 
       {/* 3. SECTION 3 — SOLAR SOLUTIONS (COMPACT PINNED CINEMATIC STORYTELLING) */}
-      <section ref={solutionsRef} className="relative h-[160vh] lg:h-[175vh] bg-[#0B0F17] cinematic-snap-start">
+      <section ref={solutionsRef} className="relative h-[160vh] lg:h-[180vh] bg-[#0B0F17] snap-start-always">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
           <div className="absolute inset-0 z-0">
@@ -523,7 +523,7 @@ export default function HomePage() {
       </section>
 
       {/* 6. SECTION 6 — IMPACT SECTION (COMPACT PINNED PROGRESSIVE NUMBERS) */}
-      <section ref={impactRef} className="relative h-[130vh] lg:h-[150vh] bg-[#070A10] text-white border-t border-slate-800/80 cinematic-snap-start">
+      <section ref={impactRef} className="relative h-[130vh] lg:h-[150vh] bg-[#070A10] text-white border-t border-slate-800/80 snap-start-always">
         <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 z-0">
             <Image
@@ -686,7 +686,7 @@ export default function HomePage() {
       </section>
 
       {/* 8. SECTION 8 — FINAL CINEMATIC CONCLUSION CTA */}
-      <section className="relative min-h-screen min-h-[100svh] min-h-[100dvh] flex items-center justify-center py-20 lg:py-0 overflow-hidden border-t border-slate-800/80 cinematic-snap-start">
+      <section className="relative min-h-screen min-h-[100svh] min-h-[100dvh] flex items-center justify-center py-20 lg:py-0 overflow-hidden border-t border-slate-800/80 snap-start-always">
         {/* Full-width Daylight Image Background */}
         <div className="absolute inset-0 z-0">
           <Image
