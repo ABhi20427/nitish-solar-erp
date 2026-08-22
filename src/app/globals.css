@@ -34,22 +34,24 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Primary Document Vertical Scroll Snap Architecture */
+/* Hybrid Scroll Snap Architecture:
+   Uses 'scroll-snap-type: y proximity' on root html so major scenes settle into full-screen alignment
+   without forcing the browser to skip smaller natural-height content sections. */
 @media (min-width: 1024px) {
   html {
-    scroll-snap-type: y mandatory;
+    scroll-snap-type: y proximity;
   }
 
-  /* Top-Level Major Full-Screen Visual Scenes */
+  /* Full-Screen Major Cinematic Scenes */
   .snap-major-scene {
     scroll-snap-align: start;
-    scroll-snap-stop: always;
+    scroll-snap-stop: normal;
   }
 
-  /* Supporting Normal Content Sections */
+  /* Freely Scrollable Natural-Height Supporting Sections */
   .snap-natural {
-    scroll-snap-align: none !important;
-    scroll-snap-stop: normal !important;
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
   }
 }
 
@@ -58,7 +60,8 @@ body {
     scroll-snap-type: y proximity;
   }
 
-  .snap-major-scene {
+  .snap-major-scene,
+  .snap-natural {
     scroll-snap-align: start;
     scroll-snap-stop: normal;
   }
