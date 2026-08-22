@@ -14,7 +14,7 @@ export interface EmailData {
 }
 
 export async function sendLeadEmail(data: EmailData) {
-  const host = process.env.ZOHO_SMTP_HOST || 'smtpro.zoho.in';
+  const host = process.env.ZOHO_SMTP_HOST || 'smtp.zoho.in';
   const port = Number(process.env.ZOHO_SMTP_PORT) || 465;
   const user = process.env.ZOHO_SMTP_USER || 'nitishsolar@zohomail.in';
   const pass = process.env.ZOHO_SMTP_PASS || process.env.ZOHO_SMTP_PASSWORD;
