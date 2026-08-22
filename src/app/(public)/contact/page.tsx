@@ -14,6 +14,8 @@ export default function ContactPage() {
   const { addLead } = useSolarStore();
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -21,27 +23,56 @@ export default function ContactPage() {
     email: '',
     city: '',
     message: '',
+    website_hp: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone) return;
 
-    addLead({
-      fullName: form.name,
-      phone: form.phone,
-      email: form.email || `${form.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      city: form.city || 'Pune',
-      state: 'Maharashtra',
-      address: 'Contact Inquiry Address',
-      customerType: 'RESIDENTIAL',
-      monthlyBillAmount: 10000,
-      notes: form.message || 'General contact page message submitted to nitish solar',
-      source: 'nitish solar Contact Page',
-      priority: 'MEDIUM',
-    });
+    setIsSubmitting(true);
+    setErrorMessage('');
 
-    setSubmitted(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          email: form.email,
+          city: form.city,
+          message: form.message,
+          website_hp: form.website_hp,
+          source: 'nitish solar Contact Page',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        addLead({
+          fullName: form.name,
+          phone: form.phone,
+          email: form.email || `${form.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+          city: form.city || 'Pune',
+          state: 'Maharashtra',
+          address: 'Contact Inquiry Address',
+          customerType: 'RESIDENTIAL',
+          monthlyBillAmount: 10000,
+          notes: form.message || 'General contact page message submitted to nitish solar',
+          source: 'nitish solar Contact Page',
+          priority: 'MEDIUM',
+        });
+        setSubmitted(true);
+      } else {
+        setErrorMessage(data.error || 'Something went wrong while sending your enquiry. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('Something went wrong while sending your enquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -127,9 +158,9 @@ export default function ContactPage() {
                     <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                       <CheckCircle2 className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-white">Message Sent!</h3>
+                    <h3 className="text-xl font-bold text-white">Enquiry Received</h3>
                     <p className="text-xs text-slate-300 max-w-sm mx-auto font-light">
-                      Thank you. An engineering representative from <strong className="text-white">nitish solar</strong> will respond shortly.
+                      Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.
                     </p>
                     <Button variant="outline" className="border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white" onClick={() => setSubmitted(false)}>
                       Send Another Message
@@ -137,6 +168,23 @@ export default function ContactPage() {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                    {/* Honeypot Spam Prevention Field */}
+                    <input
+                      type="text"
+                      name="website_hp"
+                      value={form.website_hp}
+                      onChange={(e) => setForm({ ...form, website_hp: e.target.value })}
+                      style={{ display: 'none' }}
+                      tabIndex={-1}
+                      autoComplete="off"
+                    />
+
+                    {errorMessage && (
+                      <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl">
+                        {errorMessage}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block font-semibold text-slate-300 mb-1">Your Full Name *</label>
@@ -199,11 +247,12 @@ export default function ContactPage() {
                     <Button
                       variant="accent"
                       type="submit"
-                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 border-0"
+                      disabled={isSubmitting}
+                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 border-0 disabled:opacity-50"
                       size="lg"
                       icon={<Send className="w-4 h-4" />}
                     >
-                      Send Message to nitish solar
+                      {isSubmitting ? 'Sending Enquiry...' : 'Send Message to nitish solar'}
                     </Button>
                   </form>
                 )}

@@ -23,9 +23,12 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
     proposedCapacityKw: 10,
     roofAreaSqFt: 1200,
     notes: '',
+    website_hp: '',
   });
 
   const [submittedLead, setSubmittedLead] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const calcEst = calculateSolarSystem({
     monthlyBillAmount: formData.monthlyBillAmount,
@@ -33,28 +36,60 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
     availableRoofAreaSqFt: formData.roofAreaSqFt,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.fullName || !formData.phone) return;
 
-    const created = addLead({
-      fullName: formData.fullName,
-      companyName: formData.companyName,
-      phone: formData.phone,
-      email: formData.email || `${formData.fullName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      customerType: formData.customerType,
-      monthlyBillAmount: Number(formData.monthlyBillAmount),
-      city: formData.city || 'Pune',
-      state: formData.state,
-      address: formData.address || 'Project Location',
-      roofAreaSqFt: Number(formData.roofAreaSqFt),
-      proposedCapacityKw: calcEst.recommendedCapacityKw,
-      notes: formData.notes || `Quote request submitted to nitish solar for a ${calcEst.recommendedCapacityKw} kW system`,
-      source: 'nitish solar Web Quote Form',
-      priority: 'HIGH',
-    });
+    setIsSubmitting(true);
+    setErrorMessage('');
 
-    setSubmittedLead(created);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.fullName,
+          company: formData.companyName,
+          phone: formData.phone,
+          email: formData.email,
+          city: formData.city,
+          propertyType: formData.customerType,
+          requiredCapacity: calcEst.recommendedCapacityKw,
+          monthlyBill: formData.monthlyBillAmount,
+          message: formData.notes,
+          website_hp: formData.website_hp,
+          source: 'nitish solar Modal Quote Form',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const created = addLead({
+          fullName: formData.fullName,
+          companyName: formData.companyName,
+          phone: formData.phone,
+          email: formData.email || `${formData.fullName.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+          customerType: formData.customerType,
+          monthlyBillAmount: Number(formData.monthlyBillAmount),
+          city: formData.city || 'Pune',
+          state: formData.state,
+          address: formData.address || 'Project Location',
+          roofAreaSqFt: Number(formData.roofAreaSqFt),
+          proposedCapacityKw: calcEst.recommendedCapacityKw,
+          notes: formData.notes || `Quote request submitted to nitish solar for a ${calcEst.recommendedCapacityKw} kW system`,
+          source: 'nitish solar Web Quote Form',
+          priority: 'HIGH',
+        });
+        setSubmittedLead(created);
+      } else {
+        setErrorMessage(data.error || 'Something went wrong while sending your enquiry. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('Something went wrong while sending your enquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -123,6 +158,23 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+          {/* Honeypot Field */}
+          <input
+            type="text"
+            name="website_hp"
+            value={formData.website_hp}
+            onChange={(e) => setFormData({ ...formData, website_hp: e.target.value })}
+            style={{ display: 'none' }}
+            tabIndex={-1}
+            autoComplete="off"
+          />
+
+          {errorMessage && (
+            <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl">
+              {errorMessage}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block font-semibold text-slate-300 mb-1">Full Name *</label>
@@ -228,8 +280,8 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
             <Button variant="outline" type="button" onClick={onClose} className="border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white">
               Cancel
             </Button>
-            <Button variant="accent" type="submit" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold">
-              Submit Quote Request
+            <Button variant="accent" type="submit" disabled={isSubmitting} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold disabled:opacity-50">
+              {isSubmitting ? 'Sending Enquiry...' : 'Submit Quote Request'}
             </Button>
           </div>
         </form>

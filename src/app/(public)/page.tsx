@@ -65,6 +65,7 @@ export default function HomePage() {
     requiredCapacity: 25,
     monthlyBill: 25000,
     message: '',
+    website_hp: '',
   });
 
   const quickCalc = calculateSolarSystem({ monthlyBillAmount: quickBill });
@@ -118,27 +119,62 @@ export default function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLeadSubmit = (e: React.FormEvent) => {
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [leadErrorMessage, setLeadErrorMessage] = useState('');
+
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!leadForm.name || !leadForm.phone) return;
 
-    addLead({
-      fullName: leadForm.name,
-      companyName: leadForm.company,
-      phone: leadForm.phone,
-      email: leadForm.email || `${leadForm.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      customerType: leadForm.propertyType,
-      monthlyBillAmount: Number(leadForm.monthlyBill),
-      city: leadForm.location || 'Pune',
-      state: 'Maharashtra',
-      address: 'Web Inquiry Location',
-      proposedCapacityKw: Number(leadForm.requiredCapacity) || quickCalc.recommendedCapacityKw,
-      notes: leadForm.message || `Lead request submitted to nitish solar website homepage.`,
-      source: 'nitish solar Homepage Form',
-      priority: 'HIGH',
-    });
+    setIsSubmittingLead(true);
+    setLeadErrorMessage('');
 
-    setFormSubmitted(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: leadForm.name,
+          company: leadForm.company,
+          phone: leadForm.phone,
+          email: leadForm.email,
+          location: leadForm.location,
+          propertyType: leadForm.propertyType,
+          requiredCapacity: Number(leadForm.requiredCapacity) || quickCalc.recommendedCapacityKw,
+          monthlyBill: Number(quickBill),
+          message: leadForm.message,
+          website_hp: leadForm.website_hp,
+          source: 'nitish solar Homepage Quick Form',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        addLead({
+          fullName: leadForm.name,
+          companyName: leadForm.company,
+          phone: leadForm.phone,
+          email: leadForm.email || `${leadForm.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+          customerType: leadForm.propertyType,
+          monthlyBillAmount: Number(quickBill),
+          city: leadForm.location || 'Pune',
+          state: 'Maharashtra',
+          address: 'Web Inquiry Location',
+          proposedCapacityKw: Number(leadForm.requiredCapacity) || quickCalc.recommendedCapacityKw,
+          notes: leadForm.message || `Lead request submitted to nitish solar website homepage.`,
+          source: 'nitish solar Homepage Form',
+          priority: 'HIGH',
+        });
+        setFormSubmitted(true);
+      } else {
+        setLeadErrorMessage(data.error || 'Something went wrong while sending your enquiry. Please try again.');
+      }
+    } catch (err) {
+      setLeadErrorMessage('Something went wrong while sending your enquiry. Please try again.');
+    } finally {
+      setIsSubmittingLead(false);
+    }
   };
 
   // Solutions Stories Data
@@ -629,14 +665,31 @@ export default function HomePage() {
                   <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                     <CheckCircle2 className="w-6 h-6" />
                   </div>
-                  <h4 className="font-bold text-white text-base">Request Received</h4>
-                  <p className="text-xs text-slate-300">An engineer from nitish solar will contact you shortly.</p>
+                  <h4 className="font-bold text-white text-base">Enquiry Received</h4>
+                  <p className="text-xs text-slate-300">Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.</p>
                   <Button variant="outline" size="sm" className="border-slate-700 text-slate-300 hover:text-white" onClick={() => setFormSubmitted(false)}>
                     Submit Another Inquiry
                   </Button>
                 </div>
               ) : (
                 <form onSubmit={handleLeadSubmit} className="space-y-3 text-xs">
+                  {/* Honeypot Field */}
+                  <input
+                    type="text"
+                    name="website_hp"
+                    value={leadForm.website_hp}
+                    onChange={(e) => setLeadForm({ ...leadForm, website_hp: e.target.value })}
+                    style={{ display: 'none' }}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+
+                  {leadErrorMessage && (
+                    <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl">
+                      {leadErrorMessage}
+                    </div>
+                  )}
+
                   <div>
                     <label className="block font-semibold text-slate-300 mb-1">Full Name *</label>
                     <input
@@ -678,11 +731,12 @@ export default function HomePage() {
                   <Button
                     variant="accent"
                     type="submit"
-                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border-0 py-3 mt-2"
+                    disabled={isSubmittingLead}
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border-0 py-3 mt-2 disabled:opacity-50"
                     size="lg"
                     icon={<ArrowRight className="w-4 h-4" />}
                   >
-                    Submit Proposal Request
+                    {isSubmittingLead ? 'Sending Proposal Request...' : 'Submit Proposal Request'}
                   </Button>
                 </form>
               )}

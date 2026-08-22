@@ -11,6 +11,8 @@ import { CheckCircle2, Send, Zap, ShieldCheck } from 'lucide-react';
 export default function DedicatedQuotePage() {
   const { addLead } = useSolarStore();
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -22,29 +24,62 @@ export default function DedicatedQuotePage() {
     requiredCapacity: 10,
     monthlyBill: 15000,
     message: '',
+    website_hp: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone) return;
 
-    addLead({
-      fullName: form.name,
-      companyName: form.company,
-      phone: form.phone,
-      email: form.email || `${form.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
-      customerType: form.propertyType,
-      monthlyBillAmount: Number(form.monthlyBill),
-      city: form.location || 'Pune',
-      state: 'Maharashtra',
-      address: 'Web Quote Form Inquiry',
-      proposedCapacityKw: Number(form.requiredCapacity),
-      notes: form.message || `Dedicated quote request submitted for a ${form.requiredCapacity} kW system`,
-      source: 'nitish solar Dedicated Quote Page',
-      priority: 'HIGH',
-    });
+    setIsSubmitting(true);
+    setErrorMessage('');
 
-    setFormSubmitted(true);
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          company: form.company,
+          phone: form.phone,
+          email: form.email,
+          location: form.location,
+          propertyType: form.propertyType,
+          requiredCapacity: form.requiredCapacity,
+          monthlyBill: form.monthlyBill,
+          message: form.message,
+          website_hp: form.website_hp,
+          source: 'nitish solar Dedicated Quote Page',
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        addLead({
+          fullName: form.name,
+          companyName: form.company,
+          phone: form.phone,
+          email: form.email || `${form.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+          customerType: form.propertyType,
+          monthlyBillAmount: Number(form.monthlyBill),
+          city: form.location || 'Pune',
+          state: 'Maharashtra',
+          address: 'Web Quote Form Inquiry',
+          proposedCapacityKw: Number(form.requiredCapacity),
+          notes: form.message || `Dedicated quote request submitted for a ${form.requiredCapacity} kW system`,
+          source: 'nitish solar Dedicated Quote Page',
+          priority: 'HIGH',
+        });
+        setFormSubmitted(true);
+      } else {
+        setErrorMessage(data.error || 'Something went wrong while sending your enquiry. Please try again.');
+      }
+    } catch (err) {
+      setErrorMessage('Something went wrong while sending your enquiry. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -75,9 +110,9 @@ export default function DedicatedQuotePage() {
                 <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
-                <h3 className="text-2xl font-bold text-white">Quote Request Submitted!</h3>
+                <h3 className="text-2xl font-bold text-white">Enquiry Received</h3>
                 <p className="text-xs text-slate-300 max-w-md mx-auto font-light">
-                  Thank you, <strong className="text-white">{form.name}</strong>. A solar engineer from <strong className="text-white font-bold">nitish solar</strong> will call you within 24 hours to schedule your site assessment.
+                  Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.
                 </p>
                 <div className="pt-2 flex justify-center">
                   <Button variant="accent" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold" onClick={() => setFormSubmitted(false)}>
@@ -87,6 +122,23 @@ export default function DedicatedQuotePage() {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                {/* Honeypot Field */}
+                <input
+                  type="text"
+                  name="website_hp"
+                  value={form.website_hp}
+                  onChange={(e) => setForm({ ...form, website_hp: e.target.value })}
+                  style={{ display: 'none' }}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+
+                {errorMessage && (
+                  <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl">
+                    {errorMessage}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block font-semibold text-slate-300 mb-1">Full Name *</label>
@@ -193,11 +245,12 @@ export default function DedicatedQuotePage() {
                 <Button
                   variant="accent"
                   type="submit"
-                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 border-0"
+                  disabled={isSubmitting}
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 border-0 disabled:opacity-50"
                   size="lg"
                   icon={<Send className="w-4 h-4" />}
                 >
-                  Submit Quote Request to nitish solar
+                  {isSubmitting ? 'Sending Enquiry...' : 'Submit Quote Request to nitish solar'}
                 </Button>
               </form>
             )}
