@@ -204,63 +204,69 @@ export default function HomePage() {
 
       {/* 1. HERO BACKGROUND (100VH / 100SVH / 100DVH FULL-SCREEN CINEMATIC) */}
       <section className="relative w-full min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center overflow-hidden snap-major-scene">
-        {/* Full-bleed Daylight Solar Infrastructure Background */}
-        <div className="absolute inset-0 z-0">
+        {/* Background Visual Layer (Video-ready container for future video asset) */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <Image
             src="/images/hero_light.png"
-            alt="nitish solar bright solar energy infrastructure"
+            alt="nitish solar clean energy infrastructure"
             fill
             priority
             sizes="100vw"
             className="object-cover object-center filter contrast-105 saturate-105"
           />
-          {/* Subtle localized dark gradient behind text ONLY */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0F172A] to-transparent" />
+          {/* Layered Sophisticated Dark Gradient Overlays for Video/Image Readability */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0B0F17] via-[#0B0F17]/60 to-transparent pointer-events-none" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16">
-          <div className="max-w-3xl space-y-8">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-xs font-semibold shadow-lg">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+        {/* Hero Content Container */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16 sm:pt-20">
+          <div className="max-w-3xl space-y-6 sm:space-y-8">
+            {/* Tag Kicker */}
+            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/80 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest hero-animate-1 shadow-lg">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
               <span>Next-Generation Clean Energy Infrastructure</span>
             </div>
 
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[1.08] drop-shadow-md">
-              Powering India’s Transition to <span className="text-amber-400">Clean Solar Energy</span>
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight text-white leading-[1.05] drop-shadow-lg hero-animate-2">
+              Powering a <span className="text-amber-400">Cleaner Future</span>.
             </h1>
 
-            <p className="text-base sm:text-xl text-slate-100 font-light leading-relaxed max-w-2xl drop-shadow-sm">
-              <strong className="text-white font-semibold">nitish solar</strong> delivers turnkey solar infrastructure, smart energy storage, and high-efficiency rooftop systems for homes, commercial enterprises, and industrial complexes.
+            {/* Supporting Text */}
+            <p className="text-base sm:text-xl lg:text-2xl text-slate-200 font-light leading-relaxed max-w-2xl drop-shadow-sm hero-animate-3">
+              Reliable solar solutions for homes, businesses, and industry.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-4">
-              <Link href="/solutions">
+            {/* CTAs */}
+            <div className="flex flex-wrap items-center gap-4 pt-2 sm:pt-4 hero-animate-4">
+              <Link href="/quote">
                 <Button
                   variant="accent"
                   size="lg"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-4 rounded-xl shadow-2xl transition-all duration-300 group border-0 text-base"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-4 rounded-xl shadow-2xl shadow-amber-500/20 transition-all duration-300 group border-0 text-base flex items-center gap-2.5"
                   icon={<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                 >
-                  Explore Solutions
+                  Get a Quote
                 </Button>
               </Link>
-              <Link href="/quote">
+              <Link href="/solutions">
                 <Button
                   variant="outline"
                   size="lg"
                   className="border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-white/20 hover:border-white/60 font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 text-base"
                 >
-                  Get a Quote
+                  Explore Solar
                 </Button>
               </Link>
             </div>
           </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-slate-200 text-xs font-medium drop-shadow-md">
-          <span className="uppercase tracking-widest text-[10px]">Scroll for Visual Journey</span>
+        {/* Minimal Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-slate-300 text-xs font-mono font-medium drop-shadow-md hero-animate-4">
+          <span className="uppercase tracking-widest text-[10px] text-slate-400">Scroll to explore</span>
           <ChevronDown className="w-4 h-4 animate-bounce text-amber-400" />
         </div>
       </section>
