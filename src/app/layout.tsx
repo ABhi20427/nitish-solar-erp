@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { SolarStoreProvider } from '@/lib/store-context';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'nitish solar — Reliable Solar Energy Solutions',
@@ -13,8 +19,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="bg-slate-50 text-navy-900 min-h-screen flex flex-col antialiased">
+    <html lang="en" className={inter.variable}>
+      <body className="bg-[#0B0F17] text-slate-100 min-h-screen flex flex-col antialiased font-sans">
         <SolarStoreProvider>{children}</SolarStoreProvider>
       </body>
     </html>

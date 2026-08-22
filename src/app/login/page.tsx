@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, redirect } from 'next/navigation';
 import { useSolarStore } from '@/lib/store-context';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { ShieldCheck, Lock, Mail, AlertCircle, ArrowRight, Check, Zap, Users } f
 import Link from 'next/link';
 
 export default function LoginPage() {
+  redirect('/');
   const router = useRouter();
   const { login, users } = useSolarStore();
 

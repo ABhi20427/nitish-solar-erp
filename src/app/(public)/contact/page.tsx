@@ -45,16 +45,16 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-brand-dark">
+    <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 font-sans antialiased">
       <PublicNavbar onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
-      <section className="bg-brand-dark text-white py-16">
+      <section className="bg-[#070A10] text-white py-16 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-brand-purplelight">
+          <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400">
             Solar Engineering Desk
           </span>
-          <h1 className="text-4xl font-black tracking-tight">Contact nitish solar</h1>
-          <p className="text-slate-300 max-w-2xl mx-auto text-sm">
+          <h1 className="text-4xl font-black tracking-tight text-white">Contact nitish solar</h1>
+          <p className="text-slate-300 max-w-2xl mx-auto text-sm font-light">
             Have questions regarding solar panel efficiency, DISCOM net metering, government subsidies, or industrial MW plant engineering?
           </p>
         </div>
@@ -64,74 +64,74 @@ export default function ContactPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
           {/* Contact Details */}
           <div className="lg:col-span-5 space-y-6">
-            <h2 className="text-2xl font-bold text-brand-dark">Get in Touch</h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Our engineering advisors and project managers at <strong className="text-brand-dark font-bold">nitish solar</strong> are ready to assist you.
+            <h2 className="text-2xl font-bold text-white">Get in Touch</h2>
+            <p className="text-xs text-slate-300 leading-relaxed font-light">
+              Our engineering advisors and project managers at <strong className="text-white font-semibold">nitish solar</strong> are ready to assist you.
             </p>
 
-            <div className="space-y-4 text-xs">
-              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-100 text-brand-purple flex items-center justify-center shrink-0">
+            <div className="space-y-4 text-xs font-light">
+              <div className="bg-[#131B2E] rounded-xl p-4 border border-slate-800/80 shadow-md flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 border border-slate-800">
                   <MapPin className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-brand-dark">Office Location</h4>
-                  <p className="text-slate-600 mt-0.5">{COMPANY_INFO.address}</p>
+                  <h4 className="font-bold text-white">Office Location</h4>
+                  <p className="text-slate-300 mt-0.5">{COMPANY_INFO.address}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-100 text-brand-blue flex items-center justify-center shrink-0">
+              <div className="bg-[#131B2E] rounded-xl p-4 border border-slate-800/80 shadow-md flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 border border-slate-800">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-brand-dark">Phone Lines</h4>
-                  <p className="text-slate-600 mt-0.5">{COMPANY_INFO.phone}</p>
+                  <h4 className="font-bold text-white">Phone Lines</h4>
+                  <p className="text-slate-300 mt-0.5">{COMPANY_INFO.phone}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-pink-100 text-brand-magenta flex items-center justify-center shrink-0">
+              <div className="bg-[#131B2E] rounded-xl p-4 border border-slate-800/80 shadow-md flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 border border-slate-800">
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-brand-dark">Email Desk</h4>
-                  <p className="text-slate-600 mt-0.5">{COMPANY_INFO.email}</p>
+                  <h4 className="font-bold text-white">Email Desk</h4>
+                  <p className="text-slate-300 mt-0.5">{COMPANY_INFO.email}</p>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm flex items-start gap-3">
-                <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+              <div className="bg-[#131B2E] rounded-xl p-4 border border-slate-800/80 shadow-md flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-slate-900 text-amber-400 flex items-center justify-center shrink-0 border border-slate-800">
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-brand-dark">Business Hours</h4>
-                  <p className="text-slate-600 mt-0.5">{COMPANY_INFO.hours}</p>
+                  <h4 className="font-bold text-white">Business Hours</h4>
+                  <p className="text-slate-300 mt-0.5">{COMPANY_INFO.hours}</p>
                 </div>
               </div>
             </div>
 
             {/* Map Placeholder */}
-            <div className="bg-slate-200 rounded-2xl h-48 border border-slate-300 flex items-center justify-center text-slate-500 text-xs font-semibold">
-              <MapPin className="w-5 h-5 text-brand-purple mr-2" /> Interactive Map Location Placeholder
+            <div className="bg-[#131B2E] rounded-2xl h-48 border border-slate-800/80 flex items-center justify-center text-slate-400 text-xs font-mono font-semibold">
+              <MapPin className="w-5 h-5 text-amber-400 mr-2" /> Interactive Map Location Placeholder
             </div>
           </div>
 
           {/* Contact Form */}
           <div className="lg:col-span-7">
-            <Card>
+            <Card className="bg-[#131B2E] border-slate-800/80 text-slate-100 shadow-xl">
               <CardHeader title="Send a Message to nitish solar" subtitle="Fills directly into our solar sales engineering queue." />
               <CardBody>
                 {submitted ? (
                   <div className="text-center py-8 space-y-4">
-                    <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                       <CheckCircle2 className="w-8 h-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-brand-dark">Message Sent!</h3>
-                    <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                      Thank you. An engineering representative from <strong className="text-brand-dark">nitish solar</strong> will respond shortly.
+                    <h3 className="text-xl font-bold text-white">Message Sent!</h3>
+                    <p className="text-xs text-slate-300 max-w-sm mx-auto font-light">
+                      Thank you. An engineering representative from <strong className="text-white">nitish solar</strong> will respond shortly.
                     </p>
-                    <Button variant="outline" onClick={() => setSubmitted(false)}>
+                    <Button variant="outline" className="border-slate-700 bg-slate-900/60 text-slate-300 hover:text-white" onClick={() => setSubmitted(false)}>
                       Send Another Message
                     </Button>
                   </div>
@@ -139,67 +139,67 @@ export default function ContactPage() {
                   <form onSubmit={handleSubmit} className="space-y-4 text-xs">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block font-semibold text-slate-700 mb-1">Your Full Name *</label>
+                        <label className="block font-semibold text-slate-300 mb-1">Your Full Name *</label>
                         <input
                           type="text"
                           required
                           placeholder="e.g. Ramesh Deshmukh"
                           value={form.name}
                           onChange={(e) => setForm({ ...form, name: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-purple/40"
+                          className="w-full px-3.5 py-2 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-slate-700 mb-1">Phone Number *</label>
+                        <label className="block font-semibold text-slate-300 mb-1">Phone Number *</label>
                         <input
                           type="tel"
                           required
                           placeholder="+91 98765 43210"
                           value={form.phone}
                           onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-purple/40"
+                          className="w-full px-3.5 py-2 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+                        <label className="block font-semibold text-slate-300 mb-1">Email Address</label>
                         <input
                           type="email"
                           placeholder="name@domain.com"
                           value={form.email}
                           onChange={(e) => setForm({ ...form, email: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-purple/40"
+                          className="w-full px-3.5 py-2 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
                         />
                       </div>
                       <div>
-                        <label className="block font-semibold text-slate-700 mb-1">City / Region</label>
+                        <label className="block font-semibold text-slate-300 mb-1">City / Region</label>
                         <input
                           type="text"
                           placeholder="e.g. Pune"
                           value={form.city}
                           onChange={(e) => setForm({ ...form, city: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-purple/40"
+                          className="w-full px-3.5 py-2 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block font-semibold text-slate-700 mb-1">Message / Requirements</label>
+                      <label className="block font-semibold text-slate-300 mb-1">Message / Requirements</label>
                       <textarea
                         rows={4}
                         placeholder="Describe your property, roof size, or energy goal..."
                         value={form.message}
                         onChange={(e) => setForm({ ...form, message: e.target.value })}
-                        className="w-full px-3.5 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-brand-purple/40"
+                        className="w-full px-3.5 py-2 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
                       />
                     </div>
 
                     <Button
                       variant="accent"
                       type="submit"
-                      className="w-full bg-gradient-to-r from-brand-purple via-brand-blue to-brand-magenta text-white font-bold py-2.5 border-0"
+                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-2.5 border-0"
                       size="lg"
                       icon={<Send className="w-4 h-4" />}
                     >

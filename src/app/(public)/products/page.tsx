@@ -20,16 +20,16 @@ export default function ProductsPage() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-brand-dark">
+    <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 font-sans antialiased">
       <PublicNavbar onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
-      <section className="bg-brand-dark text-white py-16">
+      <section className="bg-[#070A10] text-white py-16 border-b border-slate-800/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
-          <span className="text-xs font-extrabold uppercase tracking-widest text-brand-purplelight">
+          <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400">
             Tier-1 Certified Solar Hardware
           </span>
-          <h1 className="text-4xl font-black tracking-tight">Products Supplied by nitish solar</h1>
-          <p className="text-slate-300 max-w-2xl mx-auto text-sm">
+          <h1 className="text-4xl font-black tracking-tight text-white">Products Supplied by nitish solar</h1>
+          <p className="text-slate-300 max-w-2xl mx-auto text-sm font-light">
             Explore high-efficiency N-Type TOPCon Mono & Bifacial Panels, Grid-Tie & Hybrid Inverters, Lithium Storage, Mounting Structures, and BOS Equipment.
           </p>
         </div>
@@ -45,8 +45,8 @@ export default function ProductsPage() {
                 onClick={() => setSelectedType(type)}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                   selectedType === type
-                    ? 'bg-brand-dark text-white shadow-md'
-                    : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
+                    ? 'bg-amber-500 text-slate-950 shadow-md font-bold'
+                    : 'bg-[#131B2E] text-slate-300 border border-slate-800 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 {type === 'ALL' ? 'All Products' : type.replace(/_/g, ' ')}
@@ -58,42 +58,44 @@ export default function ProductsPage() {
         {/* Product Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredProducts.map((product) => (
-            <div key={product.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-card hover:shadow-card-hover transition-all flex flex-col justify-between">
+            <div key={product.id} className="bg-[#131B2E] rounded-2xl border border-slate-800/80 overflow-hidden shadow-xl hover:border-amber-400/40 transition-all flex flex-col justify-between">
               <div>
                 {product.imageUrl ? (
-                  <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover" />
+                  <img src={product.imageUrl} alt={product.name} className="w-full h-48 object-cover filter brightness-95" />
                 ) : (
-                  <div className="w-full h-48 bg-slate-100 flex items-center justify-center text-slate-400">
-                    <Sun className="w-12 h-12 text-brand-purple" />
+                  <div className="w-full h-48 bg-[#0F172A] flex items-center justify-center text-amber-400">
+                    <Sun className="w-12 h-12" />
                   </div>
                 )}
 
                 <div className="p-6 space-y-3">
                   <div className="flex items-center justify-between">
-                    <Badge variant="purple">{product.type.replace(/_/g, ' ')}</Badge>
-                    <span className="text-xs font-semibold text-slate-400">SKU: {product.sku}</span>
+                    <span className="px-2.5 py-1 rounded-md bg-amber-400/10 border border-amber-400/30 text-amber-400 text-[10px] font-mono font-bold uppercase">
+                      {product.type.replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-xs font-mono font-semibold text-slate-400">SKU: {product.sku}</span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-brand-dark leading-snug">{product.name}</h3>
+                  <h3 className="text-lg font-bold text-white leading-snug">{product.name}</h3>
 
-                  <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 text-xs space-y-1.5">
+                  <div className="bg-[#0B0F17] rounded-xl p-3 border border-slate-800 text-xs space-y-1.5 font-light">
                     {product.specifications && Object.entries(product.specifications).map(([key, val]) => (
                       <div key={key} className="flex justify-between">
-                        <span className="text-slate-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
-                        <span className="font-semibold text-slate-800">{String(val)}</span>
+                        <span className="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
+                        <span className="font-semibold text-slate-200">{String(val)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+              <div className="px-6 py-4 bg-[#0B0F17]/60 border-t border-slate-800/80 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Turnkey Price</span>
-                  <span className="text-lg font-black text-brand-dark">₹{new Intl.NumberFormat('en-IN').format(product.unitPrice)}</span>
+                  <span className="text-[10px] text-slate-400 block uppercase font-mono font-bold">Turnkey Price</span>
+                  <span className="text-lg font-black text-amber-400 font-mono">₹{new Intl.NumberFormat('en-IN').format(product.unitPrice)}</span>
                 </div>
                 <Link href="/quote">
-                  <Button variant="accent" size="sm" className="bg-gradient-to-r from-brand-purple to-brand-blue text-white font-bold" icon={<ArrowRight className="w-3.5 h-3.5" />}>
+                  <Button variant="accent" size="sm" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold" icon={<ArrowRight className="w-3.5 h-3.5" />}>
                     Learn More & Quote
                   </Button>
                 </Link>

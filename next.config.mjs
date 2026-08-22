@@ -9,6 +9,25 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/login',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/erp',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/erp/:path*',
+        destination: '/',
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

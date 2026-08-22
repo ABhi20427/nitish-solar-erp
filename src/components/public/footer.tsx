@@ -1,11 +1,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/public/brand-logo';
-import { ShieldCheck, Mail, Phone, MapPin, ArrowUpRight } from 'lucide-react';
+import { ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
 
 export function PublicFooter() {
   return (
-    <footer className="bg-brand-dark text-slate-300 border-t border-slate-800">
+    <footer className="bg-[#070A10] text-slate-300 border-t border-slate-800/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
           {/* Brand Col */}
@@ -13,11 +13,11 @@ export function PublicFooter() {
             <Link href="/" className="inline-block">
               <BrandLogo variant="light" />
             </Link>
-            <p className="text-sm text-slate-400 max-w-sm leading-relaxed">
+            <p className="text-sm text-slate-400 max-w-sm leading-relaxed font-light">
               nitish solar provides engineering-driven rooftop and ground-mounted photovoltaic solar energy solutions for residential homes, commercial enterprises, and heavy industrial facilities.
             </p>
-            <div className="flex items-center gap-2 text-xs text-amber-400 bg-slate-900 border border-slate-800 rounded-lg p-2.5 w-fit">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-brand-purplelight" />
+            <div className="flex items-center gap-2 text-xs text-amber-400 bg-slate-900/90 border border-slate-800/80 rounded-lg p-2.5 w-fit">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
               <span>Engineering Quality & Solar Standards Certified</span>
             </div>
           </div>
@@ -43,28 +43,23 @@ export function PublicFooter() {
               <li><Link href="/residential" className="hover:text-amber-400 transition-colors">Residential Solar</Link></li>
               <li><Link href="/commercial" className="hover:text-amber-400 transition-colors">Commercial Solar</Link></li>
               <li><Link href="/industrial" className="hover:text-amber-400 transition-colors">Industrial Solar</Link></li>
-              <li>
-                <Link href="/erp" className="hover:text-amber-400 transition-colors text-brand-purplelight font-semibold flex items-center gap-1">
-                  Internal ERP Portal <ArrowUpRight className="w-3.5 h-3.5" />
-                </Link>
-              </li>
             </ul>
           </div>
 
           {/* Contact Information */}
           <div>
             <h4 className="text-white text-xs font-bold uppercase tracking-wider mb-4">Contact Desk</h4>
-            <ul className="space-y-3 text-sm text-slate-400">
+            <ul className="space-y-3 text-sm text-slate-400 font-light">
               <li className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-brand-purplelight shrink-0 mt-0.5" />
+                <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                 <span>nitish solar Technology Park, Industrial Estate, Pune - 411057</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-brand-bluelight shrink-0" />
+                <Phone className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>+91 98765 43210 / 1800-SOLAR</span>
               </li>
               <li className="flex items-center gap-2.5">
-                <Mail className="w-4 h-4 text-brand-magentalight shrink-0" />
+                <Mail className="w-4 h-4 text-amber-400 shrink-0" />
                 <span>info@nitishsolar.com</span>
               </li>
             </ul>
@@ -72,7 +67,7 @@ export function PublicFooter() {
         </div>
 
         {/* Footer Bottom Copyright */}
-        <div className="mt-12 pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+        <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between text-xs text-slate-500 gap-4">
           <p>© nitish solar. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <span>Privacy Policy</span>

@@ -46,19 +46,19 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-navy-950/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
       <div
-        className={`bg-white rounded-2xl border border-slate-200 shadow-2xl w-full ${maxWidths[maxWidth]} overflow-hidden flex flex-col max-h-[90vh]`}
+        className={`bg-[#0F172A] text-slate-100 rounded-2xl border border-slate-800 shadow-2xl w-full ${maxWidths[maxWidth]} overflow-hidden flex flex-col max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-[#0B0F17]/80">
           <div>
-            <h3 className="text-lg font-bold text-navy-900">{title}</h3>
-            {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+            <h3 className="text-lg font-bold text-white">{title}</h3>
+            {subtitle && <p className="text-xs text-slate-400 mt-0.5">{subtitle}</p>}
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
