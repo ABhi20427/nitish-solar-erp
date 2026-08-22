@@ -168,10 +168,10 @@ export default function HomePage() {
         });
         setFormSubmitted(true);
       } else {
-        setLeadErrorMessage(data.error || 'Something went wrong while sending your enquiry. Please try again.');
+        setLeadErrorMessage(data.error || "We couldn't send your enquiry. Please try again.");
       }
     } catch (err) {
-      setLeadErrorMessage('Something went wrong while sending your enquiry. Please try again.');
+      setLeadErrorMessage("We couldn't send your enquiry. Please try again.");
     } finally {
       setIsSubmittingLead(false);
     }

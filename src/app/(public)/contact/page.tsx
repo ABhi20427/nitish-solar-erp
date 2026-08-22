@@ -66,10 +66,10 @@ export default function ContactPage() {
         });
         setSubmitted(true);
       } else {
-        setErrorMessage(data.error || 'Something went wrong while sending your enquiry. Please try again.');
+        setErrorMessage(data.error || "We couldn't send your enquiry. Please try again.");
       }
     } catch (err) {
-      setErrorMessage('Something went wrong while sending your enquiry. Please try again.');
+      setErrorMessage("We couldn't send your enquiry. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
