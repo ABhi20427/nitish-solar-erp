@@ -198,12 +198,12 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 selection:bg-amber-500 selection:text-slate-950 font-sans antialiased overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 selection:bg-amber-500 selection:text-slate-950 font-sans antialiased">
       {/* Dynamic Scroll Navigation Header */}
       <PublicNavbar transparentOverlay lightTheme onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
       {/* 1. HERO BACKGROUND (100VH / 100SVH / 100DVH FULL-SCREEN CINEMATIC) */}
-      <section className="relative min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center overflow-hidden snap-start-always">
+      <section className="relative w-full min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center overflow-hidden snap-major-scene">
         {/* Full-bleed Daylight Solar Infrastructure Background */}
         <div className="absolute inset-0 z-0">
           <Image
@@ -266,7 +266,7 @@ export default function HomePage() {
       </section>
 
       {/* 2. SECTION 2 — EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") */}
-      <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80">
+      <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
@@ -315,8 +315,8 @@ export default function HomePage() {
       </section>
 
       {/* 3. SECTION 3 — SOLAR SOLUTIONS (COMPACT PINNED CINEMATIC STORYTELLING) */}
-      <section ref={solutionsRef} className="relative h-[160vh] lg:h-[180vh] bg-[#0B0F17] snap-start-always">
-        <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+      <section ref={solutionsRef} className="relative w-full h-[180vh] bg-[#0B0F17] snap-major-scene">
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex items-center justify-center">
           {/* Background Images Crossfade */}
           <div className="absolute inset-0 z-0">
             {SOLUTIONS_STORIES.map((story, idx) => (
@@ -403,7 +403,7 @@ export default function HomePage() {
       </section>
 
       {/* 4. SECTION 4 — WHY NITISH SOLAR (CORPORATE STATEMENT) */}
-      <section className="py-20 bg-[#131B2E] text-slate-100 border-t border-slate-800/80 relative overflow-hidden">
+      <section className="py-20 bg-[#131B2E] text-slate-100 border-t border-slate-800/80 relative overflow-hidden snap-natural">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">Corporate Engineering Standard</span>
@@ -523,8 +523,8 @@ export default function HomePage() {
       </section>
 
       {/* 6. SECTION 6 — IMPACT SECTION (COMPACT PINNED PROGRESSIVE NUMBERS) */}
-      <section ref={impactRef} className="relative h-[130vh] lg:h-[150vh] bg-[#070A10] text-white border-t border-slate-800/80 snap-start-always">
-        <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
+      <section ref={impactRef} className="relative w-full h-[140vh] bg-[#070A10] text-white border-t border-slate-800/80 snap-major-scene">
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex items-center justify-center">
           <div className="absolute inset-0 z-0">
             <Image
               src="/images/hero_light.png"
@@ -559,7 +559,7 @@ export default function HomePage() {
       </section>
 
       {/* 7. SECTION 7 — SOLAR CALCULATOR & PROPOSAL REQUEST */}
-      <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80">
+      <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#0B0F17]/90 rounded-3xl p-8 sm:p-12 border border-slate-800/90 shadow-2xl">
             <div className="lg:col-span-6 space-y-6">
@@ -686,7 +686,7 @@ export default function HomePage() {
       </section>
 
       {/* 8. SECTION 8 — FINAL CINEMATIC CONCLUSION CTA */}
-      <section className="relative min-h-screen min-h-[100svh] min-h-[100dvh] flex items-center justify-center py-20 lg:py-0 overflow-hidden border-t border-slate-800/80 snap-start-always">
+      <section className="relative w-full min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center py-20 lg:py-0 overflow-hidden border-t border-slate-800/80 snap-major-scene">
         {/* Full-width Daylight Image Background */}
         <div className="absolute inset-0 z-0">
           <Image
