@@ -711,182 +711,214 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. SECTION 4 — INSIDE A SOLAR PLANT (IMMERSIVE HOMEPAGE 5-STAGE 3D SCROLL JOURNEY) */}
-      <section ref={plantSectionRef} className="hidden md:block relative w-full h-[320vh] bg-[#0B0F17] snap-major-scene">
-        {/* Sticky Viewport Container (100vh viewport) */}
+      {/* 4. SECTION 4 — INSIDE A SOLAR PLANT (HOMEPAGE 5-STAGE "FOLLOW THE ENERGY" EXPERIENCE) */}
+      <section ref={plantSectionRef} className="hidden md:block relative w-full h-[360vh] bg-[#0B0F17] snap-major-scene">
+        {/* Sticky Viewport Container (100vh full viewport) */}
         <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
           
-          {/* Soft Ambient Background Energy Glow */}
+          {/* Soft Ambient Background Energy Glow (Dynamic color depending on DC / AC stage) */}
           <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/80 to-[#0B0F17]" />
             <div
-              className="absolute left-1/2 top-1/2 w-[650px] h-[420px] rounded-full bg-gradient-to-r from-amber-500/15 via-sky-600/10 to-amber-400/15 blur-3xl transition-transform duration-700 ease-out opacity-80"
+              className={`absolute left-1/2 top-1/2 w-[700px] h-[450px] rounded-full blur-3xl transition-all duration-700 ease-out opacity-75 ${
+                plantStageIdx < 2
+                  ? 'bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-600/15'
+                  : plantStageIdx === 2
+                  ? 'bg-gradient-to-r from-amber-500/10 via-sky-500/15 to-blue-600/15'
+                  : 'bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-emerald-500/15'
+              }`}
               style={{
-                transform: `translate(-50%, -50%) translateX(${(2 - plantStageIdx) * 16}vw)`,
+                transform: `translate(-50%, -50%) translateX(${(2 - plantStageIdx) * 14}vw)`,
               }}
             />
           </div>
 
-          {/* Section Header */}
-          <div className="max-w-4xl mx-auto px-4 text-center space-y-1.5 relative z-30 shrink-0">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              <span>INSIDE A SOLAR PLANT</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-none">
-              See how sunlight becomes power.
-            </h2>
-
-            <p className="text-slate-400 text-xs sm:text-sm font-light max-w-xl mx-auto">
-              Explore the 5-stage engineering journey from photovoltaic generation to grid energy.
-            </p>
-          </div>
-
-          {/* 3D Exploded Visual Stage */}
-          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto z-20">
-            <div
-              className="relative w-[280px] sm:w-[380px] lg:w-[440px] h-[180px] sm:h-[240px] lg:h-[270px] transition-all duration-700 ease-out animate-[float_6s_ease-in-out_infinite]"
-              style={{
-                perspective: '1200px',
-                perspectiveOrigin: '50% 40%',
-              }}
-            >
-              <div
-                className="w-full h-full relative transition-transform duration-700 ease-out"
-                style={{
-                  transformStyle: 'preserve-3d',
-                  transform: 'rotateX(52deg) rotateZ(-28deg)',
-                }}
-              >
-                {PLANT_STAGES[plantStageIdx].layers.map((layer, idx) => {
-                  const isActive = idx === plantLayerIdx;
-                  const totalLayers = PLANT_STAGES[plantStageIdx].layers.length;
-                  const explosionSpread = 48;
-                  const zOffset = ((totalLayers - 1) / 2 - idx) * explosionSpread + (isActive ? 35 : 0);
-                  const opacity = isActive ? 1.0 : Math.abs(idx - plantLayerIdx) === 1 ? 0.75 : 0.45;
-                  const scale = isActive ? 1.05 : 1.0;
-
-                  return (
-                    <div
-                      key={layer.id}
-                      onClick={() => setPlantLayerIdx(idx)}
-                      className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out group"
-                      style={{
-                        transform: `translateZ(${zOffset}px) scale(${scale})`,
-                        opacity,
-                        willChange: 'transform, opacity',
-                      }}
-                    >
-                      <div
-                        className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-2xl relative overflow-hidden backdrop-blur-md ${
-                          isActive
-                            ? 'border-amber-400 bg-[#16223B]/90 ring-4 ring-amber-400/30 shadow-amber-500/25'
-                            : 'border-slate-700/80 bg-[#0F172A]/70 group-hover:border-slate-400'
-                        }`}
-                      >
-                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.1)_0%,transparent_70%)]" />
-                        
-                        {/* Custom Graphic Overlay per Stage */}
-                        {plantStageIdx === 0 && layer.id === 'cells' && (
-                          <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-1 p-2">
-                            {Array.from({ length: 24 }).map((_, c) => (
-                              <div key={c} className="bg-sky-950 border border-amber-400/50 rounded-sm" />
-                            ))}
-                          </div>
-                        )}
-
-                        {plantStageIdx === 1 && (
-                          <div className="w-full h-full flex items-center justify-around px-4">
-                            <div className="w-8 h-8 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-mono text-amber-400 font-bold">DC</div>
-                            <div className="h-0.5 flex-1 bg-gradient-to-r from-amber-500 to-amber-300 mx-2" />
-                            <div className="w-8 h-8 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-mono text-amber-400 font-bold">1500V</div>
-                          </div>
-                        )}
-
-                        {plantStageIdx === 2 && (
-                          <div className="w-full h-full flex flex-col justify-between p-3">
-                            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
-                              <span>DC INPUT</span>
-                              <span className="text-amber-400 font-bold">MPPT ACTIVE</span>
-                              <span>AC OUTPUT</span>
-                            </div>
-                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                              <div className="h-full bg-amber-400 w-3/4 rounded-full animate-pulse" />
-                            </div>
-                          </div>
-                        )}
-
-                        {plantStageIdx === 3 && (
-                          <div className="w-full h-full flex items-center justify-center gap-6">
-                            <div className="w-12 h-12 rounded-full border-4 border-amber-400/80 flex items-center justify-center text-xs font-bold text-amber-400">800V</div>
-                            <div className="text-amber-400 font-extrabold text-sm">➔➔➔</div>
-                            <div className="w-12 h-12 rounded-full border-4 border-emerald-400/80 flex items-center justify-center text-xs font-bold text-emerald-400">33kV</div>
-                          </div>
-                        )}
-
-                        {plantStageIdx === 4 && (
-                          <div className="w-full h-full flex items-center justify-between px-6 text-xs font-mono font-bold text-emerald-400">
-                            <span>50.0 Hz SYNC</span>
-                            <span className="text-amber-400 animate-ping">● LIVE EXPORT</span>
-                            <span>NET METER</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div
-                        className={`absolute -right-28 sm:-right-36 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[10px] sm:text-xs font-mono font-bold transition-all duration-300 whitespace-nowrap shadow-lg ${
-                          isActive
-                            ? 'bg-amber-500 text-slate-950 border-amber-300 font-extrabold scale-110'
-                            : 'bg-slate-950/90 text-slate-400 border-slate-800 group-hover:text-white'
-                        }`}
-                      >
-                        {layer.name}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Short 1-Sentence Explanation Card */}
-          <div className="max-w-xl mx-auto w-full px-4 relative z-30 shrink-0">
-            <div className="bg-[#131B2E] border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl text-center space-y-2 relative overflow-hidden">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2 text-xs font-mono">
-                <span className="font-bold text-amber-400 uppercase tracking-wider">
-                  {PLANT_STAGES[plantStageIdx].code} — {PLANT_STAGES[plantStageIdx].title}
-                </span>
-                <span className="text-slate-500">{PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.name}</span>
+          {/* Main 2-Column Desktop Grid Layout (Guarantees Text Safe Zone vs Visual Stage) */}
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 w-full flex-1 grid grid-cols-12 gap-8 items-center relative z-20 my-auto">
+            
+            {/* LEFT 5-COL: Dedicated Text Safe Zone (Title + Stage Info + Layer Explanation) */}
+            <div className="col-span-5 space-y-5 text-left shrink-0">
+              
+              {/* Section Eyebrow */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>INSIDE A SOLAR PLANT</span>
               </div>
 
-              <p className="text-slate-200 text-xs sm:text-sm font-light leading-relaxed">
-                {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.desc}
+              {/* Headline */}
+              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-tight leading-tight">
+                See how sunlight becomes power.
+              </h2>
+
+              {/* Stage Badge & Title */}
+              <div className="space-y-1 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold text-amber-400">
+                    STAGE {PLANT_STAGES[plantStageIdx].code} / 05
+                  </span>
+                  <span className="text-[11px] font-mono text-slate-500 uppercase">
+                    {PLANT_STAGES[plantStageIdx].subtitle}
+                  </span>
+                </div>
+                <h3 className="text-2xl font-black text-white tracking-tight">
+                  {PLANT_STAGES[plantStageIdx].title}
+                </h3>
+              </div>
+
+              {/* Stage Concise 1-Sentence Explanation */}
+              <p className="text-slate-300 text-sm font-light leading-relaxed bg-[#131B2E]/90 p-4 rounded-2xl border border-slate-800 shadow-lg">
+                {PLANT_STAGES[plantStageIdx].shortDesc}
               </p>
 
-              <div className="flex items-center justify-between pt-1">
-                <button
-                  onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
-                  disabled={plantLayerIdx === 0}
-                  className="text-[11px] font-mono text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 flex items-center gap-1"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" /> Previous Layer
-                </button>
+              {/* Active Exploded Layer Detail Card */}
+              <div className="bg-[#0F172A] border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
+                <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
+                  <span>Active Layer:</span>
+                  <span className="text-amber-400 font-bold">
+                    {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.name}
+                  </span>
+                </div>
+                <p className="text-slate-200 font-light leading-snug">
+                  {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.desc}
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <button
+                    onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
+                    disabled={plantLayerIdx === 0}
+                    className="text-[11px] font-mono text-slate-400 hover:text-white disabled:opacity-30 flex items-center gap-1"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Prev Layer
+                  </button>
+                  <button
+                    onClick={() => setPlantLayerIdx((prev) => Math.min(PLANT_STAGES[plantStageIdx].layers.length - 1, prev + 1))}
+                    disabled={plantLayerIdx === PLANT_STAGES[plantStageIdx].layers.length - 1}
+                    className="text-[11px] font-mono text-amber-400 hover:text-amber-300 disabled:opacity-30 font-bold flex items-center gap-1"
+                  >
+                    Next Layer <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                <button
-                  onClick={() => setPlantLayerIdx((prev) => Math.min(PLANT_STAGES[plantStageIdx].layers.length - 1, prev + 1))}
-                  disabled={plantLayerIdx === PLANT_STAGES[plantStageIdx].layers.length - 1}
-                  className="text-[11px] font-mono text-amber-400 hover:text-amber-300 disabled:opacity-30 flex items-center gap-1 font-bold"
+            {/* RIGHT 7-COL: Interactive 3D Exploded Visual Stage (Strictly Isolated Container) */}
+            <div className="col-span-7 relative min-h-[380px] lg:min-h-[440px] flex items-center justify-center overflow-hidden rounded-3xl border border-slate-800/80 bg-[#070A10]/90 shadow-2xl p-6">
+              
+              {/* Background Particle Energy Trail Overlay */}
+              <div className="absolute inset-0 pointer-events-none opacity-40">
+                <div className="absolute inset-x-0 top-1/2 h-[1px] bg-gradient-to-r from-transparent via-amber-400/40 to-transparent animate-energy-flow" />
+              </div>
+
+              {/* 3D Isometric Exploded Stage Viewport */}
+              <div
+                className="relative w-[320px] lg:w-[420px] h-[220px] lg:h-[270px] transition-all duration-700 ease-out animate-[float_6s_ease-in-out_infinite]"
+                style={{
+                  perspective: '1200px',
+                  perspectiveOrigin: '50% 40%',
+                }}
+              >
+                <div
+                  className="w-full h-full relative transition-transform duration-700 ease-out"
+                  style={{
+                    transformStyle: 'preserve-3d',
+                    transform: 'rotateX(52deg) rotateZ(-28deg)',
+                  }}
                 >
-                  Next Layer <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+                  {PLANT_STAGES[plantStageIdx].layers.map((layer, idx) => {
+                    const isActive = idx === plantLayerIdx;
+                    const totalLayers = PLANT_STAGES[plantStageIdx].layers.length;
+                    const explosionSpread = 48;
+                    const zOffset = ((totalLayers - 1) / 2 - idx) * explosionSpread + (isActive ? 35 : 0);
+                    const opacity = isActive ? 1.0 : Math.abs(idx - plantLayerIdx) === 1 ? 0.75 : 0.45;
+                    const scale = isActive ? 1.05 : 1.0;
+
+                    return (
+                      <div
+                        key={layer.id}
+                        onClick={() => setPlantLayerIdx(idx)}
+                        className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out group"
+                        style={{
+                          transform: `translateZ(${zOffset}px) scale(${scale})`,
+                          opacity,
+                          willChange: 'transform, opacity',
+                        }}
+                      >
+                        <div
+                          className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-2xl relative overflow-hidden backdrop-blur-md ${
+                            isActive
+                              ? 'border-amber-400 bg-[#16223B]/95 ring-4 ring-amber-400/30 shadow-amber-500/25'
+                              : 'border-slate-700/80 bg-[#0F172A]/80 group-hover:border-slate-400'
+                          }`}
+                        >
+                          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.12)_0%,transparent_70%)]" />
+                          
+                          {/* Stage-Specific Schematic Overlays */}
+                          {plantStageIdx === 0 && layer.id === 'cells' && (
+                            <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-1 p-2">
+                              {Array.from({ length: 24 }).map((_, c) => (
+                                <div key={c} className="bg-sky-950 border border-amber-400/50 rounded-sm" />
+                              ))}
+                            </div>
+                          )}
+
+                          {plantStageIdx === 1 && (
+                            <div className="w-full h-full flex items-center justify-around px-4">
+                              <div className="w-9 h-9 rounded-full border-2 border-amber-400 flex items-center justify-center text-xs font-mono text-amber-400 font-bold">DC</div>
+                              <div className="h-0.5 flex-1 bg-gradient-to-r from-amber-500 to-amber-300 mx-2" />
+                              <div className="w-9 h-9 rounded-full border-2 border-amber-400 flex items-center justify-center text-xs font-mono text-amber-400 font-bold">1500V</div>
+                            </div>
+                          )}
+
+                          {plantStageIdx === 2 && (
+                            <div className="w-full h-full flex flex-col justify-between p-3.5">
+                              <div className="flex justify-between items-center text-[10px] font-mono text-slate-300 font-bold">
+                                <span className="text-amber-400">DC IN (1500V)</span>
+                                <span className="text-sky-400">MPPT 98.9%</span>
+                                <span className="text-emerald-400">AC OUT (800V)</span>
+                              </div>
+                              <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 w-full rounded-full animate-pulse" />
+                              </div>
+                            </div>
+                          )}
+
+                          {plantStageIdx === 3 && (
+                            <div className="w-full h-full flex items-center justify-center gap-6">
+                              <div className="w-12 h-12 rounded-full border-4 border-amber-400/80 flex items-center justify-center text-xs font-bold text-amber-400">800V</div>
+                              <div className="text-indigo-400 font-extrabold text-sm animate-pulse">➔ STEP-UP ➔</div>
+                              <div className="w-12 h-12 rounded-full border-4 border-indigo-400/80 flex items-center justify-center text-xs font-bold text-indigo-400">33kV</div>
+                            </div>
+                          )}
+
+                          {plantStageIdx === 4 && (
+                            <div className="w-full h-full flex items-center justify-between px-6 text-xs font-mono font-bold text-emerald-400">
+                              <span>50.0 Hz SYNC</span>
+                              <span className="text-amber-400 animate-ping">● GRID EXPORT</span>
+                              <span>NET METER</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Layer Label Tag */}
+                        <div
+                          className={`absolute -right-28 sm:-right-36 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[10px] sm:text-xs font-mono font-bold transition-all duration-300 whitespace-nowrap shadow-lg ${
+                            isActive
+                              ? 'bg-amber-500 text-slate-950 border-amber-300 font-extrabold scale-110'
+                              : 'bg-slate-950/90 text-slate-400 border-slate-800 group-hover:text-white'
+                          }`}
+                        >
+                          {layer.name}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Continuous 5-Stage Journey Progress Navigation Bar */}
-          <div className="max-w-3xl mx-auto w-full px-4 pt-3 pb-1 relative z-30 shrink-0">
-            <div className="flex items-center justify-between bg-[#131B2E]/90 border border-slate-800 rounded-2xl p-2 shadow-xl">
+          {/* Continuous 5-Stage Journey Progress Navigation Bar (Synchronized Click + Scroll State) */}
+          <div className="max-w-4xl mx-auto w-full px-6 pt-3 pb-1 relative z-30 shrink-0">
+            <div className="flex items-center justify-between bg-[#131B2E]/95 border border-slate-800 rounded-2xl p-2 shadow-2xl">
               {PLANT_STAGES.map((stage, idx) => {
                 const isSelected = idx === plantStageIdx;
                 const IconComponent = stage.icon;
@@ -894,20 +926,22 @@ export default function HomePage() {
                   <button
                     key={stage.id}
                     onClick={() => {
+                      setPlantStageIdx(idx);
+                      setPlantLayerIdx(0);
                       if (plantSectionRef.current) {
                         const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
                         const targetScrollTop = plantSectionRef.current.offsetTop + (idx / 4) * totalDist;
                         window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
                       }
                     }}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-300 ${
                       isSelected
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20 scale-105'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/25 scale-105 ring-2 ring-amber-400'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800/80'
                     }`}
                   >
                     <IconComponent className="w-4 h-4 shrink-0" />
-                    <span className="text-[10px] sm:text-xs font-mono font-bold tracking-tight hidden sm:inline">
+                    <span className="text-xs font-mono font-bold tracking-tight">
                       {stage.code} {stage.title.split(' ')[0]}
                     </span>
                   </button>
