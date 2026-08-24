@@ -800,118 +800,195 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* RIGHT 7-COL: Interactive 3D Exploded Visual Stage (Strictly Isolated Container) */}
-            <div className="col-span-7 relative min-h-[380px] lg:min-h-[440px] flex items-center justify-center overflow-hidden rounded-3xl border border-slate-800/80 bg-[#070A10]/90 shadow-2xl p-6">
+            {/* RIGHT 7-COL: Interactive Cinematic Solar Infrastructure & Energy Flow Canvas Container */}
+            <div className="col-span-7 relative min-h-[420px] lg:min-h-[460px] flex flex-col items-center justify-between overflow-hidden rounded-3xl border border-slate-800/80 bg-[#070A10]/95 shadow-2xl p-6">
               
-              {/* Background Particle Energy Trail Overlay */}
-              <div className="absolute inset-0 pointer-events-none opacity-40">
-                <div className="absolute inset-x-0 top-1/2 h-[1px] bg-gradient-to-r from-transparent via-amber-400/40 to-transparent animate-energy-flow" />
+              {/* 1. Continuous Infrastructure Journey Map (Visual Thread Header) */}
+              <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] font-mono font-bold z-20 shrink-0">
+                <span className={`transition-colors duration-300 ${plantStageIdx === 0 ? 'text-amber-400 font-extrabold' : 'text-slate-500'}`}>
+                  01 PANELS
+                </span>
+                <span className="text-slate-600">➔</span>
+                <span className={`transition-colors duration-300 ${plantStageIdx === 1 ? 'text-amber-400 font-extrabold' : 'text-slate-500'}`}>
+                  02 DC COLLECTION
+                </span>
+                <span className="text-slate-600">➔</span>
+                <span className={`transition-colors duration-300 ${plantStageIdx === 2 ? 'text-sky-400 font-extrabold' : 'text-slate-500'}`}>
+                  03 INVERTER (DC➔AC)
+                </span>
+                <span className="text-slate-600">➔</span>
+                <span className={`transition-colors duration-300 ${plantStageIdx === 3 ? 'text-indigo-400 font-extrabold' : 'text-slate-500'}`}>
+                  04 TRANSFORMER
+                </span>
+                <span className="text-slate-600">➔</span>
+                <span className={`transition-colors duration-300 ${plantStageIdx === 4 ? 'text-emerald-400 font-extrabold' : 'text-slate-500'}`}>
+                  05 GRID
+                </span>
               </div>
 
-              {/* 3D Isometric Exploded Stage Viewport */}
-              <div
-                className="relative w-[320px] lg:w-[420px] h-[220px] lg:h-[270px] transition-all duration-700 ease-out animate-[float_6s_ease-in-out_infinite]"
-                style={{
-                  perspective: '1200px',
-                  perspectiveOrigin: '50% 40%',
-                }}
-              >
-                <div
-                  className="w-full h-full relative transition-transform duration-700 ease-out"
-                  style={{
-                    transformStyle: 'preserve-3d',
-                    transform: 'rotateX(52deg) rotateZ(-28deg)',
-                  }}
-                >
-                  {PLANT_STAGES[plantStageIdx].layers.map((layer, idx) => {
-                    const isActive = idx === plantLayerIdx;
-                    const totalLayers = PLANT_STAGES[plantStageIdx].layers.length;
-                    const explosionSpread = 48;
-                    const zOffset = ((totalLayers - 1) / 2 - idx) * explosionSpread + (isActive ? 35 : 0);
-                    const opacity = isActive ? 1.0 : Math.abs(idx - plantLayerIdx) === 1 ? 0.75 : 0.45;
-                    const scale = isActive ? 1.05 : 1.0;
+              {/* 2. Main Interactive Visual Environment Scene */}
+              <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-3 z-10">
+                
+                {/* SCENE 0: SOLAR PANELS — Photons striking PV matrix */}
+                {plantStageIdx === 0 && (
+                  <div className="w-full h-full flex flex-col items-center justify-center relative space-y-4 animate-fade-in">
+                    {/* Sunlight Beam Effect */}
+                    <div className="absolute -top-10 inset-x-0 h-24 bg-gradient-to-b from-amber-400/20 via-amber-300/10 to-transparent blur-md pointer-events-none" />
+                    
+                    {/* Photovoltaic Array Graphics */}
+                    <div className="w-[340px] sm:w-[400px] h-[180px] rounded-2xl border border-amber-400/60 bg-[#0F172A]/90 p-3 shadow-2xl relative overflow-hidden backdrop-blur-md">
+                      <div className="flex items-center justify-between text-[10px] font-mono font-bold text-amber-400 mb-2 border-b border-slate-800 pb-1">
+                        <span>SOLAR MODULE ARRAY</span>
+                        <span className="animate-pulse">● SUNLIGHT CAPTURE ACTIVE</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-6 grid-rows-3 gap-1.5 h-[120px]">
+                        {Array.from({ length: 18 }).map((_, c) => (
+                          <div
+                            key={c}
+                            className="bg-slate-900 border border-amber-500/40 rounded-md relative overflow-hidden group hover:border-amber-400 transition-colors"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-br from-sky-950 via-slate-900 to-amber-950/40" />
+                            <div className="absolute bottom-0 inset-x-0 h-1 bg-amber-400/70 animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                    return (
-                      <div
-                        key={layer.id}
-                        onClick={() => setPlantLayerIdx(idx)}
-                        className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out group"
-                        style={{
-                          transform: `translateZ(${zOffset}px) scale(${scale})`,
-                          opacity,
-                          willChange: 'transform, opacity',
-                        }}
-                      >
-                        <div
-                          className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-2xl relative overflow-hidden backdrop-blur-md ${
-                            isActive
-                              ? 'border-amber-400 bg-[#16223B]/95 ring-4 ring-amber-400/30 shadow-amber-500/25'
-                              : 'border-slate-700/80 bg-[#0F172A]/80 group-hover:border-slate-400'
-                          }`}
-                        >
-                          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.12)_0%,transparent_70%)]" />
-                          
-                          {/* Stage-Specific Schematic Overlays */}
-                          {plantStageIdx === 0 && layer.id === 'cells' && (
-                            <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-1 p-2">
-                              {Array.from({ length: 24 }).map((_, c) => (
-                                <div key={c} className="bg-sky-950 border border-amber-400/50 rounded-sm" />
-                              ))}
-                            </div>
-                          )}
+                    {/* Exiting Energy Stream Flow */}
+                    <div className="w-full max-w-sm flex items-center justify-center gap-2">
+                      <span className="text-[10px] font-mono text-amber-400 font-bold">DC POWER STREAM</span>
+                      <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden relative">
+                        <div className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full w-full animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                          {plantStageIdx === 1 && (
-                            <div className="w-full h-full flex items-center justify-around px-4">
-                              <div className="w-9 h-9 rounded-full border-2 border-amber-400 flex items-center justify-center text-xs font-mono text-amber-400 font-bold">DC</div>
-                              <div className="h-0.5 flex-1 bg-gradient-to-r from-amber-500 to-amber-300 mx-2" />
-                              <div className="w-9 h-9 rounded-full border-2 border-amber-400 flex items-center justify-center text-xs font-mono text-amber-400 font-bold">1500V</div>
-                            </div>
-                          )}
+                {/* SCENE 1: DC COLLECTION — Multiple panel streams converging into 1 main flow */}
+                {plantStageIdx === 1 && (
+                  <div className="w-full h-full flex flex-col items-center justify-center relative space-y-4 animate-fade-in">
+                    <div className="w-[340px] sm:w-[420px] bg-[#0F172A]/90 border border-amber-500/50 rounded-2xl p-4 shadow-2xl space-y-3">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                        <span className="text-amber-400 font-bold">STRING 01 (500V)</span>
+                        <span className="text-amber-400 font-bold">STRING 02 (500V)</span>
+                        <span className="text-amber-400 font-bold">STRING 03 (500V)</span>
+                      </div>
 
-                          {plantStageIdx === 2 && (
-                            <div className="w-full h-full flex flex-col justify-between p-3.5">
-                              <div className="flex justify-between items-center text-[10px] font-mono text-slate-300 font-bold">
-                                <span className="text-amber-400">DC IN (1500V)</span>
-                                <span className="text-sky-400">MPPT 98.9%</span>
-                                <span className="text-emerald-400">AC OUT (800V)</span>
-                              </div>
-                              <div className="h-2.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                <div className="h-full bg-gradient-to-r from-amber-500 via-sky-400 to-emerald-400 w-full rounded-full animate-pulse" />
-                              </div>
-                            </div>
-                          )}
+                      {/* 3 Parallel Streams Converging */}
+                      <div className="space-y-2">
+                        <div className="h-1 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full animate-pulse" />
+                        <div className="h-1 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full animate-pulse" />
+                        <div className="h-1 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full animate-pulse" />
+                      </div>
 
-                          {plantStageIdx === 3 && (
-                            <div className="w-full h-full flex items-center justify-center gap-6">
-                              <div className="w-12 h-12 rounded-full border-4 border-amber-400/80 flex items-center justify-center text-xs font-bold text-amber-400">800V</div>
-                              <div className="text-indigo-400 font-extrabold text-sm animate-pulse">➔ STEP-UP ➔</div>
-                              <div className="w-12 h-12 rounded-full border-4 border-indigo-400/80 flex items-center justify-center text-xs font-bold text-indigo-400">33kV</div>
-                            </div>
-                          )}
+                      {/* Convergence Box */}
+                      <div className="bg-[#16223B] border border-amber-400/80 rounded-xl p-3 text-center space-y-1">
+                        <div className="text-xs font-mono font-bold text-white">IP65 DC COMBINER BOX</div>
+                        <div className="text-amber-400 font-black text-sm">1500V DC CONVERGED HIGH-VOLTAGE OUTPUT</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                          {plantStageIdx === 4 && (
-                            <div className="w-full h-full flex items-center justify-between px-6 text-xs font-mono font-bold text-emerald-400">
-                              <span>50.0 Hz SYNC</span>
-                              <span className="text-amber-400 animate-ping">● GRID EXPORT</span>
-                              <span>NET METER</span>
-                            </div>
-                          )}
+                {/* SCENE 2: INVERTER STATION — Visual DC -> AC Waveform Conversion */}
+                {plantStageIdx === 2 && (
+                  <div className="w-full h-full flex flex-col items-center justify-center relative space-y-4 animate-fade-in">
+                    <div className="w-[340px] sm:w-[420px] bg-[#0F172A]/90 border border-sky-500/50 rounded-2xl p-4 shadow-2xl space-y-4">
+                      <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-slate-800 pb-2">
+                        <span className="text-amber-400">DC INPUT (1500V)</span>
+                        <span className="text-sky-400">SiC IGBT SWITCHING STAGE</span>
+                        <span className="text-sky-300">AC OUTPUT (800V 3-PHASE)</span>
+                      </div>
+
+                      {/* Visual DC -> AC Waveform Conversion Graphic */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="w-20 h-10 bg-amber-950/60 border border-amber-500/60 rounded-lg flex items-center justify-center text-amber-400 text-xs font-mono font-bold">
+                          DC ➔
                         </div>
 
-                        {/* Layer Label Tag */}
-                        <div
-                          className={`absolute -right-28 sm:-right-36 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[10px] sm:text-xs font-mono font-bold transition-all duration-300 whitespace-nowrap shadow-lg ${
-                            isActive
-                              ? 'bg-amber-500 text-slate-950 border-amber-300 font-extrabold scale-110'
-                              : 'bg-slate-950/90 text-slate-400 border-slate-800 group-hover:text-white'
-                          }`}
-                        >
-                          {layer.name}
+                        <div className="flex-1 h-12 bg-slate-950 border border-sky-400/60 rounded-lg p-2 flex items-center justify-center overflow-hidden relative">
+                          <div className="w-full h-0.5 bg-gradient-to-r from-amber-400 via-sky-400 to-blue-500 animate-pulse" />
+                          <span className="absolute text-[10px] font-mono text-sky-400 font-bold">50.0 Hz SINUSOIDAL INVERSION</span>
+                        </div>
+
+                        <div className="w-20 h-10 bg-sky-950/60 border border-sky-400/60 rounded-lg flex items-center justify-center text-sky-300 text-xs font-mono font-bold">
+                          ➔ AC
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SCENE 3: STEP-UP TRANSFORMER — 800V -> 33kV Step-up Acceleration */}
+                {plantStageIdx === 3 && (
+                  <div className="w-full h-full flex flex-col items-center justify-center relative space-y-4 animate-fade-in">
+                    <div className="w-[340px] sm:w-[420px] bg-[#0F172A]/90 border border-indigo-500/50 rounded-2xl p-4 shadow-2xl space-y-4">
+                      <div className="flex items-center justify-between text-[11px] font-mono font-bold border-b border-slate-800 pb-2">
+                        <span className="text-sky-400">PRIMARY (800V AC)</span>
+                        <span className="text-indigo-400">COPPER ISOLATION COILS</span>
+                        <span className="text-indigo-300">SECONDARY (33kV HV)</span>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="w-24 h-12 rounded-xl border-2 border-sky-400 flex items-center justify-center font-mono font-bold text-sky-300 text-xs">
+                          800V AC
+                        </div>
+                        
+                        <div className="flex-1 text-center space-y-1">
+                          <div className="text-indigo-400 font-black text-xs uppercase tracking-widest animate-pulse">
+                            ➔ STEP-UP VOLTAGE ➔
+                          </div>
+                          <div className="h-2 bg-gradient-to-r from-sky-400 via-indigo-500 to-indigo-400 rounded-full" />
+                        </div>
+
+                        <div className="w-24 h-12 rounded-xl border-2 border-indigo-400 bg-indigo-950/60 flex items-center justify-center font-mono font-bold text-indigo-300 text-xs shadow-lg shadow-indigo-500/30">
+                          33kV HV
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* SCENE 4: UTILITY GRID TIE-IN — High Voltage Export to City Infrastructure */}
+                {plantStageIdx === 4 && (
+                  <div className="w-full h-full flex flex-col items-center justify-center relative space-y-4 animate-fade-in">
+                    <div className="w-[340px] sm:w-[420px] bg-[#0F172A]/90 border border-emerald-500/50 rounded-2xl p-4 shadow-2xl space-y-3">
+                      <div className="flex items-center justify-between text-[11px] font-mono font-bold text-emerald-400 border-b border-slate-800 pb-2">
+                        <span>33kV GANTRY TOWER</span>
+                        <span className="animate-pulse">● LIVE GRID SYNCHRONIZED</span>
+                        <span>0.2s ABT METER</span>
+                      </div>
+
+                      <div className="p-3 bg-emerald-950/40 border border-emerald-500/40 rounded-xl flex items-center justify-between text-xs font-mono font-bold text-slate-200">
+                        <span>POWER EXPORT: <strong className="text-emerald-400">100% CLEAN SOLAR</strong></span>
+                        <span className="text-emerald-400">DISCOM READY</span>
+                      </div>
+
+                      {/* Payoff Tagline */}
+                      <div className="pt-1 text-center">
+                        <div className="text-amber-400 font-black text-sm tracking-tight">
+                          "From sunlight to power."
+                        </div>
+                        <div className="text-slate-400 text-[11px] font-light">
+                          Engineered for every scale.
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Bottom Energy Flow Beam Indicator */}
+              <div className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-mono z-20 shrink-0">
+                <span className="text-slate-400">ENERGY STREAM STATE:</span>
+                <span className="font-bold text-amber-400">
+                  {plantStageIdx === 0 && '⚡ SUNLIGHT PHOTON ACTIVATION'}
+                  {plantStageIdx === 1 && '⚡ 1500V DC STRING CONVERGENCE'}
+                  {plantStageIdx === 2 && '⚡ 3-PHASE AC INVERSION ACTIVE'}
+                  {plantStageIdx === 3 && '⚡ 33kV HIGH-VOLTAGE STEP-UP'}
+                  {plantStageIdx === 4 && '⚡ LIVE UTILITY GRID EXPORT'}
+                </span>
               </div>
             </div>
           </div>
