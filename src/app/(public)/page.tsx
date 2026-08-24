@@ -362,10 +362,10 @@ export default function HomePage() {
       </section>
 
       {/* 3. SECTION 3 — SOLAR SOLUTIONS (PINNED HORIZONTAL CONVEYOR CARDS) */}
-      <section ref={solutionsRef} className="hidden md:block relative w-full h-[260vh] bg-[#0B0F17] snap-major-scene">
-        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between py-6 lg:py-8">
-          {/* Section Heading */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-30 pt-2 lg:pt-4">
+      <section ref={solutionsRef} className="hidden md:block relative w-full h-[280vh] bg-[#0B0F17] snap-major-scene scroll-mt-20">
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6">
+          {/* Anchored Section Heading (Always visible below fixed navbar) */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-40 shrink-0">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
               OUR SOLUTIONS
             </span>
@@ -377,11 +377,11 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Cards Viewport Container */}
+          {/* Horizontal Card Conveyor Viewport Container */}
           <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto">
             {SOLUTIONS_STORIES.map((story, idx) => {
               // Compute continuous relative position for card idx
-              // When solutionsProgress = 0, idx 0 is at 0 (center), idx 1 is at 1 (right), idx 2 is at 2 (far right)
+              // When solutionsProgress = 0, idx 0 is at 0 (center), idx 1 is at 1 (peeking right), idx 2 is at 2 (far right)
               const relPos = idx - solutionsProgress * 2;
 
               let opacity = 1;
@@ -389,32 +389,39 @@ export default function HomePage() {
               let brightness = 1;
 
               if (relPos < 0) {
-                // Moving Left towards / off left edge: opacity 1 -> 0.7 (at -0.5) -> 0.35 (at -1.0) -> 0 (at -1.8)
-                opacity = Math.max(0, Math.min(1, 1 + relPos * 0.55));
-                // Scale: 1 -> 0.96 -> 0.92
-                scale = Math.max(0.88, 1 + relPos * 0.05);
-                brightness = Math.max(0.6, 1 + relPos * 0.25);
-              } else if (relPos > 1.2) {
-                opacity = Math.max(0, Math.min(1, 1 - (relPos - 1.2) * 0.8));
+                // Moving Left towards / off left edge: opacity 1 -> 0.45 -> 0.05, scale 1 -> 0.94 -> 0.88
+                const distLeft = Math.abs(relPos);
+                opacity = Math.max(0.05, 1 - distLeft * 0.55);
+                scale = Math.max(0.88, 1 - distLeft * 0.06);
+                brightness = Math.max(0.5, 1 - distLeft * 0.25);
+              } else if (relPos > 0) {
+                // Positioned on the right / entering from right edge
+                const distRight = relPos;
+                opacity = Math.max(0.1, 1 - distRight * 0.25);
+                scale = Math.max(0.9, 1 - distRight * 0.04);
+                brightness = Math.max(0.7, 1 - distRight * 0.15);
               }
 
-              // Active/central card has highest z-index
-              const zIndex = 30 - Math.round(Math.abs(relPos) * 6);
+              // Active/central card (relPos closest to 0) gets highest z-index
+              const zIndex = 30 - Math.round(Math.abs(relPos) * 10);
+              const translateX = relPos * 52; // Horizontal translation in viewport width percentage
 
               return (
                 <div
                   key={story.type}
-                  className="absolute left-1/2 top-1/2 transition-all duration-150 ease-out w-[90vw] max-w-[960px]"
+                  className="absolute left-1/2 top-1/2 transition-all duration-150 ease-out w-[88vw] max-w-[920px]"
                   style={{
-                    transform: `translate(-50%, -50%) translateX(${relPos * 84}vw) scale(${scale})`,
+                    transform: `translate(-50%, -50%) translateX(${translateX}vw) scale(${scale})`,
                     opacity,
                     zIndex,
                     filter: `brightness(${brightness})`,
+                    willChange: 'transform, opacity',
+                    pointerEvents: opacity < 0.2 ? 'none' : 'auto',
                   }}
                 >
-                  <div className="bg-[#131B2E]/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 lg:p-8 shadow-2xl shadow-black/80 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group">
+                  <div className="bg-[#131B2E]/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 lg:p-7 shadow-2xl shadow-black/80 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group">
                     {/* LEFT SIDE — PHOTO */}
-                    <div className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[300px] lg:h-[340px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner">
+                    <div className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner">
                       <Image
                         src={story.image}
                         alt={story.heading}
@@ -426,12 +433,12 @@ export default function HomePage() {
                     </div>
 
                     {/* RIGHT SIDE — CONTENT */}
-                    <div className="w-full md:w-7/12 lg:w-1/2 space-y-4 text-left">
+                    <div className="w-full md:w-7/12 lg:w-1/2 space-y-3.5 text-left">
                       <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
                         {story.type}
                       </span>
 
-                      <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tight leading-snug">
+                      <h3 className="text-xl lg:text-3xl font-black text-white tracking-tight leading-snug">
                         {story.heading}
                       </h3>
 
@@ -439,21 +446,21 @@ export default function HomePage() {
                         {story.desc}
                       </p>
 
-                      <ul className="space-y-2 pt-1">
+                      <ul className="space-y-1.5 pt-0.5">
                         {story.bullets.map((b) => (
-                          <li key={b} className="flex items-start gap-2.5 text-xs lg:text-sm text-slate-200 font-medium">
+                          <li key={b} className="flex items-start gap-2 text-xs lg:text-sm text-slate-200 font-medium">
                             <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                             <span>{b}</span>
                           </li>
                         ))}
                       </ul>
 
-                      <div className="pt-2">
+                      <div className="pt-1.5">
                         <Link href={story.link}>
                           <Button
                             variant="accent"
                             size="sm"
-                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs lg:text-sm border-0 shadow-lg shadow-amber-500/10 flex items-center gap-2 group/btn"
+                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-2 rounded-xl text-xs lg:text-sm border-0 shadow-lg shadow-amber-500/10 flex items-center gap-2 group/btn"
                             icon={<ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />}
                           >
                             {story.cta}
@@ -468,7 +475,7 @@ export default function HomePage() {
           </div>
 
           {/* Section Card Dots Indicator */}
-          <div className="flex justify-center items-center gap-3 relative z-30 pb-2 lg:pb-4">
+          <div className="flex justify-center items-center gap-3 relative z-40 pb-2 shrink-0">
             {SOLUTIONS_STORIES.map((_, idx) => (
               <button
                 key={idx}
@@ -491,7 +498,7 @@ export default function HomePage() {
       </section>
 
       {/* Mobile: Clean Vertically Readable Card Stack */}
-      <section className="block md:hidden py-16 bg-[#0B0F17] px-4 space-y-8 border-t border-slate-800/80">
+      <section className="block md:hidden py-16 pt-24 bg-[#0B0F17] px-4 space-y-8 border-t border-slate-800/80">
         <div className="text-center space-y-2 mb-8">
           <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
             OUR SOLUTIONS
