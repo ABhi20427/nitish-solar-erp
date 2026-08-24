@@ -413,6 +413,7 @@ export default function HomePage() {
               // Compute continuous relative position for card idx
               // When solutionsProgress = 0, idx 0 is at 0 (center), idx 1 is at 1 (peeking right), idx 2 is at 2 (far right)
               const relPos = idx - solutionsProgress * 2;
+              const isCentral = Math.abs(relPos) < 0.35;
 
               let opacity = 1;
               let scale = 1;
@@ -457,21 +458,37 @@ export default function HomePage() {
                     />
                   )}
 
-                  <div className="bg-[#131B2E]/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 lg:p-7 shadow-2xl shadow-black/90 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group relative z-20">
-                    {/* LEFT SIDE — PHOTO */}
+                  <div
+                    className={`border transition-all duration-500 rounded-3xl p-6 lg:p-7 shadow-2xl flex flex-col md:flex-row items-center gap-6 lg:gap-8 group relative z-20 overflow-hidden ${
+                      isCentral
+                        ? 'bg-gradient-to-br from-[#18233C] via-[#131B2E] to-[#0F172A] border-amber-400/40 shadow-amber-500/10'
+                        : 'bg-[#131B2E]/95 border-slate-800/90 shadow-black/90'
+                    }`}
+                  >
+                    {/* LEFT SIDE — PHOTO WITH IMAGE PARALLAX */}
                     <div className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner">
                       <Image
                         src={story.image}
                         alt={story.heading}
                         fill
                         sizes="(max-width: 1024px) 50vw, 45vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95 saturate-105"
+                        style={{
+                          transform: `scale(${isCentral ? 1.04 : 1.0}) translateX(${-relPos * 3.5}%)`,
+                          filter: `brightness(${isCentral ? 1.02 : 0.88})`,
+                          willChange: 'transform, filter',
+                        }}
+                        className="object-cover transition-transform duration-500 ease-out"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     </div>
 
-                    {/* RIGHT SIDE — CONTENT */}
-                    <div className="w-full md:w-7/12 lg:w-1/2 space-y-3.5 text-left">
+                    {/* RIGHT SIDE — CONTENT WITH MICRO-PARALLAX */}
+                    <div
+                      className="w-full md:w-7/12 lg:w-1/2 space-y-3.5 text-left transition-transform duration-300 ease-out"
+                      style={{
+                        transform: `translateX(${relPos * -4}px)`,
+                      }}
+                    >
                       <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
                         {story.type}
                       </span>
@@ -512,25 +529,19 @@ export default function HomePage() {
             })}
           </div>
 
-          {/* Section Card Dots Indicator */}
-          <div className="flex justify-center items-center gap-3 relative z-30 pb-2 shrink-0">
-            {SOLUTIONS_STORIES.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (solutionsRef.current) {
-                    const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
-                    const targetProgress = idx / 2;
-                    const targetScrollTop = solutionsRef.current.offsetTop + targetProgress * totalDist;
-                    window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-                  }
-                }}
-                className={`h-2.5 rounded-full transition-all duration-300 ${
-                  solutionsStep === idx ? 'w-8 bg-amber-400' : 'w-2.5 bg-slate-700 hover:bg-slate-500'
-                }`}
-                title={`Go to Card ${idx + 1}`}
+          {/* Premium Solutions Scene Progress Indicator: 01 ━━━━━ [Line] ━━━━━ 03 */}
+          <div className="flex flex-col items-center gap-2 relative z-30 pb-3 shrink-0 max-w-md mx-auto w-full px-6">
+            <div className="flex items-center justify-between w-full text-[11px] font-mono font-bold tracking-widest">
+              <span className={`transition-colors duration-300 ${solutionsStep === 0 ? 'text-amber-400' : 'text-slate-500'}`}>01 RESIDENTIAL</span>
+              <span className={`transition-colors duration-300 ${solutionsStep === 1 ? 'text-amber-400' : 'text-slate-500'}`}>02 COMMERCIAL</span>
+              <span className={`transition-colors duration-300 ${solutionsStep === 2 ? 'text-amber-400' : 'text-slate-500'}`}>03 INDUSTRIAL</span>
+            </div>
+            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden relative">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full transition-all duration-200 ease-out shadow-sm shadow-amber-400/50"
+                style={{ width: `${Math.max(12, Math.min(100, (solutionsProgress + 0.1) * 88))}%` }}
               />
-            ))}
+            </div>
           </div>
         </div>
       </section>
