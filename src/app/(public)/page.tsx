@@ -46,6 +46,7 @@ export default function HomePage() {
 
   // Deterministic Initial Scroll Step States
   const [solutionsStep, setSolutionsStep] = useState(0);
+  const [solutionsProgress, setSolutionsProgress] = useState(0);
   const [projectsStep, setProjectsStep] = useState(0);
   const [impactStep, setImpactStep] = useState(0);
 
@@ -82,7 +83,8 @@ export default function HomePage() {
             const rect = solutionsRef.current.getBoundingClientRect();
             const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
             if (totalDist > 0) {
-              const progress = Math.max(0, Math.min(0.99, -rect.top / totalDist));
+              const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
+              setSolutionsProgress(progress);
               let nextStep = 0;
               if (progress < 0.35) nextStep = 0;
               else if (progress < 0.7) nextStep = 1;
@@ -185,6 +187,7 @@ export default function HomePage() {
       desc: 'Rooftop solar installations for luxury homes and housing societies. Reduce monthly electricity bills by up to 90% while benefiting from PM Surya Ghar government subsidy support.',
       image: '/images/residential_light.png',
       link: '/residential',
+      cta: 'Explore Residential',
       bullets: ['Net metering & DISCOM approval assistance', '25-Year linear module performance warranty', 'Smart mobile app generation telemetry'],
       icon: HomeIcon,
     },
@@ -194,6 +197,7 @@ export default function HomePage() {
       desc: 'Engineered for commercial office buildings, hospitals, hotels, shopping complexes. Slash operational electricity overheads and capitalize on 40% accelerated tax depreciation.',
       image: '/images/industrial_light.png',
       link: '/commercial',
+      cta: 'Explore Commercial',
       bullets: ['40% Accelerated tax depreciation benefit', 'Non-penetrative ballast mounting structures', 'High financial return on investment (IRR)'],
       icon: Building2,
     },
@@ -203,6 +207,7 @@ export default function HomePage() {
       desc: 'For factories, manufacturing plants, cold storage units, megawatt solar farms. High-power bifacial N-type TOPCon modules engineered for heavy 24/7 industrial loads.',
       image: '/images/hero_light.png',
       link: '/industrial',
+      cta: 'Explore Industrial',
       bullets: ['11kV / 33kV HT grid synchronization', 'High-power bifacial solar modules', 'Open access & captive power procurement'],
       icon: Factory,
     },
@@ -356,91 +361,198 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECTION 3 — SOLAR SOLUTIONS (COMPACT PINNED CINEMATIC STORYTELLING) */}
-      <section ref={solutionsRef} className="relative w-full h-[180vh] bg-[#0B0F17] snap-major-scene">
-        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex items-center justify-center">
-          {/* Background Images Crossfade */}
-          <div className="absolute inset-0 z-0">
-            {SOLUTIONS_STORIES.map((story, idx) => (
-              <div
-                key={story.type}
-                className={`absolute inset-0 transition-opacity duration-700 ease-out ${solutionsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                  }`}
-              >
+      {/* 3. SECTION 3 — SOLAR SOLUTIONS (PINNED HORIZONTAL CONVEYOR CARDS) */}
+      <section ref={solutionsRef} className="hidden md:block relative w-full h-[260vh] bg-[#0B0F17] snap-major-scene">
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between py-6 lg:py-8">
+          {/* Section Heading */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-30 pt-2 lg:pt-4">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
+              OUR SOLUTIONS
+            </span>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
+              Solar engineered for every scale.
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base font-light max-w-xl mx-auto">
+              From homes to businesses to industrial infrastructure.
+            </p>
+          </div>
+
+          {/* Cards Viewport Container */}
+          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto">
+            {SOLUTIONS_STORIES.map((story, idx) => {
+              // Compute continuous relative position for card idx
+              // When solutionsProgress = 0, idx 0 is at 0 (center), idx 1 is at 1 (right), idx 2 is at 2 (far right)
+              const relPos = idx - solutionsProgress * 2;
+
+              let opacity = 1;
+              let scale = 1;
+              let brightness = 1;
+
+              if (relPos < 0) {
+                // Moving Left towards / off left edge: opacity 1 -> 0.7 (at -0.5) -> 0.35 (at -1.0) -> 0 (at -1.8)
+                opacity = Math.max(0, Math.min(1, 1 + relPos * 0.55));
+                // Scale: 1 -> 0.96 -> 0.92
+                scale = Math.max(0.88, 1 + relPos * 0.05);
+                brightness = Math.max(0.6, 1 + relPos * 0.25);
+              } else if (relPos > 1.2) {
+                opacity = Math.max(0, Math.min(1, 1 - (relPos - 1.2) * 0.8));
+              }
+
+              // Active/central card has highest z-index
+              const zIndex = 30 - Math.round(Math.abs(relPos) * 6);
+
+              return (
+                <div
+                  key={story.type}
+                  className="absolute left-1/2 top-1/2 transition-all duration-150 ease-out w-[90vw] max-w-[960px]"
+                  style={{
+                    transform: `translate(-50%, -50%) translateX(${relPos * 84}vw) scale(${scale})`,
+                    opacity,
+                    zIndex,
+                    filter: `brightness(${brightness})`,
+                  }}
+                >
+                  <div className="bg-[#131B2E]/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 lg:p-8 shadow-2xl shadow-black/80 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group">
+                    {/* LEFT SIDE — PHOTO */}
+                    <div className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[300px] lg:h-[340px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner">
+                      <Image
+                        src={story.image}
+                        alt={story.heading}
+                        fill
+                        sizes="(max-width: 1024px) 50vw, 45vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95 saturate-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    </div>
+
+                    {/* RIGHT SIDE — CONTENT */}
+                    <div className="w-full md:w-7/12 lg:w-1/2 space-y-4 text-left">
+                      <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
+                        {story.type}
+                      </span>
+
+                      <h3 className="text-2xl lg:text-3xl font-black text-white tracking-tight leading-snug">
+                        {story.heading}
+                      </h3>
+
+                      <p className="text-slate-300 text-xs lg:text-sm font-light leading-relaxed">
+                        {story.desc}
+                      </p>
+
+                      <ul className="space-y-2 pt-1">
+                        {story.bullets.map((b) => (
+                          <li key={b} className="flex items-start gap-2.5 text-xs lg:text-sm text-slate-200 font-medium">
+                            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <span>{b}</span>
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="pt-2">
+                        <Link href={story.link}>
+                          <Button
+                            variant="accent"
+                            size="sm"
+                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs lg:text-sm border-0 shadow-lg shadow-amber-500/10 flex items-center gap-2 group/btn"
+                            icon={<ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />}
+                          >
+                            {story.cta}
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Section Card Dots Indicator */}
+          <div className="flex justify-center items-center gap-3 relative z-30 pb-2 lg:pb-4">
+            {SOLUTIONS_STORIES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (solutionsRef.current) {
+                    const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
+                    const targetProgress = idx / 2;
+                    const targetScrollTop = solutionsRef.current.offsetTop + targetProgress * totalDist;
+                    window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                  }
+                }}
+                className={`h-2.5 rounded-full transition-all duration-300 ${
+                  solutionsStep === idx ? 'w-8 bg-amber-400' : 'w-2.5 bg-slate-700 hover:bg-slate-500'
+                }`}
+                title={`Go to Card ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile: Clean Vertically Readable Card Stack */}
+      <section className="block md:hidden py-16 bg-[#0B0F17] px-4 space-y-8 border-t border-slate-800/80">
+        <div className="text-center space-y-2 mb-8">
+          <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
+            OUR SOLUTIONS
+          </span>
+          <h2 className="text-2xl font-black text-white tracking-tight">
+            Solar engineered for every scale.
+          </h2>
+          <p className="text-slate-400 text-xs font-light max-w-sm mx-auto">
+            From homes to businesses to industrial infrastructure.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {SOLUTIONS_STORIES.map((story) => (
+            <div
+              key={story.type}
+              className="bg-[#131B2E] border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4"
+            >
+              <div className="w-full aspect-[16/10] relative rounded-xl overflow-hidden border border-slate-700/50">
                 <Image
                   src={story.image}
                   alt={story.heading}
                   fill
                   sizes="100vw"
-                  className="object-cover object-center filter brightness-75 scale-105 transition-transform duration-700"
+                  className="object-cover filter brightness-95"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-transparent" />
               </div>
-            ))}
-          </div>
 
-          {/* Sticky Foreground Content Story Overlay */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
-            {SOLUTIONS_STORIES.map((story, idx) => {
-              const Icon = story.icon;
-              const isActive = solutionsStep === idx;
-              return (
-                <div
-                  key={story.type}
-                  className={`transition-all duration-700 ease-out max-w-2xl space-y-6 ${isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-6 absolute pointer-events-none'
-                    }`}
-                >
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-slate-700/80 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
-                    <Icon className="w-4 h-4" />
-                    <span>Story 0{idx + 1} — {story.type}</span>
-                  </div>
-
-                  <h2 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-md">
-                    {story.heading}
-                  </h2>
-
-                  <p className="text-slate-200 text-sm sm:text-lg font-light leading-relaxed drop-shadow-sm">
-                    {story.desc}
-                  </p>
-
-                  <ul className="space-y-2 text-xs sm:text-sm text-slate-200 pt-2">
-                    {story.bullets.map((b) => (
-                      <li key={b} className="flex items-center gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="pt-2">
-                    <Link href={story.link}>
-                      <Button
-                        variant="accent"
-                        size="lg"
-                        className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-3 rounded-xl text-sm shadow-xl transition-all border-0"
-                        icon={<ArrowRight className="w-4 h-4" />}
-                      >
-                        Explore {story.type.split(' ')[0]} Solar
-                      </Button>
-                    </Link>
-                  </div>
+              <div className="space-y-3">
+                <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-amber-400 block">
+                  {story.type}
+                </span>
+                <h3 className="text-xl font-black text-white tracking-tight leading-snug">
+                  {story.heading}
+                </h3>
+                <p className="text-slate-300 text-xs font-light leading-relaxed">
+                  {story.desc}
+                </p>
+                <ul className="space-y-2 pt-1">
+                  {story.bullets.map((b) => (
+                    <li key={b} className="flex items-start gap-2 text-xs text-slate-200 font-medium">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="pt-2">
+                  <Link href={story.link}>
+                    <Button
+                      variant="accent"
+                      size="sm"
+                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs border-0 flex items-center justify-center gap-2"
+                      icon={<ArrowRight className="w-4 h-4" />}
+                    >
+                      {story.cta}
+                    </Button>
+                  </Link>
                 </div>
-              );
-            })}
-
-            {/* Story Navigation Indicator Dots */}
-            <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
-              {SOLUTIONS_STORIES.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSolutionsStep(idx)}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 ${solutionsStep === idx ? 'bg-amber-400 scale-125 ring-4 ring-white/20' : 'bg-white/40 hover:bg-white/70'
-                    }`}
-                  title={`Go to Story ${idx + 1}`}
-                />
-              ))}
+              </div>
             </div>
-          </div>
+          ))}
         </div>
       </section>
 

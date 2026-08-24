@@ -33,9 +33,6 @@ export function PublicNavbar({
     { label: 'Home', href: '/' },
     { label: 'About', href: '/about' },
     { label: 'Solutions', href: '/solutions' },
-    { label: 'Residential', href: '/residential' },
-    { label: 'Commercial', href: '/commercial' },
-    { label: 'Industrial', href: '/industrial' },
     { label: 'Calculator', href: '/calculator' },
     { label: 'Contact', href: '/contact' },
   ];
