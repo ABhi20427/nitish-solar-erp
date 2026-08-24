@@ -361,15 +361,53 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECTION 3 — SOLAR SOLUTIONS (PINNED HORIZONTAL CONVEYOR CARDS) */}
-      <section ref={solutionsRef} className="hidden md:block relative w-full h-[280vh] bg-[#0B0F17] snap-major-scene scroll-mt-20">
-        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6">
+      {/* 3. SECTION 3 — SOLAR SOLUTIONS (CINEMATIC ENERGY BACKDROP & HORIZONTAL CONVEYOR CARDS) */}
+      <section ref={solutionsRef} className="hidden md:block relative w-full h-[280vh] bg-[#070A11] snap-major-scene scroll-mt-20 overflow-hidden">
+        {/* PARALLAX LAYER 1: Deep Charcoal & Midnight Energy Environment */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(15,23,42,0.8)_0%,rgba(7,10,17,1)_100%)] pointer-events-none z-0" />
+
+        {/* PARALLAX LAYER 2: Slow Parallax Energy Stream Flow (Right -> Left) */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-transform duration-150 ease-out z-0 opacity-30"
+          style={{
+            transform: `translateX(${-solutionsProgress * 16}vw)`,
+            willChange: 'transform',
+          }}
+        >
+          <div className="absolute top-1/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/25 to-transparent animate-energy-flow" />
+          <div className="absolute top-1/2 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-slate-600/30 to-transparent animate-energy-flow" style={{ animationDelay: '-14s' }} />
+          <div className="absolute top-3/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/20 to-transparent animate-energy-flow" style={{ animationDelay: '-7s' }} />
+        </div>
+
+        {/* PARALLAX LAYER 3: Dynamic Active Card Ambient Radial Glow */}
+        <div
+          className="absolute left-1/2 top-1/2 w-[680px] h-[440px] rounded-full bg-gradient-to-r from-amber-500/15 via-blue-600/10 to-amber-400/15 blur-3xl pointer-events-none transition-transform duration-300 ease-out z-10 opacity-70"
+          style={{
+            transform: `translate(-50%, -50%) translateX(${(0.5 - solutionsProgress) * -52}vw)`,
+            willChange: 'transform',
+          }}
+        />
+
+        {/* PARALLAX LAYER 4: Faster Floating Light Streaks (-solutionsProgress * 38vw) */}
+        <div
+          className="absolute inset-0 pointer-events-none transition-transform duration-150 ease-out z-15 opacity-35"
+          style={{
+            transform: `translateX(${-solutionsProgress * 38}vw)`,
+            willChange: 'transform',
+          }}
+        >
+          <div className="absolute top-1/3 left-1/4 w-36 h-[1px] bg-gradient-to-r from-transparent via-amber-300/40 to-transparent blur-[1px]" />
+          <div className="absolute top-2/3 left-2/3 w-52 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent blur-[1px]" />
+        </div>
+
+        {/* Sticky Scene Content Container */}
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 relative z-20">
           {/* Anchored Section Heading (Always visible below fixed navbar) */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-40 shrink-0">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
+            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block drop-shadow-sm">
               OUR SOLUTIONS
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight drop-shadow-md">
               Solar engineered for every scale.
             </h2>
             <p className="text-slate-400 text-sm sm:text-base font-light max-w-xl mx-auto">
@@ -419,7 +457,15 @@ export default function HomePage() {
                     pointerEvents: opacity < 0.2 ? 'none' : 'auto',
                   }}
                 >
-                  <div className="bg-[#131B2E]/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 lg:p-7 shadow-2xl shadow-black/80 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group">
+                  {/* Subtle Light Motion Trail Behind Cards Moving Left */}
+                  {relPos < 0.3 && relPos > -1.5 && (
+                    <div
+                      className="absolute -right-12 top-1/2 -translate-y-1/2 w-48 h-3/4 bg-gradient-to-r from-amber-500/20 via-amber-400/5 to-transparent blur-2xl rounded-full pointer-events-none transition-opacity duration-300"
+                      style={{ opacity: Math.max(0, Math.min(0.25, (0.3 - relPos) * 0.3)) }}
+                    />
+                  )}
+
+                  <div className="bg-[#131B2E]/95 backdrop-blur-xl border border-slate-800/90 rounded-3xl p-6 lg:p-7 shadow-2xl shadow-black/90 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group relative z-20">
                     {/* LEFT SIDE — PHOTO */}
                     <div className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner">
                       <Image
