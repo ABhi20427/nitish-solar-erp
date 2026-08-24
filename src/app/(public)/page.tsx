@@ -361,49 +361,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. SECTION 3 — SOLAR SOLUTIONS (CINEMATIC ENERGY BACKDROP & HORIZONTAL CONVEYOR CARDS) */}
-      <section ref={solutionsRef} className="hidden md:block relative w-full h-[280vh] bg-[#070A11] snap-major-scene scroll-mt-20 overflow-hidden">
-        {/* PARALLAX LAYER 1: Deep Charcoal & Midnight Energy Environment */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(15,23,42,0.8)_0%,rgba(7,10,17,1)_100%)] pointer-events-none z-0" />
+      {/* 3. SECTION 3 — SOLAR SOLUTIONS (INTEGRATED CINEMATIC SCENE) */}
+      <section ref={solutionsRef} className="hidden md:block relative w-full h-[280vh] bg-[#0B0F17] snap-major-scene scroll-mt-20">
+        {/* Sticky Viewport Container (All scene layers contained within 100vh viewport) */}
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
+          
+          {/* Integrated Ambient Energy Atmosphere (Inside sticky viewport) */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            {/* Soft gradient blend ensuring seamless transition with surrounding sections */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/60 to-[#0B0F17]" />
+            
+            {/* Background Parallax Energy Flow Streams (Slow Movement: -solutionsProgress * 14vw) */}
+            <div
+              className="absolute inset-0 opacity-20 transition-transform duration-150 ease-out"
+              style={{
+                transform: `translateX(${-solutionsProgress * 14}vw)`,
+                willChange: 'transform',
+              }}
+            >
+              <div className="absolute top-1/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent animate-energy-flow" />
+              <div className="absolute top-1/2 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-slate-600/25 to-transparent animate-energy-flow" style={{ animationDelay: '-14s' }} />
+              <div className="absolute top-3/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/15 to-transparent animate-energy-flow" style={{ animationDelay: '-7s' }} />
+            </div>
 
-        {/* PARALLAX LAYER 2: Slow Parallax Energy Stream Flow (Right -> Left) */}
-        <div
-          className="absolute inset-0 pointer-events-none transition-transform duration-150 ease-out z-0 opacity-30"
-          style={{
-            transform: `translateX(${-solutionsProgress * 16}vw)`,
-            willChange: 'transform',
-          }}
-        >
-          <div className="absolute top-1/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/25 to-transparent animate-energy-flow" />
-          <div className="absolute top-1/2 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-slate-600/30 to-transparent animate-energy-flow" style={{ animationDelay: '-14s' }} />
-          <div className="absolute top-3/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/20 to-transparent animate-energy-flow" style={{ animationDelay: '-7s' }} />
-        </div>
+            {/* Dynamic Active Card Spotlight Glow (Moves smoothly with solutionsProgress) */}
+            <div
+              className="absolute left-1/2 top-1/2 w-[620px] h-[400px] rounded-full bg-gradient-to-r from-amber-500/12 via-blue-600/8 to-amber-400/12 blur-3xl transition-transform duration-300 ease-out opacity-75"
+              style={{
+                transform: `translate(-50%, -50%) translateX(${(0.5 - solutionsProgress) * -52}vw)`,
+                willChange: 'transform',
+              }}
+            />
+          </div>
 
-        {/* PARALLAX LAYER 3: Dynamic Active Card Ambient Radial Glow */}
-        <div
-          className="absolute left-1/2 top-1/2 w-[680px] h-[440px] rounded-full bg-gradient-to-r from-amber-500/15 via-blue-600/10 to-amber-400/15 blur-3xl pointer-events-none transition-transform duration-300 ease-out z-10 opacity-70"
-          style={{
-            transform: `translate(-50%, -50%) translateX(${(0.5 - solutionsProgress) * -52}vw)`,
-            willChange: 'transform',
-          }}
-        />
-
-        {/* PARALLAX LAYER 4: Faster Floating Light Streaks (-solutionsProgress * 38vw) */}
-        <div
-          className="absolute inset-0 pointer-events-none transition-transform duration-150 ease-out z-15 opacity-35"
-          style={{
-            transform: `translateX(${-solutionsProgress * 38}vw)`,
-            willChange: 'transform',
-          }}
-        >
-          <div className="absolute top-1/3 left-1/4 w-36 h-[1px] bg-gradient-to-r from-transparent via-amber-300/40 to-transparent blur-[1px]" />
-          <div className="absolute top-2/3 left-2/3 w-52 h-[1px] bg-gradient-to-r from-transparent via-amber-400/30 to-transparent blur-[1px]" />
-        </div>
-
-        {/* Sticky Scene Content Container */}
-        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 relative z-20">
           {/* Anchored Section Heading (Always visible below fixed navbar) */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-40 shrink-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-30 shrink-0">
             <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block drop-shadow-sm">
               OUR SOLUTIONS
             </span>
@@ -416,7 +408,7 @@ export default function HomePage() {
           </div>
 
           {/* Horizontal Card Conveyor Viewport Container */}
-          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto">
+          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto z-20">
             {SOLUTIONS_STORIES.map((story, idx) => {
               // Compute continuous relative position for card idx
               // When solutionsProgress = 0, idx 0 is at 0 (center), idx 1 is at 1 (peeking right), idx 2 is at 2 (far right)
@@ -460,8 +452,8 @@ export default function HomePage() {
                   {/* Subtle Light Motion Trail Behind Cards Moving Left */}
                   {relPos < 0.3 && relPos > -1.5 && (
                     <div
-                      className="absolute -right-12 top-1/2 -translate-y-1/2 w-48 h-3/4 bg-gradient-to-r from-amber-500/20 via-amber-400/5 to-transparent blur-2xl rounded-full pointer-events-none transition-opacity duration-300"
-                      style={{ opacity: Math.max(0, Math.min(0.25, (0.3 - relPos) * 0.3)) }}
+                      className="absolute -right-10 top-1/2 -translate-y-1/2 w-40 h-3/4 bg-gradient-to-r from-amber-500/15 via-amber-400/5 to-transparent blur-2xl rounded-full pointer-events-none transition-opacity duration-300"
+                      style={{ opacity: Math.max(0, Math.min(0.2, (0.3 - relPos) * 0.25)) }}
                     />
                   )}
 
@@ -521,7 +513,7 @@ export default function HomePage() {
           </div>
 
           {/* Section Card Dots Indicator */}
-          <div className="flex justify-center items-center gap-3 relative z-40 pb-2 shrink-0">
+          <div className="flex justify-center items-center gap-3 relative z-30 pb-2 shrink-0">
             {SOLUTIONS_STORIES.map((_, idx) => (
               <button
                 key={idx}
