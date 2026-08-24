@@ -1,77 +1,109 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PublicNavbar } from '@/components/public/navbar';
 import { PublicFooter } from '@/components/public/footer';
 import { QuoteModal } from '@/components/public/quote-modal';
 import { Button } from '@/components/ui/button';
-import { Sparkles, Layers, ChevronRight, ChevronLeft, ArrowRight, ShieldCheck } from 'lucide-react';
+import {
+  Sparkles,
+  Sun,
+  Zap,
+  Cpu,
+  Activity,
+  ShieldCheck,
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+} from 'lucide-react';
 
-// 6 Concise Photovoltaic Module Layers
-const MODULE_LAYERS = [
+// 5 Stages of the Solar Power Journey, each with custom exploded 3D layers
+const STAGES_DATA = [
   {
-    id: 'frame',
+    id: 'panel',
     code: '01',
-    name: 'Frame',
-    fullName: '01 — Anodized Aluminum Frame',
-    desc: 'Provides structural strength and protects the entire module assembly against high wind and snow loads.',
-    color: '#94A3B8',
-    zBase: 120,
+    title: 'SOLAR PANEL',
+    subtitle: 'Photons → DC Electricity',
+    shortDesc: 'Captures sunlight photons and converts them into Direct Current (DC) electricity.',
+    icon: Sun,
+    layers: [
+      { id: 'frame', name: '01 — Frame', desc: 'Anodized aluminum structural frame protecting module edges.' },
+      { id: 'glass', name: '02 — Tempered Glass', desc: 'Anti-reflective glass allowing 95%+ solar transmission.' },
+      { id: 'eva1', name: '03 — Encapsulant EVA', desc: 'Ethylene-vinyl acetate layer cushioning PV cells.' },
+      { id: 'cells', name: '04 — Solar Cells', desc: 'Monocrystalline N-Type TOPCon silicon cell matrix.' },
+      { id: 'eva2', name: '05 — Rear EVA Sheet', desc: 'Moisture-barrier rear encapsulation layer.' },
+      { id: 'backsheet', name: '06 — Backsheet & J-Box', desc: 'Protective insulating sheet with IP68 bypass diode box.' },
+    ],
   },
   {
-    id: 'glass',
+    id: 'string',
     code: '02',
-    name: 'Glass',
-    fullName: '02 — Anti-Reflective Tempered Glass',
-    desc: 'Protects the photovoltaic cells while allowing maximum sunlight transmission with minimal reflection.',
-    color: '#38BDF8',
-    zBase: 75,
+    title: 'STRING / DC COLLECTION',
+    subtitle: 'Series Voltage Stacking',
+    shortDesc: 'Multiple solar modules connected in series to build high-voltage DC power for collection.',
+    icon: Zap,
+    layers: [
+      { id: 'modules', name: '01 — PV Module Chain', desc: 'Series string arrangement stacking voltage to 1500V DC.' },
+      { id: 'mc4', name: '02 — MC4 Connectors', desc: 'Weatherproof locking DC connectors minimizing resistance.' },
+      { id: 'cables', name: '03 — Solar DC Cables', desc: 'XLPO dual-insulated UV-resistant high-voltage copper cabling.' },
+      { id: 'combiner', name: '04 — DC Combiner Box', desc: 'IP65 enclosure combining strings with 30A gPV surge protection.' },
+    ],
   },
   {
-    id: 'eva-top',
+    id: 'inverter',
     code: '03',
-    name: 'EVA Film',
-    fullName: '03 — Encapsulant EVA Film',
-    desc: 'Encapsulates and cushions the fragile photovoltaic cells against moisture and mechanical shock.',
-    color: '#F59E0B',
-    zBase: 30,
+    title: 'INVERTER STATION',
+    subtitle: 'DC → 3-Phase AC Inversion',
+    shortDesc: 'Converts solar DC electricity into grid-ready 3-phase AC power with high efficiency.',
+    icon: Cpu,
+    layers: [
+      { id: 'cabinet', name: '01 — Weatherproof Cabinet', desc: 'Heavy-gauge NEMA 4X steel enclosure with forced-air cooling.' },
+      { id: 'mppt', name: '02 — MPPT Controllers', desc: '12 independent MPPT trackers optimizing peak solar yield.' },
+      { id: 'power', name: '03 — Power Switching Stage', desc: 'High-frequency Silicon Carbide IGBT inversion bridge.' },
+      { id: 'acfilter', name: '04 — AC Filter & Sync', desc: 'Sinusoidal filter outputting clean 800V 3-phase AC power.' },
+    ],
   },
   {
-    id: 'cells',
+    id: 'transformer',
     code: '04',
-    name: 'Solar Cells',
-    fullName: '04 — Photovoltaic Solar Cells',
-    desc: 'Convert incident sunlight photons directly into electrical energy via the semiconductor photoelectric effect.',
-    color: '#F59E0B',
-    zBase: -15,
+    title: 'STEP-UP TRANSFORMER',
+    subtitle: 'Voltage Step-Up (800V → 33kV)',
+    shortDesc: 'Raises AC voltage to 11kV or 33kV for efficient long-distance grid transmission.',
+    icon: Activity,
+    layers: [
+      { id: 'tank', name: '01 — Transformer Tank', desc: 'ONAN oil-immersed steel tank with radiator cooling fins.' },
+      { id: 'bushings', name: '02 — HV Bushings', desc: '33kV ceramic high-voltage insulation bushings.' },
+      { id: 'windings', name: '03 — Copper Coils', desc: 'Primary & secondary electrolytic copper isolation windings.' },
+      { id: 'core', name: '04 — Magnetic Core', desc: 'Low-loss grain-oriented silicon steel magnetic core.' },
+    ],
   },
   {
-    id: 'backsheet',
+    id: 'grid',
     code: '05',
-    name: 'Backsheet',
-    fullName: '05 — Protective Backsheet',
-    desc: 'Provides electrical insulation and protects the rear of the module from UV radiation and moisture.',
-    color: '#64748B',
-    zBase: -60,
-  },
-  {
-    id: 'jbox',
-    code: '06',
-    name: 'Junction Box',
-    fullName: '06 — IP68 Junction Box',
-    desc: 'Connects the module electrically and provides statutory bypass diode protection against shading.',
-    color: '#10B981',
-    zBase: -105,
+    title: 'UTILITY GRID TIE-IN',
+    subtitle: 'Grid Export & Net Metering',
+    shortDesc: 'Synchronizes clean electricity with the regional grid for utility distribution and net metering.',
+    icon: ShieldCheck,
+    layers: [
+      { id: 'gantry', name: '01 — Transmission Gantry', desc: '33kV overhead grid interconnection gantry tower.' },
+      { id: 'meter', name: '02 — Net Metering System', desc: '0.2s class bi-directional ABT tariff meter.' },
+      { id: 'switchgear', name: '03 — Vacuum Breakers', desc: 'HT vacuum circuit breaker switchgear panel.' },
+      { id: 'relays', name: '04 — Protection Relays', desc: 'Numerical anti-islanding & statutory grid protection relays.' },
+    ],
   },
 ];
 
-export default function InsideSolarModulePage() {
+export default function InsideSolarPlantExperience() {
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
-  const [activeIdx, setActiveIdx] = useState<number>(3); // Default to 04 Solar Cells
-  const [isExploded, setIsExploded] = useState<boolean>(true);
+  const [stageIdx, setStageIdx] = useState<number>(0);
+  const [layerIdx, setLayerIdx] = useState<number>(0);
+  const [scrollProgress, setScrollProgress] = useState<number>(0);
   const [isReducedMotion, setIsReducedMotion] = useState<boolean>(false);
+  
+  const outerRef = useRef<HTMLDivElement>(null);
 
-  const currentLayer = MODULE_LAYERS[activeIdx];
+  const currentStage = STAGES_DATA[stageIdx];
+  const currentLayer = currentStage.layers[layerIdx] || currentStage.layers[0];
 
   // Check prefers-reduced-motion
   useEffect(() => {
@@ -84,12 +116,47 @@ export default function InsideSolarModulePage() {
     }
   }, []);
 
-  const handleNext = () => {
-    setActiveIdx((prev) => (prev + 1) % MODULE_LAYERS.length);
+  // Handle Scroll to update active stage
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!outerRef.current) return;
+      const rect = outerRef.current.getBoundingClientRect();
+      const totalScroll = outerRef.current.offsetHeight - window.innerHeight;
+      if (totalScroll <= 0) return;
+
+      const currentScroll = Math.max(0, -rect.top);
+      const progress = Math.min(1, Math.max(0, currentScroll / totalScroll));
+      setScrollProgress(progress);
+
+      const computedStage = Math.min(4, Math.floor(progress * 5));
+      if (computedStage !== stageIdx) {
+        setStageIdx(computedStage);
+        setLayerIdx(0); // Reset layer focus on stage transition
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [stageIdx]);
+
+  const scrollToStage = (targetIdx: number) => {
+    if (outerRef.current) {
+      const totalDist = outerRef.current.offsetHeight - window.innerHeight;
+      const targetScrollTop = outerRef.current.offsetTop + (targetIdx / 4) * totalDist;
+      window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    }
+    setStageIdx(targetIdx);
+    setLayerIdx(0);
   };
 
-  const handlePrev = () => {
-    setActiveIdx((prev) => (prev - 1 + MODULE_LAYERS.length) % MODULE_LAYERS.length);
+  const handleNextStage = () => {
+    const next = Math.min(4, stageIdx + 1);
+    scrollToStage(next);
+  };
+
+  const handlePrevStage = () => {
+    const prev = Math.max(0, stageIdx - 1);
+    scrollToStage(prev);
   };
 
   return (
@@ -97,262 +164,218 @@ export default function InsideSolarModulePage() {
       {/* Navigation Header */}
       <PublicNavbar onOpenQuoteModal={() => setIsQuoteOpen(true)} />
 
-      {/* Main Container */}
-      <main className="flex-1 w-full flex flex-col justify-between py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-10">
+      {/* Main Outer Scroll Container (400vh for smooth scroll-driven journey through 5 stages) */}
+      <div ref={outerRef} className="relative w-full h-[400vh]">
         
-        {/* Page Title & Concise Introduction */}
-        <div className="text-center space-y-3 pt-2 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest animate-fade-in">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>INSIDE A SOLAR MODULE</span>
-          </div>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-none drop-shadow-md">
-            Every layer has a purpose.
-          </h1>
-
-          <p className="text-slate-300 text-sm sm:text-base lg:text-lg font-light max-w-2xl mx-auto leading-relaxed">
-            Explore the technology behind the panels that power modern solar systems.
-          </p>
-
-          <div className="pt-1 flex items-center justify-center gap-3">
-            <span className="text-[11px] font-mono font-medium text-slate-400 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800">
-              Explore each layer below
-            </span>
-          </div>
-        </div>
-
-        {/* 3D Exploded Technical Visual Assembly Stage */}
-        <div className="relative w-full min-h-[380px] sm:min-h-[460px] lg:min-h-[500px] flex items-center justify-center my-4 py-8">
+        {/* Sticky Viewport Container (100vh full viewport) */}
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-20 pb-6 bg-[#0B0F17] relative">
           
-          {/* Subtle Ambient Background Radial Solar Light */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-            <div className="w-[500px] h-[350px] bg-gradient-to-r from-amber-500/15 via-sky-500/10 to-amber-500/15 blur-3xl rounded-full opacity-70 animate-pulse" />
+          {/* Subtle Ambient Background Solar Glow */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/80 to-[#0B0F17]" />
+            <div
+              className="absolute left-1/2 top-1/2 w-[600px] h-[400px] rounded-full bg-gradient-to-r from-amber-500/15 via-sky-600/10 to-amber-400/15 blur-3xl transition-transform duration-700 ease-out opacity-80"
+              style={{
+                transform: `translate(-50%, -50%) translateX(${(2 - stageIdx) * 15}vw)`,
+              }}
+            />
           </div>
 
-          {/* 3D Isometric Perspective Container */}
-          <div
-            className={`relative w-[300px] sm:w-[420px] lg:w-[480px] h-[200px] sm:h-[260px] lg:h-[300px] transition-transform duration-700 ease-out z-10 ${
-              isReducedMotion ? '' : 'animate-[float_6s_ease-in-out_infinite]'
-            }`}
-            style={{
-              perspective: '1200px',
-              perspectiveOrigin: '50% 40%',
-            }}
-          >
+          {/* 1. Page Header Title & Subtitle */}
+          <div className="max-w-4xl mx-auto px-4 text-center space-y-1.5 relative z-30 shrink-0">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[11px] font-mono font-bold uppercase tracking-widest">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>INSIDE A SOLAR PLANT</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-none">
+              See how sunlight becomes power.
+            </h1>
+
+            <p className="text-slate-400 text-xs sm:text-sm font-light max-w-xl mx-auto">
+              Explore the 5-stage engineering journey from photovoltaic generation to grid energy.
+            </p>
+          </div>
+
+          {/* 2. Interactive Exploded 3D Stage Visual Assembly Stage */}
+          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto z-20">
+            
+            {/* 3D Isometric Perspective Viewport */}
             <div
-              className="w-full h-full relative transition-transform duration-700 ease-out"
+              className={`relative w-[280px] sm:w-[380px] lg:w-[440px] h-[180px] sm:h-[240px] lg:h-[270px] transition-all duration-700 ease-out ${
+                isReducedMotion ? '' : 'animate-[float_6s_ease-in-out_infinite]'
+              }`}
               style={{
-                transformStyle: 'preserve-3d',
-                transform: 'rotateX(52deg) rotateZ(-28deg)',
+                perspective: '1200px',
+                perspectiveOrigin: '50% 40%',
               }}
             >
-              {/* Render 6 Exploded Module Layers */}
-              {MODULE_LAYERS.map((layer, idx) => {
-                const isActive = idx === activeIdx;
+              <div
+                className="w-full h-full relative transition-transform duration-700 ease-out"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'rotateX(52deg) rotateZ(-28deg)',
+                }}
+              >
+                {/* Render Exploded Layers for Current Stage */}
+                {currentStage.layers.map((layer, idx) => {
+                  const isActive = idx === layerIdx;
+                  const totalLayers = currentStage.layers.length;
 
-                // Explosion GAP math: when exploded, layers expand vertically along Z-axis
-                const explosionSpread = isExploded ? 55 : 12;
-                const zOffset = (2.5 - idx) * explosionSpread + (isActive ? 35 : 0);
-                const opacity = isActive ? 1.0 : Math.abs(idx - activeIdx) === 1 ? 0.75 : 0.45;
-                const scale = isActive ? 1.04 : 1.0;
+                  // Explosion Gap Math along Z-axis
+                  const explosionSpread = 50;
+                  const zOffset = ((totalLayers - 1) / 2 - idx) * explosionSpread + (isActive ? 35 : 0);
+                  const opacity = isActive ? 1.0 : Math.abs(idx - layerIdx) === 1 ? 0.75 : 0.45;
+                  const scale = isActive ? 1.05 : 1.0;
 
-                return (
-                  <div
-                    key={layer.id}
-                    onClick={() => setActiveIdx(idx)}
-                    className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out group"
-                    style={{
-                      transform: `translateZ(${zOffset}px) scale(${scale})`,
-                      opacity,
-                      willChange: 'transform, opacity',
-                    }}
-                  >
-                    {/* Layer Render Surfaces */}
-                    {layer.id === 'frame' && (
-                      <div className={`w-full h-full rounded-2xl border-4 transition-all duration-300 shadow-2xl ${
-                        isActive ? 'border-amber-400 bg-slate-800/40 ring-4 ring-amber-400/20 shadow-amber-500/20' : 'border-slate-600 bg-slate-900/20 group-hover:border-slate-400'
-                      }`} />
-                    )}
-
-                    {layer.id === 'glass' && (
-                      <div className={`w-full h-full rounded-2xl border transition-all duration-300 backdrop-blur-md shadow-2xl relative overflow-hidden ${
-                        isActive ? 'border-sky-300 bg-gradient-to-tr from-sky-400/30 via-white/40 to-sky-300/10 ring-4 ring-sky-400/20' : 'border-sky-400/30 bg-sky-500/10 group-hover:border-sky-300/60'
-                      }`}>
-                        {/* Glass Reflection Streak */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                      </div>
-                    )}
-
-                    {layer.id === 'eva-top' && (
-                      <div className={`w-full h-full rounded-2xl border transition-all duration-300 backdrop-blur-sm shadow-xl ${
-                        isActive ? 'border-amber-400/80 bg-amber-400/20 ring-4 ring-amber-400/20' : 'border-amber-500/20 bg-amber-500/5 group-hover:border-amber-400/40'
-                      }`} />
-                    )}
-
-                    {layer.id === 'cells' && (
-                      <div className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-2xl p-2 flex flex-col justify-between ${
-                        isActive ? 'border-amber-400 bg-[#0C1425] ring-4 ring-amber-400/30 shadow-amber-500/30' : 'border-sky-500/40 bg-[#080D18] group-hover:border-amber-400/60'
-                      }`}>
-                        {/* Monocrystalline PV Cell Grid Matrix (6x6 Cells) */}
-                        <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-1.5 p-1">
-                          {Array.from({ length: 24 }).map((_, cIdx) => (
-                            <div
-                              key={cIdx}
-                              className={`rounded-md border transition-colors relative overflow-hidden ${
-                                isActive ? 'bg-sky-950 border-amber-400/60 shadow-inner' : 'bg-slate-900 border-sky-900/50'
-                              }`}
-                            >
-                              {/* Silver Busbar Wire Lines */}
-                              <div className="absolute inset-y-0 left-1/2 w-[1px] bg-slate-400/40" />
-                              <div className="absolute inset-y-0 left-1/3 w-[1px] bg-slate-400/40" />
-                              <div className="absolute inset-y-0 left-2/3 w-[1px] bg-slate-400/40" />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {layer.id === 'eva-bottom' && (
-                      <div className={`w-full h-full rounded-2xl border transition-all duration-300 backdrop-blur-sm shadow-xl ${
-                        isActive ? 'border-amber-400/80 bg-amber-400/20 ring-4 ring-amber-400/20' : 'border-amber-500/20 bg-amber-500/5 group-hover:border-amber-400/40'
-                      }`} />
-                    )}
-
-                    {layer.id === 'backsheet' && (
-                      <div className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-xl ${
-                        isActive ? 'border-slate-300 bg-slate-700/80 ring-4 ring-white/20' : 'border-slate-700 bg-slate-900/80 group-hover:border-slate-500'
-                      }`} />
-                    )}
-
-                    {layer.id === 'jbox' && (
-                      <div className="w-full h-full relative">
-                        <div className={`absolute bottom-2 right-4 w-16 h-12 rounded-xl border transition-all duration-300 shadow-2xl flex items-center justify-center ${
-                          isActive ? 'border-emerald-400 bg-emerald-950 ring-4 ring-emerald-400/30' : 'border-emerald-500/40 bg-slate-900 group-hover:border-emerald-400/60'
-                        }`}>
-                          <ShieldCheck className={`w-5 h-5 ${isActive ? 'text-emerald-400' : 'text-slate-400'}`} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Floating Side Tag Label for Layer */}
+                  return (
                     <div
-                      className={`absolute -right-28 sm:-right-36 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[10px] sm:text-xs font-mono font-bold transition-all duration-300 whitespace-nowrap shadow-lg ${
-                        isActive
-                          ? 'bg-amber-500 text-slate-950 border-amber-300 font-extrabold scale-110'
-                          : 'bg-slate-950/90 text-slate-400 border-slate-800 group-hover:text-white'
-                      }`}
+                      key={layer.id}
+                      onClick={() => setLayerIdx(idx)}
+                      className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out group"
+                      style={{
+                        transform: `translateZ(${zOffset}px) scale(${scale})`,
+                        opacity,
+                        willChange: 'transform, opacity',
+                      }}
                     >
-                      {layer.code} — {layer.name}
+                      {/* Layer Surface Visual Graphic */}
+                      <div
+                        className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-2xl relative overflow-hidden backdrop-blur-md ${
+                          isActive
+                            ? 'border-amber-400 bg-[#16223B]/90 ring-4 ring-amber-400/30 shadow-amber-500/25'
+                            : 'border-slate-700/80 bg-[#0F172A]/70 group-hover:border-slate-400'
+                        }`}
+                      >
+                        {/* Internal Schematic Texture Lines */}
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.1)_0%,transparent_70%)]" />
+                        
+                        {/* Unique Graphic Features per Stage */}
+                        {stageIdx === 0 && layer.id === 'cells' && (
+                          <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-1 p-2">
+                            {Array.from({ length: 24 }).map((_, c) => (
+                              <div key={c} className="bg-sky-950 border border-amber-400/50 rounded-sm" />
+                            ))}
+                          </div>
+                        )}
+
+                        {stageIdx === 1 && (
+                          <div className="w-full h-full flex items-center justify-around px-4">
+                            <div className="w-8 h-8 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-mono text-amber-400 font-bold">DC</div>
+                            <div className="h-0.5 flex-1 bg-gradient-to-r from-amber-500 to-amber-300 mx-2" />
+                            <div className="w-8 h-8 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-mono text-amber-400 font-bold">1500V</div>
+                          </div>
+                        )}
+
+                        {stageIdx === 2 && (
+                          <div className="w-full h-full flex flex-col justify-between p-3">
+                            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                              <span>DC INPUT</span>
+                              <span className="text-amber-400 font-bold">MPPT ACTIVE</span>
+                              <span>AC OUTPUT</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-amber-400 w-3/4 rounded-full animate-pulse" />
+                            </div>
+                          </div>
+                        )}
+
+                        {stageIdx === 3 && (
+                          <div className="w-full h-full flex items-center justify-center gap-6">
+                            <div className="w-12 h-12 rounded-full border-4 border-amber-400/80 flex items-center justify-center text-xs font-bold text-amber-400">800V</div>
+                            <div className="text-amber-400 font-extrabold text-sm">➔➔➔</div>
+                            <div className="w-12 h-12 rounded-full border-4 border-emerald-400/80 flex items-center justify-center text-xs font-bold text-emerald-400">33kV</div>
+                          </div>
+                        )}
+
+                        {stageIdx === 4 && (
+                          <div className="w-full h-full flex items-center justify-between px-6 text-xs font-mono font-bold text-emerald-400">
+                            <span>50.0 Hz SYNC</span>
+                            <span className="text-amber-400 animate-ping">● LIVE EXPORT</span>
+                            <span>NET METER</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Layer Side Label Tag */}
+                      <div
+                        className={`absolute -right-28 sm:-right-36 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[10px] sm:text-xs font-mono font-bold transition-all duration-300 whitespace-nowrap shadow-lg ${
+                          isActive
+                            ? 'bg-amber-500 text-slate-950 border-amber-300 font-extrabold scale-110'
+                            : 'bg-slate-950/90 text-slate-400 border-slate-800 group-hover:text-white'
+                        }`}
+                      >
+                        {layer.name}
+                      </div>
                     </div>
-                  </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Short 1-Sentence Technical Explanation Card */}
+          <div className="max-w-xl mx-auto w-full px-4 relative z-30 shrink-0">
+            <div className="bg-[#131B2E] border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl text-center space-y-2 relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2 text-xs font-mono">
+                <span className="font-bold text-amber-400 uppercase tracking-wider">
+                  {currentStage.code} — {currentStage.title}
+                </span>
+                <span className="text-slate-500">{currentLayer.name}</span>
+              </div>
+
+              <p className="text-slate-200 text-xs sm:text-sm font-light leading-relaxed">
+                {currentLayer.desc}
+              </p>
+
+              {/* Prev / Next Layer Toggles */}
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  onClick={() => setLayerIdx((prev) => Math.max(0, prev - 1))}
+                  disabled={layerIdx === 0}
+                  className="text-[11px] font-mono text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 flex items-center gap-1"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" /> Previous Layer
+                </button>
+
+                <button
+                  onClick={() => setLayerIdx((prev) => Math.min(currentStage.layers.length - 1, prev + 1))}
+                  disabled={layerIdx === currentStage.layers.length - 1}
+                  className="text-[11px] font-mono text-amber-400 hover:text-amber-300 disabled:opacity-30 flex items-center gap-1 font-bold"
+                >
+                  Next Layer <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Continuous 5-Stage Journey Progress Navigation Bar */}
+          <div className="max-w-3xl mx-auto w-full px-4 pt-3 pb-1 relative z-30 shrink-0">
+            <div className="flex items-center justify-between bg-[#131B2E]/90 border border-slate-800 rounded-2xl p-2 shadow-xl">
+              {STAGES_DATA.map((stage, idx) => {
+                const isSelected = idx === stageIdx;
+                const IconComponent = stage.icon;
+                return (
+                  <button
+                    key={stage.id}
+                    onClick={() => scrollToStage(idx)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all duration-300 ${
+                      isSelected
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20 scale-105'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold tracking-tight hidden sm:inline">
+                      {stage.code} {stage.title.split(' ')[0]}
+                    </span>
+                  </button>
                 );
               })}
             </div>
           </div>
         </div>
-
-        {/* Horizontal Component Sequence Navigation Timeline */}
-        <div className="w-full max-w-4xl mx-auto py-2 px-2">
-          <div className="relative flex items-center justify-between">
-            {/* Connecting Timeline Cable */}
-            <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 h-0.5 bg-slate-800 z-0" />
-            
-            {/* Active Progress Line */}
-            <div
-              className="absolute left-4 top-1/2 -translate-y-1/2 h-0.5 bg-gradient-to-r from-amber-500 to-amber-300 z-0 transition-all duration-500 ease-out"
-              style={{ width: `${(activeIdx / (MODULE_LAYERS.length - 1)) * 92}%` }}
-            />
-
-            {MODULE_LAYERS.map((layer, idx) => {
-              const isActive = idx === activeIdx;
-              return (
-                <button
-                  key={layer.id}
-                  onClick={() => setActiveIdx(idx)}
-                  className={`relative z-10 flex flex-col items-center gap-2 group focus:outline-none`}
-                >
-                  <div
-                    className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 flex items-center justify-center text-xs font-mono font-bold transition-all duration-300 ${
-                      isActive
-                        ? 'bg-amber-500 text-slate-950 border-amber-300 ring-4 ring-amber-500/20 scale-110 shadow-lg shadow-amber-500/20'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-amber-400/60 hover:text-white'
-                    }`}
-                  >
-                    {layer.code}
-                  </div>
-                  <span
-                    className={`text-[10px] sm:text-xs font-mono tracking-tight hidden sm:block transition-colors duration-300 ${
-                      isActive ? 'text-amber-400 font-bold' : 'text-slate-500 group-hover:text-slate-300'
-                    }`}
-                  >
-                    {layer.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Short Concise Explanation Box (1-2 sentences) */}
-        <div className="max-w-2xl mx-auto w-full bg-[#131B2E] border border-slate-800/90 rounded-2xl p-6 shadow-2xl text-center space-y-3 relative overflow-hidden">
-          {/* Subtle Glow Overlay */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-2xl pointer-events-none rounded-full" />
-
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-            <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
-              {currentLayer.fullName}
-            </span>
-            <span className="text-xs font-mono text-slate-500">Photovoltaic Architecture</span>
-          </div>
-
-          <p className="text-slate-200 text-sm sm:text-base font-light leading-relaxed animate-fade-in key={currentLayer.id}">
-            {currentLayer.desc}
-          </p>
-
-          {/* Quick Prev / Next Controls */}
-          <div className="flex items-center justify-between pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handlePrev}
-              className="border-slate-800 bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800 text-xs px-3"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" /> Previous Layer
-            </Button>
-
-            <Button
-              variant="accent"
-              size="sm"
-              onClick={handleNext}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-4 border-0 shadow-lg shadow-amber-500/10"
-            >
-              Next Layer <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-
-        {/* EPC Engineering Quality Callout Statement */}
-        <div className="max-w-4xl mx-auto w-full bg-[#070A10] border border-slate-800/80 rounded-2xl p-6 text-center space-y-3 shadow-xl">
-          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-            Tier-1 Monocrystalline Engineering Standards
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-400 font-light leading-relaxed max-w-2xl mx-auto">
-            At <strong className="text-slate-200 font-semibold">nitish solar</strong>, we deploy premium double-glass bifacial modules tested for 30-year linear performance guarantees, IEC 61215 certification, and maximum energy yield.
-          </p>
-          <div className="pt-2">
-            <Button
-              variant="accent"
-              size="sm"
-              onClick={() => setIsQuoteOpen(true)}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-2 rounded-xl text-xs border-0 shadow-lg flex items-center gap-2 mx-auto"
-              icon={<ArrowRight className="w-4 h-4" />}
-            >
-              Request Custom System Proposal
-            </Button>
-          </div>
-        </div>
-      </main>
+      </div>
 
       {/* Footer & Quote Modal */}
       <PublicFooter />
