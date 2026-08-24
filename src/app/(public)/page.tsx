@@ -44,7 +44,7 @@ const PLANT_STAGES = [
     code: '01',
     title: 'SOLAR PANEL',
     subtitle: 'Photons → DC Electricity',
-    shortDesc: 'Captures sunlight photons and converts them into Direct Current (DC) electricity.',
+    shortDesc: 'Captures sunlight and converts it into DC electricity.',
     icon: Sun,
     layers: [
       { id: 'frame', name: '01 — Frame', desc: 'Anodized aluminum structural frame protecting module edges.' },
@@ -58,9 +58,9 @@ const PLANT_STAGES = [
   {
     id: 'string',
     code: '02',
-    title: 'STRING / DC COLLECTION',
-    subtitle: 'Series Voltage Stacking',
-    shortDesc: 'Multiple solar modules connected in series to build high-voltage DC power.',
+    title: 'DC COLLECTION',
+    subtitle: 'Series Module Convergence',
+    shortDesc: 'Power from multiple panels is combined into usable DC electricity.',
     icon: Zap,
     layers: [
       { id: 'modules', name: '01 — PV Module Chain', desc: 'Series string arrangement stacking voltage to 1500V DC.' },
@@ -72,9 +72,9 @@ const PLANT_STAGES = [
   {
     id: 'inverter',
     code: '03',
-    title: 'INVERTER STATION',
-    subtitle: 'DC → 3-Phase AC Inversion',
-    shortDesc: 'Converts solar DC electricity into grid-ready 3-phase AC power.',
+    title: 'INVERTER',
+    subtitle: 'DC → AC Waveform Conversion',
+    shortDesc: 'Converts DC electricity into grid-ready AC power.',
     icon: Cpu,
     layers: [
       { id: 'cabinet', name: '01 — Weatherproof Cabinet', desc: 'Heavy-gauge steel enclosure with forced-air cooling.' },
@@ -86,9 +86,9 @@ const PLANT_STAGES = [
   {
     id: 'transformer',
     code: '04',
-    title: 'STEP-UP TRANSFORMER',
+    title: 'TRANSFORMER',
     subtitle: 'Voltage Step-Up (800V → 33kV)',
-    shortDesc: 'Raises AC voltage to 11kV or 33kV for efficient long-distance grid transmission.',
+    shortDesc: 'Raises voltage for efficient long-distance transmission.',
     icon: Activity,
     layers: [
       { id: 'tank', name: '01 — Transformer Tank', desc: 'ONAN oil-immersed steel tank with radiator cooling fins.' },
@@ -100,9 +100,9 @@ const PLANT_STAGES = [
   {
     id: 'grid',
     code: '05',
-    title: 'UTILITY GRID TIE-IN',
-    subtitle: 'Grid Export & Net Metering',
-    shortDesc: 'Synchronizes clean electricity with the regional grid for utility distribution and net metering.',
+    title: 'GRID',
+    subtitle: 'Live Export & Net Metering',
+    shortDesc: 'Protected and synchronized power enters the electrical network.',
     icon: ShieldCheck,
     layers: [
       { id: 'gantry', name: '01 — Transmission Gantry', desc: '33kV overhead grid interconnection gantry tower.' },
