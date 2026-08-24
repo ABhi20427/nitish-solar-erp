@@ -23,6 +23,12 @@ import {
   ArrowUpRight,
   Shield,
   Activity,
+  Sun,
+  Cpu,
+  ShieldCheck,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
 } from 'lucide-react';
 
 const TRUST_INDICATORS = [
@@ -30,6 +36,81 @@ const TRUST_INDICATORS = [
   { val: '450+ MWp', label: 'Installed Solar Capacity', desc: 'High-power utility and commercial grid-tie solar systems.' },
   { val: '3,800+', label: 'Satisfied Clients', desc: 'Homeowners, corporate enterprises, and industrial facilities.' },
   { val: '12+ Years', label: 'Engineering Experience', desc: 'Pioneering solar EPC excellence and DISCOM net metering.' },
+];
+
+const PLANT_STAGES = [
+  {
+    id: 'panel',
+    code: '01',
+    title: 'SOLAR PANEL',
+    subtitle: 'Photons → DC Electricity',
+    shortDesc: 'Captures sunlight photons and converts them into Direct Current (DC) electricity.',
+    icon: Sun,
+    layers: [
+      { id: 'frame', name: '01 — Frame', desc: 'Anodized aluminum structural frame protecting module edges.' },
+      { id: 'glass', name: '02 — Tempered Glass', desc: 'Anti-reflective glass allowing 95%+ solar transmission.' },
+      { id: 'eva1', name: '03 — Encapsulant EVA', desc: 'Ethylene-vinyl acetate layer cushioning PV cells.' },
+      { id: 'cells', name: '04 — Solar Cells', desc: 'Monocrystalline N-Type TOPCon silicon cell matrix.' },
+      { id: 'eva2', name: '05 — Rear EVA Sheet', desc: 'Moisture-barrier rear encapsulation layer.' },
+      { id: 'backsheet', name: '06 — Backsheet & J-Box', desc: 'Protective insulating sheet with IP68 bypass diode box.' },
+    ],
+  },
+  {
+    id: 'string',
+    code: '02',
+    title: 'STRING / DC COLLECTION',
+    subtitle: 'Series Voltage Stacking',
+    shortDesc: 'Multiple solar modules connected in series to build high-voltage DC power.',
+    icon: Zap,
+    layers: [
+      { id: 'modules', name: '01 — PV Module Chain', desc: 'Series string arrangement stacking voltage to 1500V DC.' },
+      { id: 'mc4', name: '02 — MC4 Connectors', desc: 'Weatherproof locking DC connectors minimizing resistance.' },
+      { id: 'cables', name: '03 — Solar DC Cables', desc: 'XLPO dual-insulated UV-resistant high-voltage copper cabling.' },
+      { id: 'combiner', name: '04 — DC Combiner Box', desc: 'IP65 enclosure combining strings with 30A gPV surge protection.' },
+    ],
+  },
+  {
+    id: 'inverter',
+    code: '03',
+    title: 'INVERTER STATION',
+    subtitle: 'DC → 3-Phase AC Inversion',
+    shortDesc: 'Converts solar DC electricity into grid-ready 3-phase AC power.',
+    icon: Cpu,
+    layers: [
+      { id: 'cabinet', name: '01 — Weatherproof Cabinet', desc: 'Heavy-gauge steel enclosure with forced-air cooling.' },
+      { id: 'mppt', name: '02 — MPPT Controllers', desc: '12 independent MPPT trackers optimizing peak solar yield.' },
+      { id: 'power', name: '03 — Power Switching Stage', desc: 'High-frequency Silicon Carbide IGBT inversion bridge.' },
+      { id: 'acfilter', name: '04 — AC Filter & Sync', desc: 'Sinusoidal filter outputting clean 800V 3-phase AC power.' },
+    ],
+  },
+  {
+    id: 'transformer',
+    code: '04',
+    title: 'STEP-UP TRANSFORMER',
+    subtitle: 'Voltage Step-Up (800V → 33kV)',
+    shortDesc: 'Raises AC voltage to 11kV or 33kV for efficient long-distance grid transmission.',
+    icon: Activity,
+    layers: [
+      { id: 'tank', name: '01 — Transformer Tank', desc: 'ONAN oil-immersed steel tank with radiator cooling fins.' },
+      { id: 'bushings', name: '02 — HV Bushings', desc: '33kV ceramic high-voltage insulation bushings.' },
+      { id: 'windings', name: '03 — Copper Coils', desc: 'Primary & secondary electrolytic copper isolation windings.' },
+      { id: 'core', name: '04 — Magnetic Core', desc: 'Low-loss grain-oriented silicon steel magnetic core.' },
+    ],
+  },
+  {
+    id: 'grid',
+    code: '05',
+    title: 'UTILITY GRID TIE-IN',
+    subtitle: 'Grid Export & Net Metering',
+    shortDesc: 'Synchronizes clean electricity with the regional grid for utility distribution and net metering.',
+    icon: ShieldCheck,
+    layers: [
+      { id: 'gantry', name: '01 — Transmission Gantry', desc: '33kV overhead grid interconnection gantry tower.' },
+      { id: 'meter', name: '02 — Net Metering System', desc: '0.2s class bi-directional ABT tariff meter.' },
+      { id: 'switchgear', name: '03 — Vacuum Breakers', desc: 'HT vacuum circuit breaker switchgear panel.' },
+      { id: 'relays', name: '04 — Protection Relays', desc: 'Numerical anti-islanding & statutory grid protection relays.' },
+    ],
+  },
 ];
 
 // Deterministic Number Formatter to guarantee 100% hydration match between Node SSR and browser client
@@ -47,12 +128,13 @@ export default function HomePage() {
   // Deterministic Initial Scroll Step States
   const [solutionsStep, setSolutionsStep] = useState(0);
   const [solutionsProgress, setSolutionsProgress] = useState(0);
-  const [projectsStep, setProjectsStep] = useState(0);
+  const [plantStageIdx, setPlantStageIdx] = useState(0);
+  const [plantLayerIdx, setPlantLayerIdx] = useState(0);
   const [impactStep, setImpactStep] = useState(0);
 
   // Section Refs
   const solutionsRef = useRef<HTMLDivElement>(null);
-  const projectsRef = useRef<HTMLDivElement>(null);
+  const plantSectionRef = useRef<HTMLDivElement>(null);
   const impactRef = useRef<HTMLDivElement>(null);
 
   // Quote Form State
@@ -94,7 +176,24 @@ export default function HomePage() {
             }
           }
 
-          // 2. Impact Scroll Progress
+          // 2. Inside A Solar Plant Scroll Progress
+          if (plantSectionRef.current) {
+            const rect = plantSectionRef.current.getBoundingClientRect();
+            const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
+            if (totalDist > 0 && rect.top <= 0 && rect.bottom >= 0) {
+              const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
+              const computedStage = Math.min(4, Math.floor(progress * 5));
+              setPlantStageIdx((prev) => {
+                if (prev !== computedStage) {
+                  setPlantLayerIdx(0);
+                  return computedStage;
+                }
+                return prev;
+              });
+            }
+          }
+
+          // 3. Impact Scroll Progress
           if (impactRef.current) {
             const rect = impactRef.current.getBoundingClientRect();
             const totalDist = impactRef.current.offsetHeight - window.innerHeight;
@@ -612,122 +711,209 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. SECTION 4 — WHY NITISH SOLAR (CORPORATE STATEMENT) */}
-      <section className="py-20 bg-[#131B2E] text-slate-100 border-t border-slate-800/80 relative overflow-hidden snap-natural">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 space-y-12">
-          <div className="text-center max-w-3xl mx-auto space-y-4">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">Corporate Engineering Standard</span>
-            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-              Engineered for Maximum Yield. Built to Last Generations.
+      {/* 4. SECTION 4 — INSIDE A SOLAR PLANT (IMMERSIVE HOMEPAGE 5-STAGE 3D SCROLL JOURNEY) */}
+      <section ref={plantSectionRef} className="hidden md:block relative w-full h-[320vh] bg-[#0B0F17] snap-major-scene">
+        {/* Sticky Viewport Container (100vh viewport) */}
+        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
+          
+          {/* Soft Ambient Background Energy Glow */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/80 to-[#0B0F17]" />
+            <div
+              className="absolute left-1/2 top-1/2 w-[650px] h-[420px] rounded-full bg-gradient-to-r from-amber-500/15 via-sky-600/10 to-amber-400/15 blur-3xl transition-transform duration-700 ease-out opacity-80"
+              style={{
+                transform: `translate(-50%, -50%) translateX(${(2 - plantStageIdx) * 16}vw)`,
+              }}
+            />
+          </div>
+
+          {/* Section Header */}
+          <div className="max-w-4xl mx-auto px-4 text-center space-y-1.5 relative z-30 shrink-0">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>INSIDE A SOLAR PLANT</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight leading-none">
+              See how sunlight becomes power.
             </h2>
-            <p className="text-slate-300 text-sm sm:text-base font-light">
-              We combine electrical engineering rigor, Tier-1 hardware procurement, and continuous digital telemetry to deliver long-term power security.
+
+            <p className="text-slate-400 text-xs sm:text-sm font-light max-w-xl mx-auto">
+              Explore the 5-stage engineering journey from photovoltaic generation to grid energy.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                title: 'Turnkey Engineering',
-                desc: 'Custom 3D shadow analysis, string inverter sizing, and structural tilt calculations tailored to local wind loads.',
-                icon: Shield,
-              },
-              {
-                title: 'Tier-1 Components',
-                desc: 'Strict procurement of certified Mono PERC and N-type TOPCon solar panels with 25-30 year linear warranties.',
-                icon: Award,
-              },
-              {
-                title: 'Grid Synchronized',
-                desc: 'Seamless DISCOM utility net-metering setup, bi-directional meter installation, and statutory safety approvals.',
-                icon: Activity,
-              },
-              {
-                title: 'Lifetime Telemetry',
-                desc: '24/7 cloud IoT generation tracking, automated alert diagnostics, and preventive maintenance support.',
-                icon: Zap,
-              },
-            ].map((pillar) => {
-              const Icon = pillar.icon;
-              return (
-                <div key={pillar.title} className="bg-[#0F172A] p-6 sm:p-8 rounded-2xl border border-slate-800/80 space-y-4 hover:border-amber-400/40 transition-all duration-300 shadow-xl">
-                  <div className="w-12 h-12 rounded-xl bg-slate-900 text-amber-400 flex items-center justify-center border border-slate-800 shadow-sm">
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white">{pillar.title}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed font-light">{pillar.desc}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. SECTION 5 — PROJECTS (COMPACT 135VH PINNED CINEMATIC SCROLL) */}
-      <section ref={projectsRef} className="relative h-[135vh] bg-[#0B0F17]">
-        <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center">
-          {/* Background Images Crossfade */}
-          <div className="absolute inset-0 z-0">
-            {PROJECT_STORIES.map((proj, idx) => (
+          {/* 3D Exploded Visual Stage */}
+          <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-auto z-20">
+            <div
+              className="relative w-[280px] sm:w-[380px] lg:w-[440px] h-[180px] sm:h-[240px] lg:h-[270px] transition-all duration-700 ease-out animate-[float_6s_ease-in-out_infinite]"
+              style={{
+                perspective: '1200px',
+                perspectiveOrigin: '50% 40%',
+              }}
+            >
               <div
-                key={proj.title}
-                className={`absolute inset-0 transition-opacity duration-700 ease-out ${projectsStep === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                  }`}
+                className="w-full h-full relative transition-transform duration-700 ease-out"
+                style={{
+                  transformStyle: 'preserve-3d',
+                  transform: 'rotateX(52deg) rotateZ(-28deg)',
+                }}
               >
-                <Image
-                  src={proj.image}
-                  alt={proj.title}
-                  fill
-                  sizes="100vw"
-                  className="object-cover object-center filter brightness-75 scale-105 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F17] via-black/50 to-transparent" />
+                {PLANT_STAGES[plantStageIdx].layers.map((layer, idx) => {
+                  const isActive = idx === plantLayerIdx;
+                  const totalLayers = PLANT_STAGES[plantStageIdx].layers.length;
+                  const explosionSpread = 48;
+                  const zOffset = ((totalLayers - 1) / 2 - idx) * explosionSpread + (isActive ? 35 : 0);
+                  const opacity = isActive ? 1.0 : Math.abs(idx - plantLayerIdx) === 1 ? 0.75 : 0.45;
+                  const scale = isActive ? 1.05 : 1.0;
+
+                  return (
+                    <div
+                      key={layer.id}
+                      onClick={() => setPlantLayerIdx(idx)}
+                      className="absolute inset-0 cursor-pointer transition-all duration-500 ease-out group"
+                      style={{
+                        transform: `translateZ(${zOffset}px) scale(${scale})`,
+                        opacity,
+                        willChange: 'transform, opacity',
+                      }}
+                    >
+                      <div
+                        className={`w-full h-full rounded-2xl border transition-all duration-300 shadow-2xl relative overflow-hidden backdrop-blur-md ${
+                          isActive
+                            ? 'border-amber-400 bg-[#16223B]/90 ring-4 ring-amber-400/30 shadow-amber-500/25'
+                            : 'border-slate-700/80 bg-[#0F172A]/70 group-hover:border-slate-400'
+                        }`}
+                      >
+                        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(245,158,11,0.1)_0%,transparent_70%)]" />
+                        
+                        {/* Custom Graphic Overlay per Stage */}
+                        {plantStageIdx === 0 && layer.id === 'cells' && (
+                          <div className="w-full h-full grid grid-cols-6 grid-rows-4 gap-1 p-2">
+                            {Array.from({ length: 24 }).map((_, c) => (
+                              <div key={c} className="bg-sky-950 border border-amber-400/50 rounded-sm" />
+                            ))}
+                          </div>
+                        )}
+
+                        {plantStageIdx === 1 && (
+                          <div className="w-full h-full flex items-center justify-around px-4">
+                            <div className="w-8 h-8 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-mono text-amber-400 font-bold">DC</div>
+                            <div className="h-0.5 flex-1 bg-gradient-to-r from-amber-500 to-amber-300 mx-2" />
+                            <div className="w-8 h-8 rounded-full border-2 border-amber-400 flex items-center justify-center text-[10px] font-mono text-amber-400 font-bold">1500V</div>
+                          </div>
+                        )}
+
+                        {plantStageIdx === 2 && (
+                          <div className="w-full h-full flex flex-col justify-between p-3">
+                            <div className="flex justify-between items-center text-[10px] font-mono text-slate-400">
+                              <span>DC INPUT</span>
+                              <span className="text-amber-400 font-bold">MPPT ACTIVE</span>
+                              <span>AC OUTPUT</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-amber-400 w-3/4 rounded-full animate-pulse" />
+                            </div>
+                          </div>
+                        )}
+
+                        {plantStageIdx === 3 && (
+                          <div className="w-full h-full flex items-center justify-center gap-6">
+                            <div className="w-12 h-12 rounded-full border-4 border-amber-400/80 flex items-center justify-center text-xs font-bold text-amber-400">800V</div>
+                            <div className="text-amber-400 font-extrabold text-sm">➔➔➔</div>
+                            <div className="w-12 h-12 rounded-full border-4 border-emerald-400/80 flex items-center justify-center text-xs font-bold text-emerald-400">33kV</div>
+                          </div>
+                        )}
+
+                        {plantStageIdx === 4 && (
+                          <div className="w-full h-full flex items-center justify-between px-6 text-xs font-mono font-bold text-emerald-400">
+                            <span>50.0 Hz SYNC</span>
+                            <span className="text-amber-400 animate-ping">● LIVE EXPORT</span>
+                            <span>NET METER</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={`absolute -right-28 sm:-right-36 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg border text-[10px] sm:text-xs font-mono font-bold transition-all duration-300 whitespace-nowrap shadow-lg ${
+                          isActive
+                            ? 'bg-amber-500 text-slate-950 border-amber-300 font-extrabold scale-110'
+                            : 'bg-slate-950/90 text-slate-400 border-slate-800 group-hover:text-white'
+                        }`}
+                      >
+                        {layer.name}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            </div>
           </div>
 
-          {/* Sticky Foreground Content Story Overlay */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 w-full">
-            {PROJECT_STORIES.map((proj, idx) => {
-              const isActive = projectsStep === idx;
-              return (
-                <div
-                  key={proj.title}
-                  className={`transition-all duration-700 ease-out max-w-2xl space-y-4 ${isActive ? 'opacity-100 translate-y-0 relative' : 'opacity-0 translate-y-6 absolute pointer-events-none'
-                    }`}
+          {/* Short 1-Sentence Explanation Card */}
+          <div className="max-w-xl mx-auto w-full px-4 relative z-30 shrink-0">
+            <div className="bg-[#131B2E] border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-2xl text-center space-y-2 relative overflow-hidden">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2 text-xs font-mono">
+                <span className="font-bold text-amber-400 uppercase tracking-wider">
+                  {PLANT_STAGES[plantStageIdx].code} — {PLANT_STAGES[plantStageIdx].title}
+                </span>
+                <span className="text-slate-500">{PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.name}</span>
+              </div>
+
+              <p className="text-slate-200 text-xs sm:text-sm font-light leading-relaxed">
+                {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.desc}
+              </p>
+
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
+                  disabled={plantLayerIdx === 0}
+                  className="text-[11px] font-mono text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 flex items-center gap-1"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="px-3.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-mono font-bold uppercase tracking-widest border border-slate-700/80">
-                      Project Showcase 0{idx + 1}
+                  <ChevronLeft className="w-3.5 h-3.5" /> Previous Layer
+                </button>
+
+                <button
+                  onClick={() => setPlantLayerIdx((prev) => Math.min(PLANT_STAGES[plantStageIdx].layers.length - 1, prev + 1))}
+                  disabled={plantLayerIdx === PLANT_STAGES[plantStageIdx].layers.length - 1}
+                  className="text-[11px] font-mono text-amber-400 hover:text-amber-300 disabled:opacity-30 flex items-center gap-1 font-bold"
+                >
+                  Next Layer <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Continuous 5-Stage Journey Progress Navigation Bar */}
+          <div className="max-w-3xl mx-auto w-full px-4 pt-3 pb-1 relative z-30 shrink-0">
+            <div className="flex items-center justify-between bg-[#131B2E]/90 border border-slate-800 rounded-2xl p-2 shadow-xl">
+              {PLANT_STAGES.map((stage, idx) => {
+                const isSelected = idx === plantStageIdx;
+                const IconComponent = stage.icon;
+                return (
+                  <button
+                    key={stage.id}
+                    onClick={() => {
+                      if (plantSectionRef.current) {
+                        const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
+                        const targetScrollTop = plantSectionRef.current.offsetTop + (idx / 4) * totalDist;
+                        window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+                      }
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl transition-all duration-300 ${
+                      isSelected
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/20 scale-105'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4 shrink-0" />
+                    <span className="text-[10px] sm:text-xs font-mono font-bold tracking-tight hidden sm:inline">
+                      {stage.code} {stage.title.split(' ')[0]}
                     </span>
-                    <span className="text-amber-400 font-bold text-sm font-mono">{proj.capacity}</span>
-                  </div>
-
-                  <h3 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight drop-shadow-md">
-                    {proj.title}
-                  </h3>
-
-                  <p className="text-amber-400 font-mono text-xs uppercase tracking-widest">{proj.location}</p>
-
-                  <p className="text-slate-200 text-sm sm:text-base font-light leading-relaxed max-w-xl">
-                    {proj.desc}
-                  </p>
-
-                  <div className="pt-2">
-                    <Link href="/projects">
-                      <Button
-                        variant="outline"
-                        size="lg"
-                        className="border-slate-700 bg-slate-900/60 backdrop-blur-md text-white hover:bg-slate-800 font-semibold px-6 py-3 rounded-xl text-sm"
-                        icon={<ArrowUpRight className="w-4 h-4 text-amber-400" />}
-                      >
-                        Explore Project Portfolio
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
