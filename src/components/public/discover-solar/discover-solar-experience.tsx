@@ -203,6 +203,13 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           isScanning={stage === 5}
           scanProgress={scanProgress}
           zoomLevel={zoomLevel}
+          onLocationChanged={(newLat, newLng) => {
+            setSelectedLocation((prev) => ({
+              ...prev,
+              lat: Number(newLat.toFixed(6)),
+              lng: Number(newLng.toFixed(6)),
+            }));
+          }}
         />
       </div>
 
@@ -302,18 +309,17 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
                 <span>SOLAR POTENTIAL DETECTED</span>
               </div>
-              <h2 className="text-2xl font-black text-white">YOUR REAL ROOF</h2>
+              <h2 className="text-2xl font-black text-white">TARGET PROPERTY</h2>
               <p className="text-xs text-slate-400 font-mono line-clamp-2">{selectedLocation.address}</p>
-              <div className="text-[11px] font-mono text-slate-400 pt-1">
-                Lat: {selectedLocation.lat} • Lng: {selectedLocation.lng}
+              <div className="text-[11px] font-mono text-amber-400 pt-1">
+                Lat: {selectedLocation.lat.toFixed(4)} • Lng: {selectedLocation.lng.toFixed(4)}
               </div>
               <div className="pt-2">
                 <button
                   onClick={() => setStage(5)}
                   className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
                 >
-                  <span>START COMPUTER-VISION ROOF SCAN</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <span>CONFIRM PROPERTY TARGET →</span>
                 </button>
               </div>
             </div>
