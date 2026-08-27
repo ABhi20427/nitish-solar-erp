@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Search, Sparkles, Building, ArrowRight } from 'lucide-react';
+import { MapPin, Navigation, Search, Sparkles, Building, ArrowRight, Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
 import { SatelliteLocation } from './types';
+import { parseLocationInput } from './google-maps-parser';
 
 interface AddressAutocompleteProps {
   onSelectLocation: (location: SatelliteLocation) => void;
@@ -18,6 +19,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 18.559,
     lng: 73.7868,
     zoom: 19.2,
+    source: 'address',
     roofPolygon: [
       { x: 32, y: 28 },
       { x: 68, y: 28 },
@@ -35,6 +37,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 28.495,
     lng: 77.0895,
     zoom: 19.0,
+    source: 'address',
     roofPolygon: [
       { x: 25, y: 22 },
       { x: 75, y: 22 },
@@ -52,6 +55,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 12.9784,
     lng: 77.6408,
     zoom: 19.3,
+    source: 'address',
     roofPolygon: [
       { x: 30, y: 25 },
       { x: 70, y: 25 },
@@ -69,6 +73,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 19.0622,
     lng: 72.828,
     zoom: 19.4,
+    source: 'address',
     roofPolygon: [
       { x: 35, y: 30 },
       { x: 65, y: 30 },
@@ -86,6 +91,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 23.0396,
     lng: 72.5074,
     zoom: 19.1,
+    source: 'address',
     roofPolygon: [
       { x: 20, y: 20 },
       { x: 80, y: 20 },
@@ -103,6 +109,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 17.4156,
     lng: 78.4347,
     zoom: 19.2,
+    source: 'address',
     roofPolygon: [
       { x: 30, y: 26 },
       { x: 70, y: 26 },
@@ -118,12 +125,28 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
   const [address, setAddress] = useState(initialValue);
   const [isOpen, setIsOpen] = useState(false);
   const [suggestions, setSuggestions] = useState(PRESET_SATELLITE_LOCATIONS);
+  const [isLocating, setIsLocating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Parse location input type dynamically
+  const parsedInput = parseLocationInput(address);
 
   useEffect(() => {
     if (!address.trim()) {
       setSuggestions(PRESET_SATELLITE_LOCATIONS);
+      setStatusMessage(null);
+      setErrorMessage(null);
       return;
+    }
+
+    if (parsedInput.isGoogleMapsLink) {
+      setStatusMessage('Google Maps location detected');
+    } else if (parsedInput.isCoordinates) {
+      setStatusMessage('Coordinates format detected');
+    } else {
+      setStatusMessage(null);
     }
 
     const query = address.toLowerCase();
@@ -137,15 +160,18 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     if (filtered.length > 0) {
       setSuggestions(filtered);
     } else {
+      const lat = parsedInput.lat || 18.5204;
+      const lng = parsedInput.lng || 73.8567;
       setSuggestions([
         {
-          address: `${address}, Mapped Location, India`,
+          address: parsedInput.displayAddress || `${address}, Mapped Location, India`,
           city: 'Mapped Region',
           district: 'District',
           state: 'India',
-          lat: 18.5204,
-          lng: 73.8567,
+          lat,
+          lng,
           zoom: 19.0,
+          source: parsedInput.source,
           roofPolygon: [
             { x: 30, y: 25 },
             { x: 70, y: 25 },
@@ -178,6 +204,34 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!address.trim()) return;
+
+    setErrorMessage(null);
+
+    // 1. Google Maps Link or Coordinates
+    if (parsedInput.lat && parsedInput.lng) {
+      const normalizedLoc: SatelliteLocation = {
+        address: parsedInput.displayAddress || address,
+        city: 'Mapped City',
+        district: 'District',
+        state: 'India',
+        lat: parsedInput.lat,
+        lng: parsedInput.lng,
+        zoom: 19.1,
+        source: parsedInput.source,
+        roofPolygon: [
+          { x: 30, y: 25 },
+          { x: 70, y: 25 },
+          { x: 70, y: 75 },
+          { x: 30, y: 75 },
+        ],
+        solarIrradiance: 4.8,
+        estimatedUsableAreaSqFt: 1500,
+      };
+      onSelectLocation(normalizedLoc);
+      return;
+    }
+
+    // 2. Preset or standard address search match
     const matched = PRESET_SATELLITE_LOCATIONS.find((l) => l.address.toLowerCase().includes(address.toLowerCase()));
     if (matched) {
       onSelectLocation(matched);
@@ -186,12 +240,88 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     }
   };
 
+  // Requirement #3: USE MY CURRENT LOCATION
+  const handleUseCurrentLocation = () => {
+    setErrorMessage(null);
+    if (!navigator.geolocation) {
+      setErrorMessage('Geolocation is not supported by your browser. Please enter your address manually.');
+      return;
+    }
+
+    setIsLocating(true);
+    setStatusMessage('Locating your position...');
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+
+        let displayAddr = `Current Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+        let city = 'Local Region';
+        let state = 'India';
+
+        try {
+          // Reverse geocode via OpenStreetMap Nominatim
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            displayAddr = data.display_name;
+            city = data.address?.city || data.address?.town || data.address?.suburb || 'Local Region';
+            state = data.address?.state || 'India';
+          }
+        } catch (e) {
+          // Graceful fallback if reverse geocode service is offline
+        }
+
+        const currentLocationLoc: SatelliteLocation = {
+          address: displayAddr,
+          city,
+          district: city,
+          state,
+          lat,
+          lng,
+          zoom: 19.2,
+          source: 'current-location',
+          roofPolygon: [
+            { x: 28, y: 24 },
+            { x: 72, y: 24 },
+            { x: 72, y: 76 },
+            { x: 28, y: 76 },
+          ],
+          solarIrradiance: 4.85,
+          estimatedUsableAreaSqFt: 1400,
+        };
+
+        setAddress(displayAddr);
+        setIsLocating(false);
+        setStatusMessage('Location acquired');
+        onSelectLocation(currentLocationLoc);
+      },
+      (err) => {
+        setIsLocating(false);
+        setStatusMessage(null);
+        if (err.code === err.PERMISSION_DENIED) {
+          setErrorMessage('Location access was denied. You can enter your address or paste a Google Maps link instead.');
+        } else if (err.code === err.TIMEOUT) {
+          setErrorMessage('Location request timed out. Please enter your address instead.');
+        } else {
+          setErrorMessage('Could not obtain current location. Please enter your address.');
+        }
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  };
+
   return (
-    <div ref={containerRef} className="relative w-full max-w-xl mx-auto">
-      <form onSubmit={handleSubmit} className="relative z-20 flex items-center gap-2">
-        <div className="relative flex-1 group">
+    <div ref={containerRef} className="relative w-full max-w-xl mx-auto space-y-3">
+      <form onSubmit={handleSubmit} className="relative z-20 flex flex-col sm:flex-row items-center gap-2">
+        <div className="relative flex-1 w-full group">
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-amber-400">
-            <MapPin className="w-5 h-5 animate-pulse" />
+            {parsedInput.isGoogleMapsLink ? (
+              <LinkIcon className="w-5 h-5 text-sky-400 animate-pulse" />
+            ) : (
+              <MapPin className="w-5 h-5 animate-pulse" />
+            )}
           </div>
           <input
             type="text"
@@ -201,13 +331,17 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
-            placeholder="Enter property address (e.g. Baner Pune, Cyber City Gurugram)..."
-            className="w-full pl-12 pr-4 py-4 rounded-2xl bg-slate-950/80 border border-slate-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 text-sm sm:text-base font-medium shadow-2xl transition-all"
+            placeholder="Enter address, coordinates, or paste Google Maps link..."
+            className="w-full pl-12 pr-14 py-4 rounded-2xl bg-slate-950/90 border border-slate-700/80 text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 text-sm sm:text-base font-medium shadow-2xl transition-all"
           />
           {address && (
             <button
               type="button"
-              onClick={() => setAddress('')}
+              onClick={() => {
+                setAddress('');
+                setStatusMessage(null);
+                setErrorMessage(null);
+              }}
               className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-white text-xs font-mono"
             >
               CLEAR
@@ -217,12 +351,43 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
 
         <button
           type="submit"
-          className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-6 py-4 rounded-2xl shadow-xl shadow-amber-500/20 text-sm flex items-center gap-2 transition-all duration-300 shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-6 py-4 rounded-2xl shadow-xl shadow-amber-500/20 text-sm flex items-center justify-center gap-2 transition-all duration-300 shrink-0 hover:scale-[1.02] active:scale-[0.98]"
         >
           <span>LOCATE MY HOME</span>
           <ArrowRight className="w-4 h-4" />
         </button>
       </form>
+
+      {/* Prominent "USE MY CURRENT LOCATION" Button (Requirement #3) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+        <button
+          type="button"
+          onClick={handleUseCurrentLocation}
+          disabled={isLocating}
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-amber-400 hover:text-amber-300 font-mono font-bold transition-all shadow-md hover:scale-[1.02] disabled:opacity-50"
+        >
+          {isLocating ? (
+            <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+          ) : (
+            <Navigation className="w-4 h-4 text-amber-400 fill-amber-400/20" />
+          )}
+          <span>◎ USE MY CURRENT LOCATION</span>
+        </button>
+
+        {statusMessage && (
+          <span className="text-[11px] font-mono text-sky-400 bg-sky-500/10 px-2.5 py-1 rounded-lg border border-sky-500/20 animate-pulse">
+            {statusMessage}
+          </span>
+        )}
+      </div>
+
+      {/* User-Facing Error Notice */}
+      {errorMessage && (
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono animate-in fade-in">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
 
       {/* Autocomplete Dropdown */}
       {isOpen && suggestions.length > 0 && (
@@ -247,7 +412,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
                     {item.address}
                   </div>
                   <div className="text-xs text-slate-400">
-                    {item.city}, {item.state} • Satellite View Ready
+                    {item.city}, {item.state} • Satellite View Ready ({item.lat.toFixed(3)}, {item.lng.toFixed(3)})
                   </div>
                 </div>
               </div>

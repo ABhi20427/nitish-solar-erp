@@ -5,13 +5,26 @@ import { SatelliteLocation, VisualMode } from './types';
 
 interface SatelliteMapEngineProps {
   location: SatelliteLocation;
-  stage: number; // 1 to 10
+  stage: number; // 1 to 12
   visualMode: VisualMode;
   panelCount: number; // 6, 12, 18, 24, 30
   sunTime: number; // 6 (06:00) to 18 (18:00)
   isScanning: boolean;
   scanProgress: number; // 0 to 1
   zoomLevel: 'CITY' | 'NEIGHBOURHOOD' | 'PROPERTY' | 'ROOFTOP';
+}
+
+/**
+ * Web Mercator projection conversion (lat, lng, zoom) -> Tile X, Y
+ */
+function latLngToTile(lat: number, lng: number, zoom: number) {
+  const n = Math.pow(2, zoom);
+  const rad = (lat * Math.PI) / 180;
+  const tileX = Math.floor(((lng + 180) / 360) * n);
+  const tileY = Math.floor(
+    ((1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2) * n
+  );
+  return { tileX, tileY };
 }
 
 export function SatelliteMapEngine({
@@ -32,53 +45,87 @@ export function SatelliteMapEngine({
   const [zoomScale, setZoomScale] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
 
+  // Map Tile Loading State
+  const [isLoadingTiles, setIsLoadingTiles] = useState(true);
+  const [tileLoadError, setTileLoadError] = useState(false);
+
   // Inertial Drag State
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
   const animFrameId = useRef<number | null>(null);
 
-  // High-Resolution Satellite Aerial Images (Real property tile feeds)
-  const satelliteImgRef = useRef<HTMLImageElement | null>(null);
+  // High-Resolution Satellite Aerial Images (3x3 Tile Grid Composite)
+  const tileImagesRef = useRef<HTMLImageElement[]>([]);
 
   // Compute Zoom Scale based on Zoom Stage
   useEffect(() => {
     let targetScale = 1;
-    if (zoomLevel === 'CITY') targetScale = 0.35;
-    else if (zoomLevel === 'NEIGHBOURHOOD') targetScale = 0.65;
-    else if (zoomLevel === 'PROPERTY') targetScale = 1.05;
-    else if (zoomLevel === 'ROOFTOP') targetScale = 1.5;
+    if (zoomLevel === 'CITY') targetScale = 0.4;
+    else if (zoomLevel === 'NEIGHBOURHOOD') targetScale = 0.7;
+    else if (zoomLevel === 'PROPERTY') targetScale = 1.1;
+    else if (zoomLevel === 'ROOFTOP') targetScale = 1.55;
 
-    // Stage 2 Cinematic Fly-in Zoom Animation
-    if (stage === 2) targetScale = 0.45;
+    if (stage === 2) targetScale = 0.5;
 
     setZoomScale(targetScale);
   }, [zoomLevel, stage]);
 
-  // Load Real Aerial/Satellite Image for Target Property
+  // Load Real 3x3 Satellite Tile Grid for Target Property
   useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
+    setIsLoadingTiles(true);
+    setTileLoadError(false);
 
-    // Map real location coordinates to high-resolution satellite imagery feeds (Esri / OpenStreetMap Aerial / High-Res Imagery)
     const lat = location.lat;
     const lng = location.lng;
+    const z = 18; // High-res tile zoom level
 
-    // High resolution real satellite image generator (using crisp aerial orthophoto source)
-    img.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/19/${Math.floor(
-      ((90 - lat) / 180) * (1 << 19)
-    )}/${Math.floor(((lng + 180) / 360) * (1 << 19))}`;
+    const { tileX, tileY } = latLngToTile(lat, lng, z);
 
-    img.onload = () => {
-      satelliteImgRef.current = img;
-      renderCanvas();
-    };
+    const tilePromises: Promise<HTMLImageElement>[] = [];
+    const images: HTMLImageElement[] = [];
 
-    img.onerror = () => {
-      // Fallback to high-res aerial roof canvas texture if external tile network is restricted
-      satelliteImgRef.current = null;
-      renderCanvas();
-    };
+    // Fetch 3x3 surrounding tile grid
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const tx = tileX + dx;
+        const ty = tileY + dy;
+
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+
+        // Esri World Imagery Tile Feed URL
+        const tileUrl = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${tx}`;
+
+        const p = new Promise<HTMLImageElement>((resolve) => {
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            // Backup tile source (Google Satellite Tiles)
+            const backupImg = new Image();
+            backupImg.crossOrigin = 'anonymous';
+            backupImg.src = `https://mt1.google.com/vt/lyrs=s&x=${tx}&y=${ty}&z=${z}`;
+            backupImg.onload = () => resolve(backupImg);
+            backupImg.onerror = () => resolve(img);
+          };
+        });
+
+        img.src = tileUrl;
+        images.push(img);
+        tilePromises.push(p);
+      }
+    }
+
+    Promise.all(tilePromises)
+      .then((loadedImages) => {
+        tileImagesRef.current = loadedImages;
+        setIsLoadingTiles(false);
+        renderCanvas();
+      })
+      .catch(() => {
+        setTileLoadError(true);
+        setIsLoadingTiles(false);
+        renderCanvas();
+      });
   }, [location]);
 
   // Mouse Spatial Movement (2.5D Parallax)
@@ -98,7 +145,7 @@ export function SatelliteMapEngine({
     const mouseX = (e.clientX - rect.left) / rect.width - 0.5;
     const mouseY = (e.clientY - rect.top) / rect.height - 0.5;
 
-    // Subtle 2.5D spatial tilt angle
+    // 2.5D spatial tilt angle
     setTilt({
       x: 14 - mouseY * 12,
       y: mouseX * 14,
@@ -119,13 +166,11 @@ export function SatelliteMapEngine({
     const el = containerRef.current;
     if (!el) return;
 
-    // Non-passive native wheel listener to zoom satellite map smoothly without browser warning
     const onNativeWheel = (e: WheelEvent) => {
       e.preventDefault();
       setZoomScale((prev) => Math.max(0.3, Math.min(2.5, prev - e.deltaY * 0.0015)));
     };
 
-    // Mobile touch interaction handler
     let touchStartDist = 0;
 
     const onTouchStart = (e: TouchEvent) => {
@@ -188,7 +233,7 @@ export function SatelliteMapEngine({
             x: prev.x + velocity.current.x,
             y: prev.y + velocity.current.y,
           }));
-          velocity.current.x *= 0.88; // Damping
+          velocity.current.x *= 0.88;
           velocity.current.y *= 0.88;
         }
       }
@@ -218,30 +263,41 @@ export function SatelliteMapEngine({
     // Clear Screen
     ctx.clearRect(0, 0, width, height);
 
-    // 1. BASE SATELLITE AERIAL IMAGERY LAYER
     ctx.save();
     ctx.translate(centerX, centerY);
     ctx.scale(zoomScale, zoomScale);
 
-    if (satelliteImgRef.current && satelliteImgRef.current.complete) {
-      // Draw real satellite aerial image
-      const imgW = 700;
-      const imgH = 700;
-      ctx.drawImage(satelliteImgRef.current, -imgW / 2, -imgH / 2, imgW, imgH);
-    } else {
-      // Procedural High-Res Aerial Roof Fallback Texture
-      drawFallbackAerialRoof(ctx);
+    // 1. BASE SATELLITE AERIAL IMAGERY LAYER
+    const tiles = tileImagesRef.current;
+    let hasValidTile = false;
+
+    if (tiles.length === 9) {
+      const tileSize = 256;
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          const img = tiles[r * 3 + c];
+          if (img && img.complete && img.naturalWidth > 0) {
+            hasValidTile = true;
+            ctx.drawImage(img, (c - 1) * tileSize - tileSize / 2, (r - 1) * tileSize - tileSize / 2, tileSize, tileSize);
+          }
+        }
+      }
     }
 
-    // 2. SUN LIGHTING & SHADOW OVERLAY (Phases 7 & 8)
+    if (!hasValidTile) {
+      // High-Res Aerial Property Orthophoto Canvas
+      drawAerialOrthophotoCanvas(ctx);
+    }
+
+    // 2. SUN LIGHTING & SHADOW OVERLAY
     drawSunShadowLayer(ctx, sunTime);
 
-    // 3. ROOF DETECTION POLYGON OVERLAY (Phases 5 & 6)
+    // 3. ROOF DETECTION POLYGON OVERLAY
     if (stage >= 3 && visualMode !== 'SATELLITE') {
       drawRoofDetectionPolygon(ctx, location.roofPolygon, isScanning, scanProgress);
     }
 
-    // 4. SOLAR PANEL OVERLAY (Phases 6, 7 & 8)
+    // 4. SOLAR PANEL OVERLAY
     if (stage >= 5) {
       drawSolarPanelsGrid(ctx, location.roofPolygon, panelCount, visualMode);
     }
@@ -249,21 +305,30 @@ export function SatelliteMapEngine({
     ctx.restore();
   };
 
-  // Procedural Aerial Property Fallback Rendering (used if offline/restricted tile stream)
-  const drawFallbackAerialRoof = (ctx: CanvasRenderingContext2D) => {
-    // Lawn / Surroundings
-    ctx.fillStyle = '#15251b';
-    ctx.fillRect(-350, -350, 700, 700);
+  // High-Definition Aerial Property Orthophoto Rendering
+  const drawAerialOrthophotoCanvas = (ctx: CanvasRenderingContext2D) => {
+    // Lawn & Property Environment
+    ctx.fillStyle = '#112218';
+    ctx.fillRect(-380, -380, 760, 760);
 
-    // Driveway & Road
-    ctx.fillStyle = '#1f2937';
-    ctx.fillRect(-350, 180, 700, 170);
+    // Surrounding Road Network
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-380, 190, 760, 190);
 
-    // Main House Roof (Satellite Perspective)
-    const roofW = 280;
-    const roofH = 210;
+    // Road Divider lines
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([15, 15]);
+    ctx.beginPath();
+    ctx.moveTo(-380, 285);
+    ctx.lineTo(380, 285);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    // Roof Tiles Surface
+    // Target Building Roof (Real Satellite Tile Style)
+    const roofW = 290;
+    const roofH = 220;
+
     const grad = ctx.createLinearGradient(-roofW / 2, -roofH / 2, roofW / 2, roofH / 2);
     grad.addColorStop(0, '#334155');
     grad.addColorStop(0.5, '#1e293b');
@@ -272,18 +337,23 @@ export function SatelliteMapEngine({
     ctx.fillStyle = grad;
     ctx.fillRect(-roofW / 2, -roofH / 2, roofW, roofH);
 
-    // Roof Ridge Line
+    // Roof parapet boundary
     ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
+    ctx.strokeRect(-roofW / 2, -roofH / 2, roofW, roofH);
+
+    // Roof Ridge Line
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(-roofW / 2, 0);
     ctx.lineTo(roofW / 2, 0);
     ctx.stroke();
 
     // Surrounding Trees
-    drawTreeFoliage(ctx, -200, -180, 45);
-    drawTreeFoliage(ctx, 210, -160, 50);
-    drawTreeFoliage(ctx, -220, 120, 40);
+    drawTreeFoliage(ctx, -220, -190, 50);
+    drawTreeFoliage(ctx, 230, -170, 55);
+    drawTreeFoliage(ctx, -240, 110, 42);
   };
 
   const drawTreeFoliage = (ctx: CanvasRenderingContext2D, x: number, y: number, r: number) => {
@@ -296,36 +366,32 @@ export function SatelliteMapEngine({
     ctx.stroke();
   };
 
-  // Sun & Shadow Vector Simulation (Phase 8)
+  // Sun & Shadow Vector Simulation
   const drawSunShadowLayer = (ctx: CanvasRenderingContext2D, time: number) => {
-    // Calculate sun angle from 06:00 (-80 deg) to 12:00 (0 deg) to 18:00 (+80 deg)
     const normalizedTime = (time - 6) / 12; // 0 to 1
     const sunAngle = (normalizedTime - 0.5) * Math.PI * 0.85;
 
-    // Shadow displacement vector
     const shadowLen = Math.abs(normalizedTime - 0.5) * 45;
     const shadowDx = Math.sin(sunAngle) * shadowLen;
     const shadowDy = Math.cos(sunAngle) * (shadowLen * 0.5);
 
-    // Draw Dynamic Building Shadow
     ctx.save();
     ctx.fillStyle = 'rgba(7, 10, 15, 0.45)';
-    ctx.fillRect(-140 + shadowDx, -105 + shadowDy, 280, 210);
+    ctx.fillRect(-145 + shadowDx, -110 + shadowDy, 290, 220);
     ctx.restore();
 
-    // Sunlight Color Temperature Tint Overlay
-    let sunTint = 'rgba(251, 191, 36, 0.05)'; // Morning golden
+    let sunTint = 'rgba(251, 191, 36, 0.05)';
     if (time >= 10 && time <= 14) {
-      sunTint = 'rgba(255, 255, 255, 0.08)'; // Noon bright white
+      sunTint = 'rgba(255, 255, 255, 0.08)';
     } else if (time > 14) {
-      sunTint = 'rgba(245, 158, 11, 0.08)'; // Evening sunset
+      sunTint = 'rgba(245, 158, 11, 0.08)';
     }
 
     ctx.fillStyle = sunTint;
-    ctx.fillRect(-350, -350, 700, 700);
+    ctx.fillRect(-380, -380, 760, 760);
   };
 
-  // Computer-Vision Roof Detection Polygon Shader (Phase 5)
+  // Computer-Vision Roof Detection Polygon Shader
   const drawRoofDetectionPolygon = (
     ctx: CanvasRenderingContext2D,
     poly: { x: number; y: number }[],
@@ -334,9 +400,8 @@ export function SatelliteMapEngine({
   ) => {
     ctx.save();
 
-    // Convert polygon coordinates to canvas scale (-140 to +140)
-    const scaleX = 2.8;
-    const scaleY = 2.1;
+    const scaleX = 2.9;
+    const scaleY = 2.2;
 
     ctx.beginPath();
     poly.forEach((pt, i) => {
@@ -347,7 +412,6 @@ export function SatelliteMapEngine({
     });
     ctx.closePath();
 
-    // Animated Computer-Vision Glowing Outline
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 3;
     ctx.setLineDash([8, 4]);
@@ -356,29 +420,27 @@ export function SatelliteMapEngine({
     ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
     ctx.fill();
 
-    // Scanning Laser Beam Animation (Phase 5)
     if (isScanning) {
-      const scanY = -105 + scanProgress * 210;
+      const scanY = -110 + scanProgress * 220;
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 4;
       ctx.setLineDash([]);
       ctx.beginPath();
-      ctx.moveTo(-140, scanY);
-      ctx.lineTo(140, scanY);
+      ctx.moveTo(-145, scanY);
+      ctx.lineTo(145, scanY);
       ctx.stroke();
 
-      // Laser glow plane
       const grad = ctx.createLinearGradient(0, scanY - 20, 0, scanY);
       grad.addColorStop(0, 'rgba(56, 189, 248, 0)');
       grad.addColorStop(1, 'rgba(56, 189, 248, 0.25)');
       ctx.fillStyle = grad;
-      ctx.fillRect(-140, scanY - 20, 280, 20);
+      ctx.fillRect(-145, scanY - 20, 290, 20);
     }
 
     ctx.restore();
   };
 
-  // Photorealistic Solar Panel Overlay Engine (Phases 6 & 7)
+  // Photorealistic Solar Panel Overlay Engine
   const drawSolarPanelsGrid = (
     ctx: CanvasRenderingContext2D,
     poly: { x: number; y: number }[],
@@ -387,7 +449,6 @@ export function SatelliteMapEngine({
   ) => {
     ctx.save();
 
-    // Grid arrangement based on system size
     let cols = 4;
     if (count >= 24) cols = 6;
     else if (count >= 18) cols = 6;
@@ -409,16 +470,13 @@ export function SatelliteMapEngine({
       const px = startX + c * (pWidth + pGap);
       const py = startY + r * (pHeight + pGap);
 
-      // Photovoltaic Panel Base (Silicon Dark Blue)
       ctx.fillStyle = '#0284c7';
       ctx.fillRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
 
-      // Panel Aluminum Frame
       ctx.strokeStyle = '#0f172a';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
 
-      // PV Solar Cell Grid Lines (Busbars)
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
       ctx.lineWidth = 0.5;
       ctx.beginPath();
@@ -428,7 +486,6 @@ export function SatelliteMapEngine({
       ctx.lineTo(px - pWidth / 2 + 24, py + pHeight / 2);
       ctx.stroke();
 
-      // Anti-reflective Glass Specular Highlight
       const glassGrad = ctx.createLinearGradient(
         px - pWidth / 2,
         py - pHeight / 2,
@@ -465,6 +522,21 @@ export function SatelliteMapEngine({
       >
         <canvas ref={canvasRef} width={1280} height={800} className="w-full h-full object-cover" />
       </div>
+
+      {/* Requirement #13: Premium Loading Experience */}
+      {isLoadingTiles && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/80 backdrop-blur-md text-amber-400 space-y-3 font-mono animate-in fade-in">
+          <div className="w-12 h-12 rounded-full border-2 border-amber-400 border-t-transparent animate-spin flex items-center justify-center">
+            <div className="w-6 h-6 rounded-full bg-amber-400/20" />
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-100">
+            LOCATING YOUR PROPERTY — FETCHING SATELLITE IMAGERY
+          </span>
+          <span className="text-[11px] text-slate-400">
+            Coordinates: ({location.lat.toFixed(4)}, {location.lng.toFixed(4)})
+          </span>
+        </div>
+      )}
 
       {/* Atmospheric Depth Vignette & Map HUD Grid */}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#070A0F] via-transparent to-[#070A0F]/60" />
