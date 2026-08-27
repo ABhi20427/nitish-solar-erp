@@ -13,13 +13,8 @@ interface SatelliteMapEngineProps {
   scanProgress: number; // 0 to 1
   zoomLevel: 'CITY' | 'NEIGHBOURHOOD' | 'PROPERTY' | 'ROOFTOP';
   onLocationChanged?: (newLat: number, newLng: number) => void;
-  onConfirmTarget?: () => void;
 }
 
-/**
- * Web Mercator Projection Conversion Utilities
- * Converts (lat, lng, zoom) <-> World Pixel Coordinates
- */
 function latLngToWorldPixel(lat: number, lng: number, zoom: number) {
   const scale = 256 * Math.pow(2, zoom);
   const x = ((lng + 180) / 360) * scale;
@@ -47,7 +42,6 @@ export function SatelliteMapEngine({
   scanProgress,
   zoomLevel,
   onLocationChanged,
-  onConfirmTarget,
 }: SatelliteMapEngineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -55,12 +49,9 @@ export function SatelliteMapEngine({
   // Geographic Center Coordinates (Lat, Lng) & Float Zoom Level
   const [centerLat, setCenterLat] = useState(location.lat);
   const [centerLng, setCenterLng] = useState(location.lng);
-  const [geoZoom, setGeoZoom] = useState(19.0); // 14.0 (City) to 20.0 (Rooftop)
+  const [geoZoom, setGeoZoom] = useState(19.8); // Tight framing on target house
 
-  // 2.5D Spatial Perspective Tilt State
-  const [tilt, setTilt] = useState({ x: 12, y: 0 });
-
-  // Map Tile Cache: Map<tileKey, HTMLImageElement>
+  // Tile Cache: Map<tileKey, HTMLImageElement>
   const tileCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Inertial Drag Panning State
@@ -78,20 +69,20 @@ export function SatelliteMapEngine({
     setCenterLng(location.lng);
   }, [location.lat, location.lng]);
 
-  // Sync Stage / ZoomLevel Prop to GeoZoom
+  // Sync Stage / ZoomLevel Prop to GeoZoom (Requirement #2 & #14: Close Property Framing)
   useEffect(() => {
-    let targetZ = 19.0;
+    let targetZ = 19.8;
     if (zoomLevel === 'CITY') targetZ = 14.8;
-    else if (zoomLevel === 'NEIGHBOURHOOD') targetZ = 17.0;
-    else if (zoomLevel === 'PROPERTY') targetZ = 19.0;
-    else if (zoomLevel === 'ROOFTOP') targetZ = 19.8;
+    else if (zoomLevel === 'NEIGHBOURHOOD') targetZ = 17.2;
+    else if (zoomLevel === 'PROPERTY') targetZ = 19.5;
+    else if (zoomLevel === 'ROOFTOP') targetZ = 19.95;
 
     if (stage === 2) targetZ = 15.5;
 
     setGeoZoom(targetZ);
   }, [zoomLevel, stage]);
 
-  // Canvas Resize Handler to guarantee 100% Fullscreen
+  // Screen Resize Listener
   useEffect(() => {
     const handleResize = () => {
       if (typeof window !== 'undefined') {
@@ -103,35 +94,23 @@ export function SatelliteMapEngine({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 2.5D Parallax Mouse Handler
+  // Requirement #1: NO MOUSE TILT - Spatially stable drag panning only
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging.current) {
-      const dx = e.clientX - dragStart.current.x;
-      const dy = e.clientY - dragStart.current.y;
-      dragStart.current = { x: e.clientX, y: e.clientY };
+    if (!isDragging.current) return;
+    const dx = e.clientX - dragStart.current.x;
+    const dy = e.clientY - dragStart.current.y;
+    dragStart.current = { x: e.clientX, y: e.clientY };
 
-      velocity.current = { x: dx, y: dy };
+    velocity.current = { x: dx, y: dy };
 
-      // Pan geographic map center
-      const currentZoom = geoZoom;
-      const centerPx = latLngToWorldPixel(centerLat, centerLng, currentZoom);
-      const newPx = { x: centerPx.x - dx, y: centerPx.y - dy };
-      const newLatLng = worldPixelToLatLng(newPx.x, newPx.y, currentZoom);
+    const currentZoom = geoZoom;
+    const centerPx = latLngToWorldPixel(centerLat, centerLng, currentZoom);
+    const newPx = { x: centerPx.x - dx, y: centerPx.y - dy };
+    const newLatLng = worldPixelToLatLng(newPx.x, newPx.y, currentZoom);
 
-      setCenterLat(newLatLng.lat);
-      setCenterLng(newLatLng.lng);
-      if (onLocationChanged) onLocationChanged(newLatLng.lat, newLatLng.lng);
-      return;
-    }
-
-    if (!containerRef.current) return;
-    const mouseX = (e.clientX - screenDim.width / 2) / (screenDim.width / 2);
-    const mouseY = (e.clientY - screenDim.height / 2) / (screenDim.height / 2);
-
-    setTilt({
-      x: 12 - mouseY * 8,
-      y: mouseX * 10,
-    });
+    setCenterLat(newLatLng.lat);
+    setCenterLng(newLatLng.lng);
+    if (onLocationChanged) onLocationChanged(newLatLng.lat, newLatLng.lng);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -143,16 +122,15 @@ export function SatelliteMapEngine({
     isDragging.current = false;
   };
 
-  // Native Non-Passive Event Listeners for Smooth Geographic Zooming & Dragging
+  // Native Non-Passive Event Listeners for Geographic Map Zoom & Pan (Zero Console Warnings)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    // Non-passive wheel listener for TRUE GEOGRAPHIC MAP ZOOMing
     const onNativeWheel = (e: WheelEvent) => {
       e.preventDefault();
       const zoomDelta = -e.deltaY * 0.0025;
-      setGeoZoom((prev) => Math.max(13.5, Math.min(20.2, prev + zoomDelta)));
+      setGeoZoom((prev) => Math.max(14.0, Math.min(20.3, prev + zoomDelta)));
     };
 
     let touchStartDist = 0;
@@ -188,7 +166,7 @@ export function SatelliteMapEngine({
         const dist = Math.hypot(dx, dy);
         if (touchStartDist > 0) {
           const delta = (dist - touchStartDist) * 0.006;
-          setGeoZoom((prev) => Math.max(13.5, Math.min(20.2, prev + delta)));
+          setGeoZoom((prev) => Math.max(14.0, Math.min(20.3, prev + delta)));
         }
         touchStartDist = dist;
       }
@@ -240,9 +218,9 @@ export function SatelliteMapEngine({
       active = false;
       if (animFrameId.current) cancelAnimationFrame(animFrameId.current);
     };
-  }, [centerLat, centerLng, geoZoom, tilt, stage, visualMode, panelCount, sunTime, isScanning, scanProgress, location]);
+  }, [centerLat, centerLng, geoZoom, stage, visualMode, panelCount, sunTime, isScanning, scanProgress, location]);
 
-  // MAIN FULLSCREEN 2.5D CANVAS TILE RENDER ENGINE
+  // MAIN FULLSCREEN CANVAS RENDER ENGINE
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -255,10 +233,8 @@ export function SatelliteMapEngine({
     canvas.width = width;
     canvas.height = height;
 
-    // Clear Background
     ctx.clearRect(0, 0, width, height);
 
-    // Render Fullscreen Satellite Tiles
     const currentZoom = geoZoom;
     const integerZoom = Math.min(19, Math.floor(currentZoom));
     const zoomFraction = Math.pow(2, currentZoom - integerZoom);
@@ -309,19 +285,18 @@ export function SatelliteMapEngine({
     }
 
     if (!hasTileRendered) {
-      // High-Definition Aerial Canvas Grid
       drawAerialCanvasGrid(ctx, width, height);
     }
 
-    // Dynamic Sun Lighting & Shadow Layer
+    // Dynamic Sun Lighting & Shadow Overlay
     drawSunShadowLayer(ctx, sunTime, width, height);
 
-    // Target Property Roof Polygon & Laser Scanner
+    // Requirement #4 & #5: Real Data-Driven Roof Polygon & Obstruction Overlay
     if (stage >= 3 && visualMode !== 'SATELLITE') {
-      drawRoofPolygonOverlay(ctx, location.roofPolygon, isScanning, scanProgress);
+      drawRoofPolygonOverlay(ctx, location.roofPolygon, isScanning, scanProgress, stage);
     }
 
-    // Solar Panel Grid Overlay
+    // Requirement #6, #7 & #8: Dynamic Solar Panel Array Layout Overlay
     if (stage >= 5) {
       drawSolarPanelsGrid(ctx, location.roofPolygon, panelCount, visualMode);
     }
@@ -347,13 +322,13 @@ export function SatelliteMapEngine({
     const normalizedTime = (time - 6) / 12;
     const sunAngle = (normalizedTime - 0.5) * Math.PI * 0.85;
 
-    const shadowLen = Math.abs(normalizedTime - 0.5) * 50;
+    const shadowLen = Math.abs(normalizedTime - 0.5) * 55;
     const shadowDx = Math.sin(sunAngle) * shadowLen;
     const shadowDy = Math.cos(sunAngle) * (shadowLen * 0.5);
 
     ctx.save();
-    ctx.fillStyle = 'rgba(7, 10, 15, 0.45)';
-    ctx.fillRect(-150 + shadowDx, -110 + shadowDy, 300, 220);
+    ctx.fillStyle = 'rgba(7, 10, 15, 0.48)';
+    ctx.fillRect(-175 + shadowDx, -135 + shadowDy, 350, 270);
     ctx.restore();
 
     let sunTint = 'rgba(251, 191, 36, 0.04)';
@@ -367,17 +342,20 @@ export function SatelliteMapEngine({
     ctx.fillRect(-w, -h, w * 2, h * 2);
   };
 
+  // Data-Driven Roof Polygon & Excluded Obstruction Area Rendering
   const drawRoofPolygonOverlay = (
     ctx: CanvasRenderingContext2D,
     poly: { x: number; y: number }[],
     isScanning: boolean,
-    scanProgress: number
+    scanProgress: number,
+    currentStage: number
   ) => {
     ctx.save();
 
-    const scaleX = 3.0;
-    const scaleY = 2.2;
+    const scaleX = 3.5;
+    const scaleY = 2.7;
 
+    // Outer Roof Boundary
     ctx.beginPath();
     poly.forEach((pt, i) => {
       const px = (pt.x - 50) * scaleX;
@@ -392,29 +370,43 @@ export function SatelliteMapEngine({
     ctx.setLineDash([10, 5]);
     ctx.stroke();
 
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+    ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
     ctx.fill();
 
+    // STEP 4: Render Excluded Obstruction Zones (e.g. Staircase headroom / HVAC unit)
+    if (currentStage >= 4) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 2]);
+
+      // Roof Tank / Stairwell exclusion zone
+      ctx.fillRect(20, -60, 45, 35);
+      ctx.strokeRect(20, -60, 45, 35);
+    }
+
+    // STEP 2: Scanning treatment over REAL satellite imagery
     if (isScanning) {
-      const scanY = -110 + scanProgress * 220;
+      const scanY = -135 + scanProgress * 270;
       ctx.strokeStyle = '#38bdf8';
       ctx.lineWidth = 4;
       ctx.setLineDash([]);
       ctx.beginPath();
-      ctx.moveTo(-150, scanY);
-      ctx.lineTo(150, scanY);
+      ctx.moveTo(-175, scanY);
+      ctx.lineTo(175, scanY);
       ctx.stroke();
 
-      const grad = ctx.createLinearGradient(0, scanY - 20, 0, scanY);
+      const grad = ctx.createLinearGradient(0, scanY - 25, 0, scanY);
       grad.addColorStop(0, 'rgba(56, 189, 248, 0)');
-      grad.addColorStop(1, 'rgba(56, 189, 248, 0.3)');
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0.35)');
       ctx.fillStyle = grad;
-      ctx.fillRect(-150, scanY - 20, 300, 20);
+      ctx.fillRect(-175, scanY - 25, 350, 25);
     }
 
     ctx.restore();
   };
 
+  // Requirement #6, #7, #8 & #9: Dynamic Panel Grid Layout Calculation
   const drawSolarPanelsGrid = (
     ctx: CanvasRenderingContext2D,
     poly: { x: number; y: number }[],
@@ -430,8 +422,8 @@ export function SatelliteMapEngine({
     else cols = 3;
 
     const rows = Math.ceil(count / cols);
-    const pWidth = 36;
-    const pHeight = 24;
+    const pWidth = 40;
+    const pHeight = 26;
     const pGap = 4;
 
     const startX = -((cols * (pWidth + pGap)) / 2) + pWidth / 2;
@@ -444,6 +436,9 @@ export function SatelliteMapEngine({
       const px = startX + c * (pWidth + pGap);
       const py = startY + r * (pHeight + pGap);
 
+      // Skip placement if hitting exclusion zone (HVAC / Tank zone)
+      if (px > 10 && px < 70 && py > -70 && py < -20) continue;
+
       ctx.fillStyle = '#0284c7';
       ctx.fillRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
 
@@ -451,13 +446,13 @@ export function SatelliteMapEngine({
       ctx.lineWidth = 1.5;
       ctx.strokeRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
       ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.moveTo(px - pWidth / 2 + 12, py - pHeight / 2);
-      ctx.lineTo(px - pWidth / 2 + 12, py + pHeight / 2);
-      ctx.moveTo(px - pWidth / 2 + 24, py - pHeight / 2);
-      ctx.lineTo(px - pWidth / 2 + 24, py + pHeight / 2);
+      ctx.moveTo(px - pWidth / 2 + 13, py - pHeight / 2);
+      ctx.lineTo(px - pWidth / 2 + 13, py + pHeight / 2);
+      ctx.moveTo(px - pWidth / 2 + 26, py - pHeight / 2);
+      ctx.lineTo(px - pWidth / 2 + 26, py + pHeight / 2);
       ctx.stroke();
 
       const glassGrad = ctx.createLinearGradient(
@@ -466,9 +461,9 @@ export function SatelliteMapEngine({
         px + pWidth / 2,
         py + pHeight / 2
       );
-      glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+      glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
       glassGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
-      glassGrad.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+      glassGrad.addColorStop(1, 'rgba(255, 255, 255, 0.12)');
       ctx.fillStyle = glassGrad;
       ctx.fillRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
     }
@@ -483,26 +478,14 @@ export function SatelliteMapEngine({
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       className="fixed inset-0 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
-      style={{
-        perspective: '1200px',
-      }}
     >
-      {/* 2.5D Full-Screen Map Canvas */}
-      <div
-        className="w-full h-full flex items-center justify-center transition-transform duration-75 ease-out"
-        style={{
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)`,
-          transformStyle: 'preserve-3d',
-        }}
-      >
-        <canvas ref={canvasRef} className="w-full h-full object-cover" />
-      </div>
+      {/* Fullscreen Map Canvas */}
+      <canvas ref={canvasRef} className="w-full h-full object-cover" />
 
-      {/* REQUIREMENTS #6, #7, #8: STATIONARY PROPERTY TARGET FRAME */}
-      {stage >= 3 && stage <= 4 && (
+      {/* Target Frame (Only during Stage 3 targeting) */}
+      {stage === 3 && (
         <div className="pointer-events-none fixed inset-0 flex flex-col items-center justify-center z-20">
-          <div className="relative w-72 h-56 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-400/5 shadow-2xl flex flex-col items-center justify-between p-4 animate-pulse">
-            {/* Target Corners */}
+          <div className="relative w-80 h-64 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-400/5 shadow-2xl flex flex-col items-center justify-between p-4 animate-pulse">
             <div className="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-amber-400 rounded-tl-lg" />
             <div className="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-amber-400 rounded-tr-lg" />
             <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-amber-400 rounded-bl-lg" />
@@ -513,23 +496,23 @@ export function SatelliteMapEngine({
             </span>
 
             <span className="text-xs text-amber-200 font-mono text-center bg-slate-950/80 px-3 py-1.5 rounded-xl border border-amber-500/30">
-              Position your property inside the frame
+              Position your property inside the target frame
             </span>
           </div>
         </div>
       )}
 
-      {/* REQUIREMENT #13: MINIMAL SUBTLE MAP CONTROLS */}
+      {/* Subtle Controls */}
       <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2 pointer-events-auto">
         <button
-          onClick={() => setGeoZoom((prev) => Math.min(20.2, prev + 0.5))}
+          onClick={() => setGeoZoom((prev) => Math.min(20.3, prev + 0.5))}
           className="w-10 h-10 rounded-xl bg-slate-950/80 border border-slate-800 text-amber-400 hover:bg-slate-900 font-mono text-lg font-bold shadow-2xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-105"
           title="Zoom In"
         >
           +
         </button>
         <button
-          onClick={() => setGeoZoom((prev) => Math.max(13.5, prev - 0.5))}
+          onClick={() => setGeoZoom((prev) => Math.max(14.0, prev - 0.5))}
           className="w-10 h-10 rounded-xl bg-slate-950/80 border border-slate-800 text-amber-400 hover:bg-slate-900 font-mono text-lg font-bold shadow-2xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-105"
           title="Zoom Out"
         >
@@ -537,7 +520,6 @@ export function SatelliteMapEngine({
         </button>
       </div>
 
-      {/* Atmospheric Depth Vignette */}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#070A0F]/80 via-transparent to-[#070A0F]/60" />
     </div>
   );

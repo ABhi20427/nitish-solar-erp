@@ -18,16 +18,18 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Maharashtra',
     lat: 18.559,
     lng: 73.7868,
-    zoom: 19.2,
+    zoom: 19.8,
     source: 'address',
     roofPolygon: [
-      { x: 32, y: 28 },
-      { x: 68, y: 28 },
-      { x: 72, y: 72 },
-      { x: 28, y: 72 },
+      { x: 30, y: 24 },
+      { x: 72, y: 24 },
+      { x: 76, y: 76 },
+      { x: 24, y: 76 },
     ],
     solarIrradiance: 4.85,
+    totalRoofAreaSqFt: 1850,
     estimatedUsableAreaSqFt: 1450,
+    obstructionAreaSqFt: 400,
   },
   {
     address: 'DLF Cyber City, Phase 2, Gurugram, Haryana',
@@ -36,16 +38,18 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Haryana',
     lat: 28.495,
     lng: 77.0895,
-    zoom: 19.0,
+    zoom: 19.8,
     source: 'address',
     roofPolygon: [
-      { x: 25, y: 22 },
-      { x: 75, y: 22 },
-      { x: 75, y: 78 },
-      { x: 25, y: 78 },
+      { x: 22, y: 20 },
+      { x: 78, y: 20 },
+      { x: 78, y: 80 },
+      { x: 22, y: 80 },
     ],
     solarIrradiance: 4.92,
+    totalRoofAreaSqFt: 2750,
     estimatedUsableAreaSqFt: 2200,
+    obstructionAreaSqFt: 550,
   },
   {
     address: '100 Feet Road, Indiranagar, Bengaluru, Karnataka',
@@ -54,16 +58,18 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Karnataka',
     lat: 12.9784,
     lng: 77.6408,
-    zoom: 19.3,
+    zoom: 19.8,
     source: 'address',
     roofPolygon: [
-      { x: 30, y: 25 },
-      { x: 70, y: 25 },
-      { x: 66, y: 75 },
-      { x: 26, y: 75 },
+      { x: 28, y: 22 },
+      { x: 72, y: 22 },
+      { x: 68, y: 78 },
+      { x: 24, y: 78 },
     ],
     solarIrradiance: 4.65,
+    totalRoofAreaSqFt: 1650,
     estimatedUsableAreaSqFt: 1300,
+    obstructionAreaSqFt: 350,
   },
   {
     address: 'Pali Hill, Bandra West, Mumbai, Maharashtra',
@@ -72,16 +78,18 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Maharashtra',
     lat: 19.0622,
     lng: 72.828,
-    zoom: 19.4,
+    zoom: 19.8,
     source: 'address',
     roofPolygon: [
-      { x: 35, y: 30 },
-      { x: 65, y: 30 },
-      { x: 65, y: 70 },
-      { x: 35, y: 70 },
+      { x: 32, y: 26 },
+      { x: 68, y: 26 },
+      { x: 68, y: 74 },
+      { x: 32, y: 74 },
     ],
     solarIrradiance: 4.75,
+    totalRoofAreaSqFt: 1400,
     estimatedUsableAreaSqFt: 1100,
+    obstructionAreaSqFt: 300,
   },
   {
     address: 'SG Highway, Bodakdev, Ahmedabad, Gujarat',
@@ -90,16 +98,18 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Gujarat',
     lat: 23.0396,
     lng: 72.5074,
-    zoom: 19.1,
+    zoom: 19.8,
     source: 'address',
     roofPolygon: [
-      { x: 20, y: 20 },
-      { x: 80, y: 20 },
-      { x: 80, y: 80 },
-      { x: 20, y: 80 },
+      { x: 18, y: 18 },
+      { x: 82, y: 18 },
+      { x: 82, y: 82 },
+      { x: 18, y: 82 },
     ],
     solarIrradiance: 5.4,
+    totalRoofAreaSqFt: 3400,
     estimatedUsableAreaSqFt: 2800,
+    obstructionAreaSqFt: 600,
   },
   {
     address: 'Road No. 12, Banjara Hills, Hyderabad, Telangana',
@@ -108,16 +118,18 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Telangana',
     lat: 17.4156,
     lng: 78.4347,
-    zoom: 19.2,
+    zoom: 19.8,
     source: 'address',
     roofPolygon: [
-      { x: 30, y: 26 },
-      { x: 70, y: 26 },
-      { x: 70, y: 74 },
-      { x: 30, y: 74 },
+      { x: 26, y: 24 },
+      { x: 74, y: 24 },
+      { x: 74, y: 76 },
+      { x: 26, y: 76 },
     ],
     solarIrradiance: 5.12,
+    totalRoofAreaSqFt: 2000,
     estimatedUsableAreaSqFt: 1600,
+    obstructionAreaSqFt: 400,
   },
 ];
 
@@ -130,7 +142,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Parse location input type dynamically
   const parsedInput = parseLocationInput(address);
 
   useEffect(() => {
@@ -170,16 +181,18 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           state: 'India',
           lat,
           lng,
-          zoom: 19.0,
+          zoom: 19.8,
           source: parsedInput.source,
           roofPolygon: [
-            { x: 30, y: 25 },
-            { x: 70, y: 25 },
-            { x: 70, y: 75 },
-            { x: 30, y: 75 },
+            { x: 25, y: 22 },
+            { x: 75, y: 22 },
+            { x: 75, y: 78 },
+            { x: 25, y: 78 },
           ],
           solarIrradiance: 4.8,
+          totalRoofAreaSqFt: 1900,
           estimatedUsableAreaSqFt: 1500,
+          obstructionAreaSqFt: 400,
         },
       ]);
     }
@@ -207,7 +220,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
 
     setErrorMessage(null);
 
-    // 1. Google Maps Link or Coordinates
     if (parsedInput.lat && parsedInput.lng) {
       const normalizedLoc: SatelliteLocation = {
         address: parsedInput.displayAddress || address,
@@ -216,22 +228,23 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         state: 'India',
         lat: parsedInput.lat,
         lng: parsedInput.lng,
-        zoom: 19.1,
+        zoom: 19.8,
         source: parsedInput.source,
         roofPolygon: [
-          { x: 30, y: 25 },
-          { x: 70, y: 25 },
-          { x: 70, y: 75 },
-          { x: 30, y: 75 },
+          { x: 25, y: 22 },
+          { x: 75, y: 22 },
+          { x: 75, y: 78 },
+          { x: 25, y: 78 },
         ],
         solarIrradiance: 4.8,
+        totalRoofAreaSqFt: 1900,
         estimatedUsableAreaSqFt: 1500,
+        obstructionAreaSqFt: 400,
       };
       onSelectLocation(normalizedLoc);
       return;
     }
 
-    // 2. Preset or standard address search match
     const matched = PRESET_SATELLITE_LOCATIONS.find((l) => l.address.toLowerCase().includes(address.toLowerCase()));
     if (matched) {
       onSelectLocation(matched);
@@ -240,7 +253,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     }
   };
 
-  // Requirement #3: USE MY CURRENT LOCATION
   const handleUseCurrentLocation = () => {
     setErrorMessage(null);
     if (!navigator.geolocation) {
@@ -261,7 +273,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         let state = 'India';
 
         try {
-          // Reverse geocode via OpenStreetMap Nominatim
           const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
           const data = await res.json();
           if (data && data.display_name) {
@@ -269,9 +280,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
             city = data.address?.city || data.address?.town || data.address?.suburb || 'Local Region';
             state = data.address?.state || 'India';
           }
-        } catch (e) {
-          // Graceful fallback if reverse geocode service is offline
-        }
+        } catch (e) {}
 
         const currentLocationLoc: SatelliteLocation = {
           address: displayAddr,
@@ -280,16 +289,18 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           state,
           lat,
           lng,
-          zoom: 19.2,
+          zoom: 19.8,
           source: 'current-location',
           roofPolygon: [
-            { x: 28, y: 24 },
-            { x: 72, y: 24 },
-            { x: 72, y: 76 },
-            { x: 28, y: 76 },
+            { x: 26, y: 22 },
+            { x: 74, y: 22 },
+            { x: 74, y: 78 },
+            { x: 26, y: 78 },
           ],
           solarIrradiance: 4.85,
+          totalRoofAreaSqFt: 1750,
           estimatedUsableAreaSqFt: 1400,
+          obstructionAreaSqFt: 350,
         };
 
         setAddress(displayAddr);
@@ -358,7 +369,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         </button>
       </form>
 
-      {/* Prominent "USE MY CURRENT LOCATION" Button (Requirement #3) */}
       <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
         <button
           type="button"
@@ -381,7 +391,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         )}
       </div>
 
-      {/* User-Facing Error Notice */}
       {errorMessage && (
         <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-mono animate-in fade-in">
           <AlertCircle className="w-4 h-4 shrink-0" />
@@ -389,7 +398,6 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         </div>
       )}
 
-      {/* Autocomplete Dropdown */}
       {isOpen && suggestions.length > 0 && (
         <div className="absolute top-full left-0 right-0 mt-3 bg-slate-950/95 border border-slate-800 rounded-2xl shadow-2xl backdrop-blur-2xl z-30 max-h-72 overflow-y-auto divide-y divide-slate-800/60 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="px-3 py-2 text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -412,7 +420,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
                     {item.address}
                   </div>
                   <div className="text-xs text-slate-400">
-                    {item.city}, {item.state} • Satellite View Ready ({item.lat.toFixed(3)}, {item.lng.toFixed(3)})
+                    {item.city}, {item.state} • Usable Area: ~{item.estimatedUsableAreaSqFt} sq.ft
                   </div>
                 </div>
               </div>

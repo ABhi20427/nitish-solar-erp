@@ -11,7 +11,9 @@ export interface SatelliteLocation {
   source?: LocationSource;
   roofPolygon: { x: number; y: number }[]; // Normalised roof boundary points [0..100]
   solarIrradiance: number; // kWh/kWp/day
+  totalRoofAreaSqFt: number;
   estimatedUsableAreaSqFt: number;
+  obstructionAreaSqFt: number;
 }
 
 export type VisualMode = 'SATELLITE' | 'SOLAR_ANALYSIS' | 'PANEL_LAYOUT' | 'SUN';
