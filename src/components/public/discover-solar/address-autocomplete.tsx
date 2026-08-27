@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Search, Sparkles, Building, ArrowRight, Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
+import { MapPin, Navigation, Sparkles, Building, ArrowRight, Link as LinkIcon, Loader2, AlertCircle } from 'lucide-react';
 import { SatelliteLocation } from './types';
-import { parseLocationInput } from './google-maps-parser';
+import { parseLocationInput, isValidLatLng } from './google-maps-parser';
 
 interface AddressAutocompleteProps {
   onSelectLocation: (location: SatelliteLocation) => void;
@@ -153,9 +153,13 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     }
 
     if (parsedInput.isGoogleMapsLink) {
-      setStatusMessage('Google Maps location detected');
+      if (parsedInput.lat && parsedInput.lng) {
+        setStatusMessage(`Google Maps location detected (${parsedInput.lat.toFixed(4)}, ${parsedInput.lng.toFixed(4)})`);
+      } else {
+        setStatusMessage('Google Maps location link detected → Ready to resolve');
+      }
     } else if (parsedInput.isCoordinates) {
-      setStatusMessage('Coordinates format detected');
+      setStatusMessage(`Coordinates detected (${parsedInput.lat?.toFixed(4)}, ${parsedInput.lng?.toFixed(4)})`);
     } else {
       setStatusMessage(null);
     }
@@ -171,30 +175,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     if (filtered.length > 0) {
       setSuggestions(filtered);
     } else {
-      const lat = parsedInput.lat || 18.5204;
-      const lng = parsedInput.lng || 73.8567;
-      setSuggestions([
-        {
-          address: parsedInput.displayAddress || `${address}, Mapped Location, India`,
-          city: 'Mapped Region',
-          district: 'District',
-          state: 'India',
-          lat,
-          lng,
-          zoom: 19.8,
-          source: parsedInput.source,
-          roofPolygon: [
-            { x: 25, y: 22 },
-            { x: 75, y: 22 },
-            { x: 75, y: 78 },
-            { x: 25, y: 78 },
-          ],
-          solarIrradiance: 4.8,
-          totalRoofAreaSqFt: 1900,
-          estimatedUsableAreaSqFt: 1500,
-          obstructionAreaSqFt: 400,
-        },
-      ]);
+      setSuggestions([]);
     }
   }, [address]);
 
@@ -214,16 +195,19 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     onSelectLocation(loc);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!address.trim()) return;
 
     setErrorMessage(null);
+    setIsOpen(false);
 
-    if (parsedInput.lat && parsedInput.lng) {
+    // 1. Direct Coordinates or Pre-extracted Google Maps URL Coordinates
+    if (parsedInput.lat !== null && parsedInput.lng !== null && isValidLatLng(parsedInput.lat, parsedInput.lng)) {
+      console.log(`Google Maps location parsed directly: { latitude: ${parsedInput.lat}, longitude: ${parsedInput.lng} }`);
       const normalizedLoc: SatelliteLocation = {
         address: parsedInput.displayAddress || address,
-        city: 'Mapped City',
+        city: 'Mapped Location',
         district: 'District',
         state: 'India',
         lat: parsedInput.lat,
@@ -236,7 +220,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           { x: 75, y: 78 },
           { x: 25, y: 78 },
         ],
-        solarIrradiance: 4.8,
+        solarIrradiance: 4.85,
         totalRoofAreaSqFt: 1900,
         estimatedUsableAreaSqFt: 1500,
         obstructionAreaSqFt: 400,
@@ -245,11 +229,118 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
       return;
     }
 
+    // 2. Google Maps URL requiring server-side expansion (e.g. short link or place search link)
+    if (parsedInput.isGoogleMapsLink) {
+      setIsLocating(true);
+      setStatusMessage('Resolving Google Maps location...');
+
+      try {
+        const res = await fetch('/api/resolve-maps-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: address }),
+        });
+
+        const data = await res.json();
+        setIsLocating(false);
+
+        if (data.success && isValidLatLng(data.lat, data.lng)) {
+          console.log(`Google Maps location resolved via API: { latitude: ${data.lat}, longitude: ${data.lng} }`);
+          setStatusMessage(`Location resolved (${data.lat.toFixed(4)}, ${data.lng.toFixed(4)})`);
+
+          const resolvedLoc: SatelliteLocation = {
+            address: data.displayAddress || address,
+            city: 'Mapped Region',
+            district: 'District',
+            state: 'India',
+            lat: data.lat,
+            lng: data.lng,
+            zoom: 19.8,
+            source: 'google-maps-link',
+            roofPolygon: [
+              { x: 25, y: 22 },
+              { x: 75, y: 22 },
+              { x: 75, y: 78 },
+              { x: 25, y: 78 },
+            ],
+            solarIrradiance: 4.85,
+            totalRoofAreaSqFt: 1900,
+            estimatedUsableAreaSqFt: 1500,
+            obstructionAreaSqFt: 400,
+          };
+          onSelectLocation(resolvedLoc);
+          return;
+        } else {
+          // ABSOLUTE RULE #6: NEVER SILENTLY FALL BACK TO DEFAULT PUNE LOCATION!
+          setStatusMessage(null);
+          setErrorMessage(
+            data.error ||
+              "Couldn't read coordinates from this Google Maps link. Please paste a full Google Maps URL with coordinates or search by address."
+          );
+          return;
+        }
+      } catch (err) {
+        setIsLocating(false);
+        setStatusMessage(null);
+        setErrorMessage("Error resolving Google Maps URL. Please paste full Google Maps URL or search by address.");
+        return;
+      }
+    }
+
+    // 3. Preset match
     const matched = PRESET_SATELLITE_LOCATIONS.find((l) => l.address.toLowerCase().includes(address.toLowerCase()));
     if (matched) {
       onSelectLocation(matched);
-    } else {
-      onSelectLocation(suggestions[0] || PRESET_SATELLITE_LOCATIONS[0]);
+      return;
+    }
+
+    // 4. Geocode text address via OpenStreetMap Nominatim
+    setIsLocating(true);
+    setStatusMessage('Locating address...');
+
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
+      );
+      const geoData = await geoRes.json();
+      setIsLocating(false);
+
+      if (geoData && geoData[0]) {
+        const lat = parseFloat(geoData[0].lat);
+        const lng = parseFloat(geoData[0].lon);
+        if (isValidLatLng(lat, lng)) {
+          const addressLoc: SatelliteLocation = {
+            address: geoData[0].display_name || address,
+            city: geoData[0].address?.city || 'Local Region',
+            district: geoData[0].address?.county || 'District',
+            state: geoData[0].address?.state || 'India',
+            lat,
+            lng,
+            zoom: 19.8,
+            source: 'address',
+            roofPolygon: [
+              { x: 25, y: 22 },
+              { x: 75, y: 22 },
+              { x: 75, y: 78 },
+              { x: 25, y: 78 },
+            ],
+            solarIrradiance: 4.8,
+            totalRoofAreaSqFt: 1800,
+            estimatedUsableAreaSqFt: 1400,
+            obstructionAreaSqFt: 400,
+          };
+          onSelectLocation(addressLoc);
+          return;
+        }
+      }
+
+      // Geocoding failed -> Return clear error (NO SILENT DEFAULT FALLBACK!)
+      setStatusMessage(null);
+      setErrorMessage(`Address "${address}" could not be found. Please check spelling or enter coordinates.`);
+    } catch (err) {
+      setIsLocating(false);
+      setStatusMessage(null);
+      setErrorMessage('Could not complete address search. Please check your internet connection.');
     }
   };
 
@@ -362,10 +453,20 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
 
         <button
           type="submit"
-          className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-6 py-4 rounded-2xl shadow-xl shadow-amber-500/20 text-sm flex items-center justify-center gap-2 transition-all duration-300 shrink-0 hover:scale-[1.02] active:scale-[0.98]"
+          disabled={isLocating}
+          className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-6 py-4 rounded-2xl shadow-xl shadow-amber-500/20 text-sm flex items-center justify-center gap-2 transition-all duration-300 shrink-0 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
         >
-          <span>LOCATE MY HOME</span>
-          <ArrowRight className="w-4 h-4" />
+          {isLocating ? (
+            <>
+              <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+              <span>LOCATING...</span>
+            </>
+          ) : (
+            <>
+              <span>LOCATE MY HOME</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
         </button>
       </form>
 
