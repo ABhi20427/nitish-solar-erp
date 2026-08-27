@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { PublicNavbar } from '@/components/public/navbar';
 import { PublicFooter } from '@/components/public/footer';
 import { QuoteModal } from '@/components/public/quote-modal';
+import { DiscoverSolarExperience } from '@/components/public/discover-solar/discover-solar-experience';
 import { Button } from '@/components/ui/button';
 import { calculateSolarSystem } from '@/lib/solar-calc';
 import { useSolarStore } from '@/lib/store-context';
@@ -122,6 +123,7 @@ function formatIndianNumber(val: number): string {
 export default function HomePage() {
   const { addLead } = useSolarStore();
   const [isQuoteOpen, setIsQuoteOpen] = useState(false);
+  const [isDiscoverSolarOpen, setIsDiscoverSolarOpen] = useState(false);
   const [quickBill, setQuickBill] = useState(25000);
   const [formSubmitted, setFormSubmitted] = useState(false);
 
@@ -340,7 +342,12 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 selection:bg-amber-500 selection:text-slate-950 font-sans antialiased">
       {/* Dynamic Scroll Navigation Header */}
-      <PublicNavbar transparentOverlay lightTheme onOpenQuoteModal={() => setIsQuoteOpen(true)} />
+      <PublicNavbar
+        transparentOverlay
+        lightTheme
+        onOpenQuoteModal={() => setIsQuoteOpen(true)}
+        onOpenDiscoverSolar={() => setIsDiscoverSolarOpen(true)}
+      />
 
       {/* 1. HERO BACKGROUND (100VH / 100SVH / 100DVH FULL-SCREEN CINEMATIC) */}
       <section className="relative w-full min-h-screen min-h-[100svh] min-h-[100dvh] h-screen h-[100svh] flex items-center justify-center overflow-hidden snap-major-scene">
@@ -381,16 +388,15 @@ export default function HomePage() {
 
             {/* CTAs */}
             <div className="flex flex-wrap items-center gap-4 pt-2 sm:pt-4 hero-animate-4">
-              <Link href="/quote">
-                <Button
-                  variant="accent"
-                  size="lg"
-                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-4 rounded-xl shadow-2xl shadow-amber-500/20 transition-all duration-300 group border-0 text-base flex items-center gap-2.5"
-                  icon={<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
-                >
-                  Get a Quote
-                </Button>
-              </Link>
+              <Button
+                variant="accent"
+                size="lg"
+                onClick={() => setIsDiscoverSolarOpen(true)}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-8 py-4 rounded-xl shadow-2xl shadow-amber-500/20 transition-all duration-300 group border-0 text-base flex items-center gap-2.5 hover:scale-105"
+                icon={<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+              >
+                DISCOVER YOUR SOLAR →
+              </Button>
               <Link href="/solutions">
                 <Button
                   variant="outline"
@@ -1306,6 +1312,7 @@ export default function HomePage() {
       {/* Public Footer */}
       <PublicFooter />
       <QuoteModal isOpen={isQuoteOpen} onClose={() => setIsQuoteOpen(false)} />
+      <DiscoverSolarExperience isOpen={isDiscoverSolarOpen} onClose={() => setIsDiscoverSolarOpen(false)} />
     </div>
   );
 }

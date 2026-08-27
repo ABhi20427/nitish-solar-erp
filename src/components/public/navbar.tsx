@@ -9,10 +9,12 @@ import { Calculator, PhoneCall, Menu, X, ArrowRight } from 'lucide-react';
 
 export function PublicNavbar({
   onOpenQuoteModal,
+  onOpenDiscoverSolar,
   transparentOverlay = false,
   lightTheme = false,
 }: {
   onOpenQuoteModal?: () => void;
+  onOpenDiscoverSolar?: () => void;
   transparentOverlay?: boolean;
   lightTheme?: boolean;
 }) {
@@ -81,24 +83,46 @@ export function PublicNavbar({
               );
             })}
 
-            <Link href="/quote">
+            {onOpenDiscoverSolar ? (
               <Button
                 variant="accent"
                 size="sm"
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border-0 shadow-lg shadow-amber-500/10 text-xs px-3.5 py-1.5 rounded-lg ml-2"
+                onClick={onOpenDiscoverSolar}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold border-0 shadow-lg shadow-amber-500/10 text-xs px-3.5 py-1.5 rounded-lg ml-2 hover:scale-105 transition-all"
               >
-                Get a Quote
+                DISCOVER YOUR SOLAR →
               </Button>
-            </Link>
+            ) : (
+              <Link href="/quote">
+                <Button
+                  variant="accent"
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold border-0 shadow-lg shadow-amber-500/10 text-xs px-3.5 py-1.5 rounded-lg ml-2"
+                >
+                  Get a Quote
+                </Button>
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Header Controls — FAR RIGHT */}
           <div className="lg:hidden flex items-center gap-3">
-            <Link href="/quote">
-              <Button variant="accent" size="sm" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-2.5">
-                Quote
+            {onOpenDiscoverSolar ? (
+              <Button
+                variant="accent"
+                size="sm"
+                onClick={onOpenDiscoverSolar}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-[11px] px-2.5"
+              >
+                DISCOVER SOLAR
               </Button>
-            </Link>
+            ) : (
+              <Link href="/quote">
+                <Button variant="accent" size="sm" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-2.5">
+                  Quote
+                </Button>
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800"
