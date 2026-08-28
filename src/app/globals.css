@@ -161,13 +161,39 @@ body {
   will-change: transform, opacity;
 }
 
+/* Closing-section value strip: a small light travelling along the connecting
+   line between value icons, echoing the "energy flowing through the system"
+   motif used elsewhere on the page as a closing visual signature. */
+@keyframes valueLineFlow {
+  0% {
+    left: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-value-flow {
+  animation: valueLineFlow 3.2s ease-in-out infinite;
+  will-change: left, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-animate-1,
   .hero-animate-2,
   .hero-animate-3,
   .hero-animate-4,
   .animate-panel-stack,
-  .animate-panel-layer {
+  .animate-panel-layer,
+  .animate-value-flow {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

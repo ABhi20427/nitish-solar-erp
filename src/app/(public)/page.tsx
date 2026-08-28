@@ -15,7 +15,6 @@ import {
   Building2,
   Factory,
   Home as HomeIcon,
-  Award,
   Calculator,
   ArrowRight,
   CheckCircle2,
@@ -30,6 +29,12 @@ import {
   ChevronRight,
   ChevronLeft,
   Layers,
+  IndianRupee,
+  Clock,
+  Compass,
+  FileCheck2,
+  Wrench,
+  Headset,
 } from 'lucide-react';
 
 
@@ -110,6 +115,18 @@ const PANEL_LAYERS = [
   { id: 'frame', depth: 32, extra: 'bg-transparent border-[1.5px] border-slate-400/60' },
 ] as const;
 
+// Closing-section value strip — what we actually promise, not fabricated
+// track-record numbers (this is a young company; false stats would be a
+// credibility risk the moment anyone asks). Presented as a connected,
+// animated row instead, echoing the site's "energy flowing through the
+// system" visual motif one last time.
+const VALUE_PROPS = [
+  { icon: Compass, label: 'Engineering-Led Design', desc: 'Every system modeled and sized before a panel is ordered.' },
+  { icon: FileCheck2, label: 'Transparent Documentation', desc: 'Full DISCOM paperwork and net-metering support, handled for you.' },
+  { icon: Wrench, label: 'Turnkey Installation', desc: 'One team, start to finish — survey, design, install, commissioning.' },
+  { icon: Headset, label: 'Direct Engineer Access', desc: 'Talk to the person who designed your system, not a call center.' },
+];
+
 // Deterministic Number Formatter to guarantee 100% hydration match between Node SSR and browser client
 function formatIndianNumber(val: number): string {
   if (typeof val !== 'number' || isNaN(val)) return '0';
@@ -122,6 +139,26 @@ export default function HomePage() {
   const [isDiscoverSolarOpen, setIsDiscoverSolarOpen] = useState(false);
   const [quickBill, setQuickBill] = useState(25000);
   const [formSubmitted, setFormSubmitted] = useState(false);
+
+  // Closing value-strip scroll reveal — fires once when the strip enters view,
+  // driving a single staggered CSS entrance for all four items.
+  const valueStripRef = useRef<HTMLDivElement>(null);
+  const [valueStripInView, setValueStripInView] = useState(false);
+  useEffect(() => {
+    const el = valueStripRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setValueStripInView(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Deterministic Initial Scroll Step States
   const [solutionsStep, setSolutionsStep] = useState(0);
@@ -1095,11 +1132,28 @@ export default function HomePage() {
       </section>
 
       {/* 7. SECTION 7 — SOLAR CALCULATOR & PROPOSAL REQUEST */}
-      <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural overflow-hidden">
+        {/* Same engineering-blueprint atmosphere used in the Editorial section —
+            faint grid + a soft amber glow anchored behind the estimator panel. */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div
+            className="absolute inset-0 opacity-[0.05]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)',
+              backgroundSize: '56px 56px',
+            }}
+          />
+          <div className="absolute left-[8%] top-1/2 -translate-y-1/2 w-[640px] h-[640px] rounded-full bg-amber-500/[0.05] blur-[150px]" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#0B0F17]/90 rounded-3xl p-8 sm:p-12 border border-slate-800/70 shadow-2xl shadow-black/40">
             <div className="lg:col-span-6 space-y-6">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">Financial ROI Estimator</span>
+              <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">
+                <Calculator className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Financial ROI Estimator</span>
+              </div>
               <h2 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">
                 See what solar can do for your facility.
               </h2>
@@ -1124,22 +1178,57 @@ export default function HomePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#131B2E] p-4 rounded-2xl border border-slate-800/70 text-xs">
-                  <div>
-                    <span className="text-slate-400 block">Recommended Capacity:</span>
-                    <span className="text-lg font-semibold text-white">{quickCalc.recommendedCapacityKw} kWp</span>
+                {/* Live Capacity Gauge + Stat Readout — the ring fills in real time
+                    as the slider moves, giving the estimator a genuine "instrument"
+                    feel instead of a static number grid. Pure SVG stroke-dashoffset,
+                    GPU-cheap, no extra libraries. */}
+                <div className="flex items-center gap-5 sm:gap-7 bg-[#131B2E] p-5 rounded-2xl border border-slate-800/70">
+                  <div className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28">
+                    <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="7" />
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        fill="none"
+                        stroke="#F59E0B"
+                        strokeWidth="7"
+                        strokeLinecap="round"
+                        strokeDasharray={2 * Math.PI * 42}
+                        strokeDashoffset={2 * Math.PI * 42 * (1 - Math.min(1, (quickBill - 5000) / (250000 - 5000)))}
+                        style={{ transition: 'stroke-dashoffset 0.3s ease-out' }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-display text-xl sm:text-2xl font-semibold text-white tabular-nums leading-none">
+                        {quickCalc.recommendedCapacityKw}
+                      </span>
+                      <span className="text-[9px] text-slate-400 mt-1">kWp system</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block">Est. Annual Savings:</span>
-                    <span className="text-lg font-semibold text-emerald-400">₹{formatIndianNumber(quickCalc.annualSavingsEst)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Est. Subsidy / Benefit:</span>
-                    <span className="text-sm font-semibold text-amber-400">₹{formatIndianNumber(quickCalc.subsidyEstimate)}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Payback Horizon:</span>
-                    <span className="text-sm font-semibold text-white">{quickCalc.paybackPeriodYears} Years</span>
+
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-3.5 text-xs flex-1 min-w-0">
+                    <div>
+                      <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                        <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+                        <span>Annual Savings</span>
+                      </div>
+                      <span className="text-base font-semibold text-emerald-400 tabular-nums">₹{formatIndianNumber(quickCalc.annualSavingsEst)}</span>
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                        <IndianRupee className="w-3.5 h-3.5 shrink-0" />
+                        <span>Subsidy / Benefit</span>
+                      </div>
+                      <span className="text-base font-semibold text-amber-400 tabular-nums">₹{formatIndianNumber(quickCalc.subsidyEstimate)}</span>
+                    </div>
+                    <div className="col-span-2">
+                      <div className="flex items-center gap-1.5 text-slate-400 mb-1">
+                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                        <span>Payback Horizon</span>
+                      </div>
+                      <span className="text-base font-semibold text-white tabular-nums">{quickCalc.paybackPeriodYears} Years</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1248,38 +1337,73 @@ export default function HomePage() {
             alt="nitish solar clean energy future"
             fill
             sizes="100vw"
-            className="object-cover object-center filter brightness-50"
+            className="object-cover object-center filter brightness-50 scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0F172A] via-black/60 to-[#070A10]" />
+          {/* Same faint engineering-grid texture used throughout the page, for
+              visual continuity right up to the last section. */}
+          <div
+            className="absolute inset-0 opacity-[0.06]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)',
+              backgroundSize: '64px 64px',
+            }}
+          />
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
-          <h2 className="font-display text-4xl sm:text-6xl font-semibold text-white tracking-tight leading-tight">
-            Let's build a cleaner energy future.
-          </h2>
-          <p className="text-slate-200 text-base sm:text-xl font-light leading-relaxed max-w-2xl mx-auto">
-            Partner with <strong className="text-white font-semibold">nitish solar</strong> to transition your home, enterprise, or industrial complex to turnkey solar power.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-9">
+          <div className="space-y-6">
+            <h2 className="font-display text-4xl sm:text-6xl font-semibold text-white tracking-tight leading-tight">
+              Let's build a cleaner energy future.
+            </h2>
+            <p className="text-slate-200 text-base sm:text-xl font-light leading-relaxed max-w-2xl mx-auto">
+              Partner with <strong className="text-white font-semibold">nitish solar</strong> to transition your home, enterprise, or industrial complex to turnkey solar power.
+            </p>
+          </div>
+
+          <div className="space-y-3">
             <Link href="/quote">
               <Button
                 variant="accent"
                 size="lg"
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-8 py-4 rounded-lg text-base transition-all border-0"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-10 py-5 rounded-lg text-base sm:text-lg transition-all border-0 hover:scale-[1.02]"
                 icon={<ArrowRight className="w-5 h-5" />}
               >
                 Get a Quote
               </Button>
             </Link>
-            <Link href="/contact">
-              <Button
-                variant="outline"
-                size="lg"
-                className="border-white/25 bg-black/30 backdrop-blur-sm text-white hover:bg-white/10 px-8 py-4 rounded-lg text-base font-medium"
-              >
-                Speak with an Engineer
-              </Button>
-            </Link>
+            <p className="text-xs text-slate-400">Free site assessment. No obligation.</p>
+          </div>
+
+          {/* Closing Value Strip — what we actually commit to, not invented
+              numbers. A connected row echoing the "energy flowing through the
+              system" motif: a line links each value, with a small light
+              continuously travelling it, and the icons settle into place with
+              a staggered reveal the first time this comes into view. */}
+          <div ref={valueStripRef} className="pt-8 max-w-3xl mx-auto border-t border-white/10">
+            <div className="relative grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-8 pt-8">
+              <div className="hidden sm:block absolute top-[42px] left-[12.5%] right-[12.5%] h-px bg-white/10">
+                <div className="relative w-full h-full">
+                  <div className="animate-value-flow absolute top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-amber-300 shadow-[0_0_6px_2px_rgba(251,191,36,0.45)]" />
+                </div>
+              </div>
+              {VALUE_PROPS.map((item, i) => (
+                <div
+                  key={item.label}
+                  className={`relative flex flex-col items-center gap-2 text-center transition-all duration-700 ease-out ${
+                    valueStripInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                  }`}
+                  style={{ transitionDelay: `${i * 120}ms` }}
+                >
+                  <span className="relative z-10 w-11 h-11 rounded-full bg-[#0F172A] border border-white/15 flex items-center justify-center">
+                    <item.icon className="w-4 h-4 text-amber-400" />
+                  </span>
+                  <span className="text-xs font-semibold text-white leading-tight">{item.label}</span>
+                  <span className="text-[11px] text-slate-400 leading-snug hidden sm:block">{item.desc}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
