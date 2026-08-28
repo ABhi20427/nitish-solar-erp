@@ -377,12 +377,12 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         {stage === 1 ? (
           <div className="absolute inset-0 z-0 overflow-hidden bg-[#070A0F]">
             <img
-              src="/images/solar-vision-hero.jpg"
+              src="/images/solar-vision-hero.png"
               alt="Solar Vision Sunset Landscape"
-              className="w-full h-full object-cover object-center animate-in fade-in duration-700"
+              className="w-full h-full object-cover object-center filter contrast-110 saturate-[1.05] brightness-95 animate-in fade-in duration-700"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-[#070A0F]/50 to-[#070A0F]/30" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-black/70" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#070A0F] via-[#070A0F]/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-transparent to-black/50 pointer-events-none" />
           </div>
         ) : (
           <SatelliteMapEngine
