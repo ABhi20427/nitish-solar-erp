@@ -124,26 +124,11 @@ body {
   animation: heroFadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.55s both;
 }
 
-@keyframes energyFlowLeft {
-  0% {
-    transform: translateX(0%);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-energy-flow {
-  animation: energyFlowLeft 35s linear infinite;
-  will-change: transform;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .hero-animate-1,
   .hero-animate-2,
   .hero-animate-3,
-  .hero-animate-4,
-  .animate-energy-flow {
+  .hero-animate-4 {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

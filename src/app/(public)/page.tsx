@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   ChevronRight,
   ChevronLeft,
+  Layers,
 } from 'lucide-react';
 
 const TRUST_INDICATORS = [
@@ -136,6 +137,8 @@ export default function HomePage() {
   // Section Refs
   const solutionsRef = useRef<HTMLDivElement>(null);
   const plantSectionRef = useRef<HTMLDivElement>(null);
+  const plantVideoRef = useRef<HTMLVideoElement>(null);
+  const hasPlayedPlantVideo = useRef(false);
   const impactRef = useRef<HTMLDivElement>(null);
 
   // Quote Form State
@@ -177,10 +180,29 @@ export default function HomePage() {
             }
           }
 
-          // 2. Inside A Solar Plant Scroll Progress
+          // 2. Inside A Solar Plant Scroll Progress & Non-Loop Video Trigger
           if (plantSectionRef.current) {
             const rect = plantSectionRef.current.getBoundingClientRect();
             const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
+
+            // Trigger video play once when user scrolls into Section 4 from top
+            const isSectionVisible = rect.top <= window.innerHeight * 0.8 && rect.bottom >= 0;
+            if (isSectionVisible) {
+              if (!hasPlayedPlantVideo.current) {
+                hasPlayedPlantVideo.current = true;
+                if (plantVideoRef.current) {
+                  plantVideoRef.current.currentTime = 0;
+                  plantVideoRef.current.play().catch(() => {});
+                }
+              }
+            } else if (rect.top > window.innerHeight) {
+              // Reset trigger when user scrolls back above Section 4
+              hasPlayedPlantVideo.current = false;
+              if (plantVideoRef.current) {
+                plantVideoRef.current.pause();
+              }
+            }
+
             if (totalDist > 0 && rect.top <= 0 && rect.bottom >= 0) {
               const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
               const computedStage = Math.min(4, Math.floor(progress * 5));
@@ -427,13 +449,40 @@ export default function HomePage() {
       </section>
 
       {/* 2. SECTION 2 — EDITORIAL INTRODUCTION ("Energy engineered for precision, returns & longevity.") */}
-      <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural overflow-hidden">
+        {/* Decorative Background: faint engineering blueprint grid + warm ambient glow +
+            a large sun-ray emblem watermark — thematically tied to "solar engineering",
+            kept extremely low-opacity/stroke-only so it reads as texture, not neon. */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div
+            className="absolute inset-0 opacity-[0.05]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)',
+              backgroundSize: '56px 56px',
+            }}
+          />
+          <div className="absolute right-[-8%] top-1/2 -translate-y-1/2 w-[760px] h-[760px] rounded-full bg-amber-500/[0.06] blur-[150px]" />
+          <svg className="absolute -top-28 -right-28 w-[600px] h-[600px] opacity-[0.08]" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="46" stroke="#F59E0B" strokeWidth="1" />
+            <circle cx="100" cy="100" r="70" stroke="#F59E0B" strokeWidth="0.5" strokeDasharray="2 4" />
+            {Array.from({ length: 16 }).map((_, i) => {
+              const rad = (i * 360 * Math.PI) / (16 * 180);
+              const x1 = 100 + Math.cos(rad) * 58;
+              const y1 = 100 + Math.sin(rad) * 58;
+              const x2 = 100 + Math.cos(rad) * 96;
+              const y2 = 100 + Math.sin(rad) * 96;
+              return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#F59E0B" strokeWidth="1" />;
+            })}
+          </svg>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
             <div className="lg:col-span-6 space-y-6">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-400 block">
-                EDITORIAL OVERVIEW & PHILOSOPHY
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">
+                Editorial Overview & Philosophy
               </span>
               <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-tight">
                 Energy engineered for precision, returns & longevity.
@@ -445,88 +494,73 @@ export default function HomePage() {
                 Whether deploying residential rooftop solar systems, commercial net-metered arrays, or utility-scale megawatt power plants, our end-to-end EPC workflow ensures exact tilt geometry, 3D shadow analysis, DISCOM grid synchronization, and 25-year linear performance guarantees.
               </p>
               <div className="pt-2">
-                <Link href="/about" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors group">
+                <Link href="/about" className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-amber-400 transition-colors group">
                   <span>Discover nitish solar's Engineering Philosophy</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
 
-            {/* Right Interactive Engineering & Financial Performance Dashboard */}
+            {/* Right: Engineering & Financial Performance Panel */}
             <div className="lg:col-span-6">
-              <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                  <div>
-                    <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">
-                      SOLAR ENGINE SPECIFICATIONS
+              <div className="bg-[#0B0F17] rounded-3xl border border-slate-800/70 p-6 sm:p-8 space-y-7">
+                <div className="flex items-center justify-between border-b border-slate-800/70 pb-5">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">
+                      Engineering Performance
                     </span>
-                    <h3 className="text-xl font-bold text-white">Engineering Performance Matrix</h3>
+                    <h3 className="font-display text-xl font-semibold text-white">Built on measurable outcomes</h3>
                   </div>
-                  <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>TIER-1 CERTIFIED</span>
-                  </div>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-400 shrink-0 pl-4">
+                    Tier-1 Certified
+                  </span>
                 </div>
 
                 {/* Performance Metrics Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
-                    <span className="text-xs font-mono text-slate-400 block">GENERATION EFFICIENCY</span>
-                    <span className="text-2xl font-black text-amber-400 block">99.4%</span>
-                    <span className="text-[10px] text-slate-500 block">N-Type TOPCon PV Cells</span>
+                <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+                  <div className="space-y-1">
+                    <span className="font-display text-2xl font-semibold text-white block tabular-nums">99.4%</span>
+                    <span className="text-xs text-slate-300 block">Generation efficiency</span>
+                    <span className="text-[11px] text-slate-500 block">N-Type TOPCon PV cells</span>
                   </div>
-                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
-                    <span className="text-xs font-mono text-slate-400 block">AVERAGE ROI PAYBACK</span>
-                    <span className="text-2xl font-black text-emerald-400 block">3.2 Years</span>
-                    <span className="text-[10px] text-slate-500 block">With DISCOM Net-Metering</span>
+                  <div className="space-y-1">
+                    <span className="font-display text-2xl font-semibold text-emerald-400 block tabular-nums">3.2 yrs</span>
+                    <span className="text-xs text-slate-300 block">Average ROI payback</span>
+                    <span className="text-[11px] text-slate-500 block">With DISCOM net-metering</span>
                   </div>
-                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
-                    <span className="text-xs font-mono text-slate-400 block">PERFORMANCE WARRANTY</span>
-                    <span className="text-2xl font-black text-white block">25 Years</span>
-                    <span className="text-[10px] text-slate-500 block">Linear Output Protection</span>
+                  <div className="space-y-1">
+                    <span className="font-display text-2xl font-semibold text-white block tabular-nums">25 yrs</span>
+                    <span className="text-xs text-slate-300 block">Performance warranty</span>
+                    <span className="text-[11px] text-slate-500 block">Linear output protection</span>
                   </div>
-                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
-                    <span className="text-xs font-mono text-slate-400 block">TAX DEPRECIATION</span>
-                    <span className="text-2xl font-black text-amber-400 block">40%</span>
-                    <span className="text-[10px] text-slate-500 block">Accelerated Commercial Benefit</span>
+                  <div className="space-y-1">
+                    <span className="font-display text-2xl font-semibold text-amber-400 block tabular-nums">40%</span>
+                    <span className="text-xs text-slate-300 block">Tax depreciation</span>
+                    <span className="text-[11px] text-slate-500 block">Accelerated commercial benefit</span>
                   </div>
                 </div>
 
                 {/* Key Engineering Pillars List */}
-                <div className="space-y-3 pt-2 border-t border-slate-800/80">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
-                      <Zap className="w-4 h-4" />
-                    </div>
+                <div className="space-y-4 pt-1 border-t border-slate-800/70">
+                  <div className="flex items-start gap-3 pt-5">
+                    <Zap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-bold text-white">Geographic 3D Roof Modeling</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed font-light">
+                      <h4 className="text-sm font-semibold text-white">Geographic 3D roof modeling</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed font-light mt-0.5">
                         Every property is mapped using high-resolution satellite imagery and shadow vector tracing to optimize azimuth tilt and panel layout.
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
-                      <ShieldCheck className="w-4 h-4" />
-                    </div>
+                    <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-sm font-bold text-white">Turnkey DISCOM Net-Metering</h4>
-                      <p className="text-xs text-slate-400 leading-relaxed font-light">
+                      <h4 className="text-sm font-semibold text-white">Turnkey DISCOM net-metering</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed font-light mt-0.5">
                         Complete statutory regulatory approvals, bi-directional ABT meter synchronization, and DISCOM grid interconnection.
                       </p>
                     </div>
                   </div>
-                </div>
-
-                {/* CTA Button */}
-                <div className="pt-2">
-                  <button
-                    onClick={() => setIsDiscoverSolarOpen(true)}
-                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
-                  >
-                    <span>ANALYZE YOUR ROOF POTENTIAL NOW →</span>
-                  </button>
                 </div>
               </div>
             </div>
@@ -826,19 +860,22 @@ export default function HomePage() {
       </section>
 
       {/* 4. SECTION 4 — INSIDE A SOLAR PLANT (HOMEPAGE 5-STAGE "FOLLOW THE ENERGY" EXPERIENCE) */}
-      <section ref={plantSectionRef} className="hidden md:block relative w-full h-[360vh] bg-[#0B0F17] snap-major-scene">
+      <section ref={plantSectionRef} className="relative w-full h-[360vh] bg-[#0B0F17] snap-major-scene">
         {/* Sticky Viewport Container (100vh full viewport) */}
         <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
           
-          {/* Soft Ambient Depth (single restrained tone, no rainbow color-shifting) */}
-          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/80 to-[#0B0F17]" />
-            <div
-              className="absolute left-1/2 top-1/2 w-[700px] h-[450px] rounded-full bg-slate-800/25 blur-[110px] transition-transform duration-700 ease-out"
-              style={{
-                transform: `translate(-50%, -50%) translateX(${(2 - plantStageIdx) * 14}vw)`,
-              }}
+          {/* Full-Screen Video Background for "Inside a Solar Plant" */}
+          <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-[#0B0F17]">
+            <video
+              ref={plantVideoRef}
+              src="/videos/backgroundvid1.mp4"
+              muted
+              playsInline
+              loop={false}
+              className="w-full h-full object-cover filter brightness-[0.45] contrast-[1.08]"
             />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-transparent to-[#0B0F17]" />
+            <div className="absolute inset-0 bg-black/40" />
           </div>
 
           {/* Main 2-Column Desktop Grid Layout (Guarantees Text Safe Zone vs Visual Stage) */}
@@ -908,244 +945,118 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* RIGHT 7-COL: Interactive Five Cinematic Engineering SVG Gadgets Container */}
-            <div className="col-span-7 relative min-h-[440px] lg:min-h-[480px] flex flex-col items-center justify-between overflow-hidden rounded-3xl border border-slate-800/70 bg-[#070A10]/95 shadow-2xl shadow-black/40 p-6">
+            {/* RIGHT 7-COL: Exploded Layer View — an axonometric stack of the current
+                stage's physical/functional layers next to a clickable layer-node row
+                (dashed icon circles + dotted connector), the way a manufacturer shows
+                an exploded module cross-section beside its component list. Stage-level
+                switching (Solar/DC/Inverter/Transformer/Grid) stays on the pill bar
+                below; this operates one level down, on that stage's layers. */}
+            <div className="col-span-7 relative min-h-[440px] lg:min-h-[480px] flex flex-col justify-center overflow-hidden rounded-3xl border border-slate-800/70 bg-[#070A10]/95 shadow-2xl shadow-black/40 p-8 lg:p-10">
+              {(() => {
+                const stage = PLANT_STAGES[plantStageIdx];
+                const layers = stage.layers;
+                const activeLayer = layers[plantLayerIdx] ?? layers[0];
+                const StageIcon = stage.icon;
+                const cleanName = (n: string) => n.replace(/^\d+\s*—\s*/, '');
 
-              {/* 1. Continuous Infrastructure Journey Header */}
-              <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800/70 text-[11px] font-semibold z-20 shrink-0">
-                {PLANT_STAGES.map((stg, i) => (
-                  <React.Fragment key={stg.id}>
-                    {i > 0 && <span className="text-slate-600">→</span>}
-                    <span
-                      onClick={() => {
-                        setPlantStageIdx(i);
-                        setPlantLayerIdx(0);
-                        if (plantSectionRef.current) {
-                          const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
-                          const targetScrollTop = plantSectionRef.current.offsetTop + (i / 4) * totalDist;
-                          window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-                        }
-                      }}
-                      className={`cursor-pointer transition-colors duration-300 ${
-                        plantStageIdx === i ? 'text-amber-400 font-bold' : 'text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      {stg.title}
-                    </span>
-                  </React.Fragment>
-                ))}
-              </div>
-
-              {/* 2. Main SVG Gadget Interactive Scene Container */}
-              <div className="relative w-full flex-1 flex items-center justify-center overflow-hidden my-3 z-10">
-                
-                {/* GADGET 01: SOLAR SVG GADGET */}
-                {plantStageIdx === 0 && (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative animate-fade-in space-y-2">
-                    <svg className="w-full max-w-[420px] h-[220px]" viewBox="0 0 420 220" fill="none">
-                      {/* Sun Rays */}
-                      <g className="text-amber-400/40 animate-pulse">
-                        <circle cx="210" cy="25" r="16" fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="2" />
-                        <line x1="210" y1="45" x2="210" y2="70" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                        <line x1="180" y1="35" x2="150" y2="70" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                        <line x1="240" y1="35" x2="270" y2="70" stroke="currentColor" strokeWidth="2" strokeDasharray="3 3" />
-                      </g>
-
-                      {/* Solar Panel Frame */}
-                      <rect x="70" y="75" width="280" height="110" rx="12" fill="#0F172A" stroke="#F59E0B" strokeWidth="2" strokeOpacity="0.7" />
-                      
-                      {/* PV Cell Matrix Grid */}
-                      {Array.from({ length: 18 }).map((_, idx) => {
-                        const col = idx % 6;
-                        const row = Math.floor(idx / 6);
-                        const x = 85 + col * 43;
-                        const y = 87 + row * 31;
-                        return (
-                          <rect
-                            key={idx}
-                            x={x}
-                            y={y}
-                            width="37"
-                            height="25"
-                            rx="3"
-                            fill="#0B132B"
-                            stroke="#38BDF8"
-                            strokeWidth="1"
-                            strokeOpacity="0.4"
-                          />
-                        );
-                      })}
-
-                      {/* Busbar Photovoltaic Energy Flow Path */}
-                      <path d="M 85 130 H 335" stroke="#F59E0B" strokeWidth="2" strokeDasharray="6 4" className="animate-pulse" />
-                      <circle cx="335" cy="130" r="5" fill="#F59E0B" className="animate-ping" />
-
-                      {/* Output DC Conduit Stream */}
-                      <path d="M 335 130 Q 365 130 365 170" stroke="#F59E0B" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    <div className="text-[11px] font-mono font-bold text-amber-400">
-                      SOLAR CELL MATRIX ➔ DC PHOTON ACTIVATION
-                    </div>
-                  </div>
-                )}
-
-                {/* GADGET 02: DC COLLECTION SVG GADGET */}
-                {plantStageIdx === 1 && (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative animate-fade-in space-y-2">
-                    <svg className="w-full max-w-[420px] h-[220px]" viewBox="0 0 420 220" fill="none">
-                      {/* String Array Inputs */}
-                      <rect x="30" y="30" width="80" height="35" rx="6" fill="#0F172A" stroke="#F59E0B" strokeWidth="1.5" />
-                      <text x="70" y="52" fill="#F59E0B" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">STRING 01</text>
-                      
-                      <rect x="30" y="90" width="80" height="35" rx="6" fill="#0F172A" stroke="#F59E0B" strokeWidth="1.5" />
-                      <text x="70" y="112" fill="#F59E0B" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">STRING 02</text>
-                      
-                      <rect x="30" y="150" width="80" height="35" rx="6" fill="#0F172A" stroke="#F59E0B" strokeWidth="1.5" />
-                      <text x="70" y="172" fill="#F59E0B" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="middle">STRING 03</text>
-
-                      {/* Converging Copper String Streams */}
-                      <path d="M 110 47 Q 200 47 240 107" stroke="#F59E0B" strokeWidth="2.5" strokeDasharray="5 3" />
-                      <path d="M 110 107 L 240 107" stroke="#F59E0B" strokeWidth="3" />
-                      <path d="M 110 167 Q 200 167 240 107" stroke="#F59E0B" strokeWidth="2.5" strokeDasharray="5 3" />
-
-                      {/* Central IP65 Combiner Box GADGET */}
-                      <rect x="240" y="70" width="120" height="75" rx="10" fill="#16223B" stroke="#F59E0B" strokeWidth="2" />
-                      <text x="300" y="102" fill="#FFFFFF" fontSize="11" fontFamily="monospace" fontWeight="bold" textAnchor="middle">COMBINER BOX</text>
-                      <text x="300" y="122" fill="#F59E0B" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">1500V DC OUTPUT</text>
-
-                      {/* Single Converged DC Flow */}
-                      <path d="M 360 107 H 410" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" className="animate-pulse" />
-                    </svg>
-                    <div className="text-[11px] font-mono font-bold text-amber-400">
-                      MULTIPLE STRINGS CONVERGING ➔ 1500V DC HIGH-VOLTAGE OUTPUT
-                    </div>
-                  </div>
-                )}
-
-                {/* GADGET 03: INVERTER SVG GADGET (DC -> AC Conversion) */}
-                {plantStageIdx === 2 && (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative animate-fade-in space-y-2">
-                    <svg className="w-full max-w-[420px] h-[220px]" viewBox="0 0 420 220" fill="none">
-                      {/* DC Input Flow */}
-                      <path d="M 10 110 H 90" stroke="#F59E0B" strokeWidth="4" strokeLinecap="round" />
-                      <text x="50" y="95" fill="#F59E0B" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">DC STREAM</text>
-
-                      {/* Inverter Cabinet Body */}
-                      <rect x="90" y="40" width="240" height="140" rx="14" fill="#0F172A" stroke="#38BDF8" strokeWidth="2" />
-                      <rect x="105" y="55" width="210" height="110" rx="8" fill="#0B132B" stroke="#1E293B" strokeWidth="1" />
-                      
-                      {/* SiC IGBT Switching Bridge Graphics */}
-                      <rect x="120" y="70" width="70" height="80" rx="6" fill="#16223B" stroke="#38BDF8" strokeWidth="1" />
-                      <text x="155" y="105" fill="#38BDF8" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">SiC IGBT</text>
-                      <text x="155" y="120" fill="#94A3B8" fontSize="8" fontFamily="monospace" textAnchor="middle">MPPT 98.9%</text>
-
-                      {/* Animated Sinusoidal AC Waveform Output */}
-                      <path
-                        d="M 210 110 Q 225 80 240 110 T 270 110 T 300 110"
-                        stroke="#38BDF8"
-                        strokeWidth="3"
-                        fill="none"
-                        className="animate-pulse"
-                      />
-                      
-                      {/* AC Output Wave */}
-                      <path d="M 330 110 H 410" stroke="#38BDF8" strokeWidth="4" strokeLinecap="round" />
-                      <text x="370" y="95" fill="#38BDF8" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">AC 3-PHASE</text>
-                    </svg>
-                    <div className="text-[11px] font-mono font-bold text-sky-400">
-                      STEADY DC IN ➔ INVERTER SWITCHING ➔ 50.0 Hz AC WAVEFORM OUT
-                    </div>
-                  </div>
-                )}
-
-                {/* GADGET 04: TRANSFORMER SVG GADGET (Voltage Step-Up) */}
-                {plantStageIdx === 3 && (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative animate-fade-in space-y-2">
-                    <svg className="w-full max-w-[420px] h-[220px]" viewBox="0 0 420 220" fill="none">
-                      {/* 800V AC Input Stream */}
-                      <path d="M 10 110 H 80" stroke="#38BDF8" strokeWidth="3" strokeLinecap="round" />
-                      <text x="45" y="95" fill="#38BDF8" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">800V AC</text>
-
-                      {/* Transformer Substation Body */}
-                      <rect x="80" y="45" width="260" height="130" rx="14" fill="#0F172A" stroke="#818CF8" strokeWidth="2" />
-                      
-                      {/* Primary Winding Coil */}
-                      <rect x="100" y="65" width="70" height="90" rx="8" fill="#16223B" stroke="#38BDF8" strokeWidth="1.5" />
-                      <text x="135" y="115" fill="#38BDF8" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">PRIMARY</text>
-
-                      {/* Magnetic Core & Step-up Flux */}
-                      <path d="M 170 110 H 250" stroke="#818CF8" strokeWidth="4" strokeDasharray="4 2" className="animate-pulse" />
-
-                      {/* Secondary High-Voltage Coil */}
-                      <rect x="250" y="65" width="70" height="90" rx="8" fill="#1E1B4B" stroke="#818CF8" strokeWidth="2" />
-                      <text x="285" y="115" fill="#818CF8" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">SECONDARY</text>
-
-                      {/* Ceramic HV Bushing */}
-                      <path d="M 285 65 V 25" stroke="#818CF8" strokeWidth="3" />
-                      <circle cx="285" cy="20" r="6" fill="#818CF8" className="animate-ping" />
-
-                      {/* High Voltage 33kV Output Beam */}
-                      <path d="M 340 110 H 410" stroke="#818CF8" strokeWidth="5" strokeLinecap="round" />
-                      <text x="375" y="95" fill="#818CF8" fontSize="9" fontFamily="monospace" fontWeight="bold" textAnchor="middle">33kV TRANSMISSION</text>
-                    </svg>
-                    <div className="text-[11px] font-mono font-bold text-indigo-400">
-                      800V LOW VOLTAGE ➔ ELECTROMAGNETIC STEP-UP ➔ 33kV HIGH VOLTAGE
-                    </div>
-                  </div>
-                )}
-
-                {/* GADGET 05: GRID SVG GADGET (Power Delivered to Network) */}
-                {plantStageIdx === 4 && (
-                  <div className="w-full h-full flex flex-col items-center justify-center relative animate-fade-in space-y-2">
-                    <svg className="w-full max-w-[420px] h-[220px]" viewBox="0 0 420 220" fill="none">
-                      {/* Grid Transmission Tower Pylon SVG */}
-                      <path d="M 40 180 L 70 30 L 100 180 M 50 80 H 90 M 45 120 H 95" stroke="#34D399" strokeWidth="2" />
-                      <circle cx="70" cy="30" r="4" fill="#34D399" className="animate-ping" />
-
-                      {/* Overhead Power Line Stream */}
-                      <path d="M 70 30 Q 150 70 230 40" stroke="#34D399" strokeWidth="3" strokeDasharray="6 3" />
-                      <path d="M 70 80 Q 150 120 230 90" stroke="#34D399" strokeWidth="2.5" />
-
-                      {/* City Destinations: Home, Business, Industry */}
-                      <g fill="#0F172A" stroke="#34D399" strokeWidth="1.5">
-                        {/* Home */}
-                        <rect x="230" y="120" width="45" height="40" rx="4" />
-                        <path d="M 225 120 L 252.5 95 L 280 120 Z" />
-                        <text x="252.5" y="145" fill="#34D399" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">HOME</text>
-
-                        {/* Business */}
-                        <rect x="290" y="90" width="45" height="70" rx="4" />
-                        <text x="312.5" y="130" fill="#34D399" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">OFFICE</text>
-
-                        {/* Industry */}
-                        <rect x="350" y="70" width="55" height="90" rx="4" />
-                        <text x="377.5" y="120" fill="#34D399" fontSize="8" fontFamily="monospace" fontWeight="bold" textAnchor="middle">FACTORY</text>
-                      </g>
-                    </svg>
-                    
-                    <div className="text-center space-y-0.5">
-                      <div className="text-amber-400 font-black text-xs tracking-tight">
-                        "From sunlight to power."
+                return (
+                  <>
+                    {/* Exploded Stack + Active Layer Readout */}
+                    <div className="flex items-center gap-8 lg:gap-10">
+                      {/* Each layer is its own fully-visible card climbing diagonally —
+                          not stacked inset-0 on top of each other — so the separation
+                          reads clearly as distinct physical layers, not one flat square. */}
+                      <div className="relative shrink-0 w-32 h-32 lg:w-36 lg:h-36">
+                        {layers.map((layer, i) => {
+                          const isLayerActive = i === plantLayerIdx;
+                          const step = layers.length > 4 ? 12 : 15;
+                          return (
+                            <div
+                              key={layer.id}
+                              onClick={() => setPlantLayerIdx(i)}
+                              className={`absolute w-16 h-16 rounded-xl border-2 cursor-pointer transition-all duration-500 ${
+                                isLayerActive
+                                  ? 'bg-amber-400 border-amber-300'
+                                  : 'bg-slate-800/90 border-slate-600/60 hover:border-slate-500'
+                              }`}
+                              style={{
+                                left: `${i * step}px`,
+                                bottom: `${i * step}px`,
+                                zIndex: isLayerActive ? 50 : i,
+                                transform: `rotate(${i * 3 - (layers.length - 1) * 1.5}deg) ${isLayerActive ? 'scale(1.2) translate(4px, -4px)' : 'scale(1)'}`,
+                                boxShadow: isLayerActive ? '0 10px 26px -8px rgba(245,158,11,0.45)' : '0 4px 10px -4px rgba(0,0,0,0.5)',
+                              }}
+                            />
+                          );
+                        })}
                       </div>
-                      <div className="text-slate-400 text-[10px] font-mono">
-                        Engineered for every scale.
+
+                      <div className="min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                          <StageIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>{stage.title}</span>
+                        </div>
+                        <h4 className="font-display text-xl lg:text-2xl font-semibold text-white tracking-tight">
+                          {cleanName(activeLayer.name)}
+                        </h4>
+                        <p className="text-slate-400 text-xs lg:text-sm font-light leading-relaxed max-w-sm">
+                          {activeLayer.desc}
+                        </p>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
 
-              {/* 3. Bottom Energy Stream Status Bar */}
-              <div className="w-full bg-slate-900/90 border border-slate-800/70 rounded-xl p-2.5 flex items-center justify-between text-xs z-20 shrink-0">
-                <span className="text-slate-500 font-medium">Gadget State</span>
-                <span className="font-semibold text-amber-400 font-mono text-[11px]">
-                  {plantStageIdx === 0 && '01 SOLAR — Photon Activation'}
-                  {plantStageIdx === 1 && '02 DC — 1500V String Convergence'}
-                  {plantStageIdx === 2 && '03 Inverter — 50.0 Hz AC Inversion'}
-                  {plantStageIdx === 3 && '04 Transformer — 33kV Step-Up'}
-                  {plantStageIdx === 4 && '05 Grid — Power Delivered'}
-                </span>
-              </div>
+                    {/* Layer Node Row: dashed icon circles + dotted connector */}
+                    <div className="relative mt-9">
+                      <div className="absolute top-5 left-5 right-5 h-px border-t border-dashed border-slate-700" />
+                      <div className="relative flex items-start justify-between">
+                        {layers.map((layer, i) => {
+                          const isLayerActive = i === plantLayerIdx;
+                          return (
+                            <button
+                              key={layer.id}
+                              onClick={() => setPlantLayerIdx(i)}
+                              className="flex flex-col items-center gap-2 group"
+                            >
+                              <span
+                                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 border-dashed transition-all duration-300 shrink-0 ${
+                                  isLayerActive
+                                    ? 'border-amber-400 bg-amber-400/15 text-amber-300 scale-110'
+                                    : 'border-slate-700 text-slate-500 group-hover:border-slate-500 group-hover:text-slate-300'
+                                }`}
+                              >
+                                <Layers className="w-4 h-4" />
+                              </span>
+                              <span className={`text-[10px] font-medium text-center max-w-[68px] leading-tight transition-colors duration-300 ${isLayerActive ? 'text-white' : 'text-slate-500'}`}>
+                                {cleanName(layer.name)}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Prev / Next Layer */}
+                    <div className="flex items-center gap-2 mt-7">
+                      <button
+                        onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
+                        disabled={plantLayerIdx === 0}
+                        aria-label="Previous layer"
+                        className="w-8 h-8 rounded-full border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-30 flex items-center justify-center transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setPlantLayerIdx((prev) => Math.min(layers.length - 1, prev + 1))}
+                        disabled={plantLayerIdx === layers.length - 1}
+                        aria-label="Next layer"
+                        className="w-8 h-8 rounded-full border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-30 flex items-center justify-center transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 
