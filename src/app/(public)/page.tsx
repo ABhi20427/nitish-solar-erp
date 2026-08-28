@@ -43,74 +43,62 @@ const PLANT_STAGES = [
   {
     id: 'solar',
     code: '01',
+    name: 'SOLAR',
     title: '01 SOLAR',
-    subtitle: 'Sunlight → DC Electricity',
-    shortDesc: 'Solar cells convert sunlight directly into electrical energy.',
+    subtitle: 'Photovoltaic Energy Capture',
+    desc: 'Solar panels capture sunlight and produce DC electricity.',
     icon: Sun,
-    layers: [
-      { id: 'frame', name: '01 — Frame', desc: 'Anodized aluminum structural frame protecting module edges.' },
-      { id: 'glass', name: '02 — Tempered Glass', desc: 'Anti-reflective glass allowing 95%+ solar transmission.' },
-      { id: 'eva1', name: '03 — Encapsulant EVA', desc: 'Ethylene-vinyl acetate layer cushioning PV cells.' },
-      { id: 'cells', name: '04 — Solar Cells', desc: 'Monocrystalline N-Type TOPCon silicon cell matrix.' },
-      { id: 'eva2', name: '05 — Rear EVA Sheet', desc: 'Moisture-barrier rear encapsulation layer.' },
-      { id: 'backsheet', name: '06 — Backsheet & J-Box', desc: 'Protective insulating sheet with IP68 bypass diode box.' },
-    ],
+    image: '/images/plant/solar.png',
+    detailBadge: 'Photovoltaic Capture',
+    specs: ['N-Type TOPCon PV Silicon Cells', '22.8% Peak Module Efficiency', 'Anti-Reflective Tempered Glass'],
   },
   {
     id: 'dc',
     code: '02',
+    name: 'DC',
     title: '02 DC',
-    subtitle: 'Power Collection',
-    shortDesc: 'Power from multiple panels is combined into usable DC electricity.',
+    subtitle: 'Direct Current Flow',
+    desc: 'Direct current flows from the solar panels through the system.',
     icon: Zap,
-    layers: [
-      { id: 'modules', name: '01 — PV Module Chain', desc: 'Series string arrangement stacking voltage to 1500V DC.' },
-      { id: 'mc4', name: '02 — MC4 Connectors', desc: 'Weatherproof locking DC connectors minimizing resistance.' },
-      { id: 'cables', name: '03 — Solar DC Cables', desc: 'XLPO dual-insulated UV-resistant high-voltage copper cabling.' },
-      { id: 'combiner', name: '04 — DC Combiner Box', desc: 'IP65 enclosure combining strings with 30A gPV surge protection.' },
-    ],
+    image: '/images/plant/dc.png',
+    detailBadge: 'Power Combining',
+    specs: ['1500V DC Series String Cabling', 'IP65 Weatherproof Combiner Box', 'MC4 Low-Resistance Connectors'],
   },
   {
     id: 'inverter',
     code: '03',
+    name: 'INVERTER',
     title: '03 INVERTER',
-    subtitle: 'DC → AC Conversion',
-    shortDesc: 'Converts solar DC electricity into grid-ready AC power.',
+    subtitle: 'DC to AC Conversion',
+    desc: 'The inverter converts DC electricity into usable AC electricity.',
     icon: Cpu,
-    layers: [
-      { id: 'cabinet', name: '01 — Weatherproof Cabinet', desc: 'Heavy-gauge steel enclosure with forced-air cooling.' },
-      { id: 'mppt', name: '02 — MPPT Controllers', desc: '12 independent MPPT trackers optimizing peak solar yield.' },
-      { id: 'power', name: '03 — Power Switching Stage', desc: 'High-frequency Silicon Carbide IGBT inversion bridge.' },
-      { id: 'acfilter', name: '04 — AC Filter & Sync', desc: 'Sinusoidal filter outputting clean 800V 3-phase AC power.' },
-    ],
+    image: '/images/plant/inverter.png',
+    detailBadge: 'Sinusoidal Inversion',
+    specs: ['Silicon Carbide IGBT Power Stage', '99.4% Inversion Efficiency', '12 Independent MPPT Trackers'],
   },
   {
     id: 'transformer',
     code: '04',
+    name: 'TRANSFORMER',
     title: '04 TRANSFORMER',
     subtitle: 'Voltage Step-Up',
-    shortDesc: 'Raises voltage for efficient long-distance transmission.',
+    desc: 'The transformer adjusts voltage for efficient electrical distribution.',
     icon: Activity,
-    layers: [
-      { id: 'tank', name: '01 — Transformer Tank', desc: 'ONAN oil-immersed steel tank with radiator cooling fins.' },
-      { id: 'bushings', name: '02 — HV Bushings', desc: '33kV ceramic high-voltage insulation bushings.' },
-      { id: 'windings', name: '03 — Copper Coils', desc: 'Primary & secondary electrolytic copper isolation windings.' },
-      { id: 'core', name: '04 — Magnetic Core', desc: 'Low-loss grain-oriented silicon steel magnetic core.' },
-    ],
+    image: '/images/plant/transformer.png',
+    detailBadge: 'Voltage Regulation',
+    specs: ['ONAN Oil-Immersed Steel Core', '11kV / 33kV Step-Up Synchronization', 'Primary Copper Isolation Coils'],
   },
   {
     id: 'grid',
     code: '05',
+    name: 'GRID',
     title: '05 GRID',
-    subtitle: 'Power Delivered',
-    shortDesc: 'Protected and synchronized power enters the electrical network.',
+    subtitle: 'Power Delivery & Synchronization',
+    desc: 'Electricity reaches the property or flows into the wider grid.',
     icon: ShieldCheck,
-    layers: [
-      { id: 'gantry', name: '01 — Transmission Gantry', desc: '33kV overhead grid interconnection gantry tower.' },
-      { id: 'meter', name: '02 — Net Metering System', desc: '0.2s class bi-directional ABT tariff meter.' },
-      { id: 'switchgear', name: '03 — Vacuum Breakers', desc: 'HT vacuum circuit breaker switchgear panel.' },
-      { id: 'relays', name: '04 — Protection Relays', desc: 'Numerical anti-islanding & statutory grid protection relays.' },
-    ],
+    image: '/images/plant/grid.png',
+    detailBadge: 'Net-Metered Dispatch',
+    specs: ['Bi-Directional ABT Smart Net Meter', 'HT Vacuum Circuit Breakers', 'DISCOM Grid Compliance'],
   },
 ];
 
@@ -131,7 +119,6 @@ export default function HomePage() {
   const [solutionsStep, setSolutionsStep] = useState(0);
   const [solutionsProgress, setSolutionsProgress] = useState(0);
   const [plantStageIdx, setPlantStageIdx] = useState(0);
-  const [plantLayerIdx, setPlantLayerIdx] = useState(0);
   const [impactStep, setImpactStep] = useState(0);
 
   // Section Refs
@@ -140,6 +127,15 @@ export default function HomePage() {
   const plantVideoRef = useRef<HTMLVideoElement>(null);
   const hasPlayedPlantVideo = useRef(false);
   const impactRef = useRef<HTMLDivElement>(null);
+
+  const jumpToPlantStage = (idx: number) => {
+    setPlantStageIdx(idx);
+    if (plantSectionRef.current) {
+      const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
+      const targetScrollTop = plantSectionRef.current.offsetTop + (idx / 4) * totalDist;
+      window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+    }
+  };
 
   // Quote Form State
   const [leadForm, setLeadForm] = useState({
@@ -206,13 +202,7 @@ export default function HomePage() {
             if (totalDist > 0 && rect.top <= 0 && rect.bottom >= 0) {
               const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
               const computedStage = Math.min(4, Math.floor(progress * 5));
-              setPlantStageIdx((prev) => {
-                if (prev !== computedStage) {
-                  setPlantLayerIdx(0);
-                  return computedStage;
-                }
-                return prev;
-              });
+              setPlantStageIdx((prev) => (prev !== computedStage ? computedStage : prev));
             }
           }
 
@@ -881,213 +871,150 @@ export default function HomePage() {
           {/* Main 2-Column Desktop Grid Layout (Guarantees Text Safe Zone vs Visual Stage) */}
           <div className="max-w-7xl mx-auto px-6 sm:px-8 w-full flex-1 grid grid-cols-12 gap-8 items-center relative z-20 my-auto">
 
-            {/* LEFT 5-COL: Dedicated Text Safe Zone (Title + Stage Info + Layer Explanation) */}
-            <div className="col-span-5 space-y-5 text-left shrink-0">
+            {/* LEFT 5-COL: Dedicated Text Safe Zone (Title + Stage Info + Description + Specs) */}
+            <div className="col-span-12 lg:col-span-5 space-y-6 text-left shrink-0">
 
               {/* Section Eyebrow */}
-              <div className="flex items-center gap-2 text-white/50 text-[11px] font-semibold uppercase tracking-[0.2em]">
-                <span className="w-4 h-px bg-amber-400" />
+              <div className="flex items-center gap-2.5 text-amber-400 text-xs font-mono font-bold uppercase tracking-[0.2em]">
+                <span className="w-5 h-0.5 bg-amber-400 rounded-full" />
                 <span>Inside a Solar Plant</span>
               </div>
 
-              {/* Headline */}
-              <h2 className="font-display text-3xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-tight">
+              {/* Main Headline */}
+              <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-white tracking-tight leading-tight">
                 See how sunlight becomes power.
               </h2>
 
-              {/* Stage Badge & Title */}
-              <div className="space-y-1 pt-2 border-t border-slate-800/80">
+              {/* Active Stage Header & Badge */}
+              <div className="space-y-2 pt-3 border-t border-slate-800/80">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-amber-400 tracking-wide">
-                    Stage {PLANT_STAGES[plantStageIdx].code} / 05
+                  <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+                    STAGE {PLANT_STAGES[plantStageIdx].code} / 05
                   </span>
-                  <span className="text-[11px] text-slate-500 uppercase tracking-wide">
-                    {PLANT_STAGES[plantStageIdx].subtitle}
+                  <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    {PLANT_STAGES[plantStageIdx].detailBadge}
                   </span>
                 </div>
-                <h3 className="font-display text-2xl font-semibold text-white tracking-tight">
+                <h3 className="font-display text-2xl sm:text-3xl font-bold text-white tracking-tight">
                   {PLANT_STAGES[plantStageIdx].title}
                 </h3>
               </div>
 
-              {/* Stage Concise 1-Sentence Explanation */}
-              <p className="text-slate-300 text-sm font-light leading-relaxed bg-[#131B2E]/90 p-4 rounded-2xl border border-slate-800/70">
-                {PLANT_STAGES[plantStageIdx].shortDesc}
+              {/* Stage Concise Description */}
+              <p className="text-slate-200 text-base sm:text-lg font-light leading-relaxed bg-[#131B2E]/90 p-5 rounded-2xl border border-slate-800/80 shadow-xl backdrop-blur-md transition-all duration-500">
+                {PLANT_STAGES[plantStageIdx].desc}
               </p>
 
-              {/* Active Exploded Layer Detail Card */}
-              <div className="bg-[#0F172A] border border-slate-800/70 rounded-2xl p-4 space-y-2 text-xs">
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span>Active Layer:</span>
-                  <span className="text-amber-400 font-semibold">
-                    {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.name}
-                  </span>
-                </div>
-                <p className="text-slate-200 font-light leading-snug">
-                  {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.desc}
-                </p>
-                <div className="flex items-center justify-between pt-1">
-                  <button
-                    onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
-                    disabled={plantLayerIdx === 0}
-                    className="text-[11px] text-slate-400 hover:text-white disabled:opacity-30 flex items-center gap-1"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" /> Prev Layer
-                  </button>
-                  <button
-                    onClick={() => setPlantLayerIdx((prev) => Math.min(PLANT_STAGES[plantStageIdx].layers.length - 1, prev + 1))}
-                    disabled={plantLayerIdx === PLANT_STAGES[plantStageIdx].layers.length - 1}
-                    className="text-[11px] text-amber-400 hover:text-amber-300 disabled:opacity-30 font-semibold flex items-center gap-1"
-                  >
-                    Next Layer <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
+              {/* Active Stage Specs Pill List */}
+              <div className="bg-[#0F172A]/90 border border-slate-800/80 rounded-2xl p-4 space-y-2.5">
+                <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
+                  TECHNICAL SPECIFICATIONS & INFRASTRUCTURE
+                </span>
+                <div className="space-y-1.5">
+                  {PLANT_STAGES[plantStageIdx].specs.map((spec) => (
+                    <div key={spec} className="flex items-center gap-2 text-xs text-slate-200 font-medium">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                      <span>{spec}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
 
-            {/* RIGHT 7-COL: Exploded Layer View — an axonometric stack of the current
-                stage's physical/functional layers next to a clickable layer-node row
-                (dashed icon circles + dotted connector), the way a manufacturer shows
-                an exploded module cross-section beside its component list. Stage-level
-                switching (Solar/DC/Inverter/Transformer/Grid) stays on the pill bar
-                below; this operates one level down, on that stage's layers. */}
-            <div className="col-span-7 relative min-h-[440px] lg:min-h-[480px] flex flex-col justify-center overflow-hidden rounded-3xl border border-slate-800/70 bg-[#070A10]/95 shadow-2xl shadow-black/40 p-8 lg:p-10">
-              {(() => {
-                const stage = PLANT_STAGES[plantStageIdx];
-                const layers = stage.layers;
-                const activeLayer = layers[plantLayerIdx] ?? layers[0];
-                const StageIcon = stage.icon;
-                const cleanName = (n: string) => n.replace(/^\d+\s*—\s*/, '');
+            {/* RIGHT 7-COL: Connected 5-Stage Circular Node Journey (Horizontal on Desktop) */}
+            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-center min-h-[380px] sm:min-h-[440px] bg-[#070A10]/90 rounded-3xl border border-slate-800/80 p-6 sm:p-10 shadow-2xl backdrop-blur-xl my-auto overflow-hidden">
+              
+              {/* Connected horizontal energy flow line behind circles */}
+              <div className="hidden sm:block absolute top-[52%] left-12 right-12 h-px bg-slate-800 pointer-events-none z-0">
+                {/* Active yellow energy progress indicator line */}
+                <div
+                  className="h-full bg-amber-400/90 transition-all duration-700 ease-out shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                  style={{
+                    width: `${(plantStageIdx / 4) * 100}%`,
+                  }}
+                />
+              </div>
 
-                return (
-                  <>
-                    {/* Exploded Stack + Active Layer Readout */}
-                    <div className="flex items-center gap-8 lg:gap-10">
-                      {/* Each layer is its own fully-visible card climbing diagonally —
-                          not stacked inset-0 on top of each other — so the separation
-                          reads clearly as distinct physical layers, not one flat square. */}
-                      <div className="relative shrink-0 w-32 h-32 lg:w-36 lg:h-36">
-                        {layers.map((layer, i) => {
-                          const isLayerActive = i === plantLayerIdx;
-                          const step = layers.length > 4 ? 12 : 15;
-                          return (
-                            <div
-                              key={layer.id}
-                              onClick={() => setPlantLayerIdx(i)}
-                              className={`absolute w-16 h-16 rounded-xl border-2 cursor-pointer transition-all duration-500 ${
-                                isLayerActive
-                                  ? 'bg-amber-400 border-amber-300'
-                                  : 'bg-slate-800/90 border-slate-600/60 hover:border-slate-500'
-                              }`}
-                              style={{
-                                left: `${i * step}px`,
-                                bottom: `${i * step}px`,
-                                zIndex: isLayerActive ? 50 : i,
-                                transform: `rotate(${i * 3 - (layers.length - 1) * 1.5}deg) ${isLayerActive ? 'scale(1.2) translate(4px, -4px)' : 'scale(1)'}`,
-                                boxShadow: isLayerActive ? '0 10px 26px -8px rgba(245,158,11,0.45)' : '0 4px 10px -4px rgba(0,0,0,0.5)',
-                              }}
-                            />
-                          );
-                        })}
+              {/* 5 Horizontal Circular Node Cards (01 SOLAR → 02 DC → 03 INVERTER → 04 TRANSFORMER → 05 GRID) */}
+              <div className="relative z-10 grid grid-cols-1 sm:grid-cols-5 gap-6 sm:gap-3 items-center justify-between">
+                {PLANT_STAGES.map((stage, idx) => {
+                  const isActive = idx === plantStageIdx;
+                  return (
+                    <div
+                      key={stage.id}
+                      onClick={() => jumpToPlantStage(idx)}
+                      className={`flex flex-col items-center cursor-pointer group transition-all duration-500 ease-out select-none ${
+                        isActive ? 'scale-110 sm:scale-115 z-20' : 'opacity-55 hover:opacity-100 hover:scale-105 z-10'
+                      }`}
+                    >
+                      {/* Stage Number & Title Above Circle */}
+                      <div className="text-center mb-3 space-y-0.5">
+                        <span className={`text-[10px] font-mono font-bold block transition-colors duration-300 ${
+                          isActive ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-400'
+                        }`}>
+                          {stage.code}
+                        </span>
+                        <span className={`text-xs font-extrabold tracking-wider block transition-colors duration-300 ${
+                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                        }`}>
+                          {stage.name}
+                        </span>
                       </div>
 
-                      <div className="min-w-0 space-y-1.5">
-                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-                          <StageIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>{stage.title}</span>
-                        </div>
-                        <h4 className="font-display text-xl lg:text-2xl font-semibold text-white tracking-tight">
-                          {cleanName(activeLayer.name)}
-                        </h4>
-                        <p className="text-slate-400 text-xs lg:text-sm font-light leading-relaxed max-w-sm">
-                          {activeLayer.desc}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Layer Node Row: dashed icon circles + dotted connector */}
-                    <div className="relative mt-9">
-                      <div className="absolute top-5 left-5 right-5 h-px border-t border-dashed border-slate-700" />
-                      <div className="relative flex items-start justify-between">
-                        {layers.map((layer, i) => {
-                          const isLayerActive = i === plantLayerIdx;
-                          return (
-                            <button
-                              key={layer.id}
-                              onClick={() => setPlantLayerIdx(i)}
-                              className="flex flex-col items-center gap-2 group"
-                            >
-                              <span
-                                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 border-dashed transition-all duration-300 shrink-0 ${
-                                  isLayerActive
-                                    ? 'border-amber-400 bg-amber-400/15 text-amber-300 scale-110'
-                                    : 'border-slate-700 text-slate-500 group-hover:border-slate-500 group-hover:text-slate-300'
-                                }`}
-                              >
-                                <Layers className="w-4 h-4" />
-                              </span>
-                              <span className={`text-[10px] font-medium text-center max-w-[68px] leading-tight transition-colors duration-300 ${isLayerActive ? 'text-white' : 'text-slate-500'}`}>
-                                {cleanName(layer.name)}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Prev / Next Layer */}
-                    <div className="flex items-center gap-2 mt-7">
-                      <button
-                        onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
-                        disabled={plantLayerIdx === 0}
-                        aria-label="Previous layer"
-                        className="w-8 h-8 rounded-full border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-30 flex items-center justify-center transition-colors"
+                      {/* Circular Image Node (◯) */}
+                      <div
+                        className={`relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden border-2 transition-all duration-500 ${
+                          isActive
+                            ? 'border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.35)] ring-4 ring-amber-400/20'
+                            : 'border-slate-800 group-hover:border-slate-600 filter contrast-90 group-hover:contrast-100'
+                        }`}
                       >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setPlantLayerIdx((prev) => Math.min(layers.length - 1, prev + 1))}
-                        disabled={plantLayerIdx === layers.length - 1}
-                        aria-label="Next layer"
-                        className="w-8 h-8 rounded-full border border-slate-700 text-slate-400 hover:text-white hover:border-slate-500 disabled:opacity-30 flex items-center justify-center transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
+                        <Image
+                          src={stage.image}
+                          alt={stage.name}
+                          fill
+                          sizes="(max-width: 640px) 80px, 120px"
+                          className={`object-cover object-center transition-all duration-700 ${
+                            isActive ? 'scale-110 contrast-105 brightness-105' : 'scale-100 group-hover:scale-105'
+                          }`}
+                        />
+                        {/* Ambient Glass Highlight Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+                      </div>
+
+                      {/* Active Node Indicator below circle */}
+                      <div className="mt-3 h-2 flex items-center justify-center">
+                        {isActive ? (
+                          <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse" />
+                        ) : (
+                          <span className="w-1.5 h-1.5 rounded-full bg-slate-800 group-hover:bg-slate-600 transition-colors" />
+                        )}
+                      </div>
                     </div>
-                  </>
-                );
-              })()}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Continuous 5-Stage Journey Progress Navigation Bar (Synchronized Click + Scroll State) */}
+          {/* Continuous 5-Stage Journey Progress Navigation Bar */}
           <div className="max-w-4xl mx-auto w-full px-6 pt-3 pb-1 relative z-30 shrink-0">
-            <div className="flex items-center justify-between bg-[#131B2E]/95 border border-slate-800/70 rounded-2xl p-2 shadow-xl shadow-black/30">
+            <div className="flex items-center justify-between bg-[#131B2E]/95 border border-slate-800/80 rounded-2xl p-2 shadow-2xl backdrop-blur-xl">
               {PLANT_STAGES.map((stage, idx) => {
                 const isSelected = idx === plantStageIdx;
                 const IconComponent = stage.icon;
                 return (
                   <button
                     key={stage.id}
-                    onClick={() => {
-                      setPlantStageIdx(idx);
-                      setPlantLayerIdx(0);
-                      if (plantSectionRef.current) {
-                        const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
-                        const targetScrollTop = plantSectionRef.current.offsetTop + (idx / 4) * totalDist;
-                        window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
-                      }
-                    }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-colors duration-300 ${
+                    onClick={() => jumpToPlantStage(idx)}
+                    className={`flex items-center gap-2 px-3.5 sm:px-5 py-2.5 rounded-xl transition-all duration-300 text-xs font-bold tracking-wider ${
                       isSelected
-                        ? 'bg-amber-500 text-slate-950 font-semibold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800/70'
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-transparent'
                     }`}
                   >
                     <IconComponent className="w-4 h-4 shrink-0" />
-                    <span className="text-xs font-semibold tracking-tight">
-                      {stage.code} {stage.title.split(' ')[0]}
-                    </span>
+                    <span>{stage.code} {stage.name}</span>
                   </button>
                 );
               })}
