@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   MapPin,
@@ -23,7 +23,7 @@ import {
   Edit3,
   PlusCircle,
   CheckCheck,
-  AlertTriangle,
+  Undo2,
 } from 'lucide-react';
 import { AddressAutocomplete, PRESET_SATELLITE_LOCATIONS } from './address-autocomplete';
 import { SatelliteMapEngine } from './satellite-map-engine';
@@ -54,10 +54,11 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   };
 
   // 8 VISUAL STATES ARCHITECTURE
-  // 1: LOCATING PROPERTY, 2: PROPERTY FOUND, 3: ROOF DETECTED, 4: ADJUST ROOF,
-  // 5: ROOF CONFIRMED, 6: CALCULATING SOLAR POTENTIAL, 7: OPTIMISING PANEL LAYOUT, 8: SOLAR ARRAY READY
   const [stage, setStage] = useState<SolarEngineState>(1);
   const [selectedLocation, setSelectedLocation] = useState<SatelliteLocation>(initialLoc);
+
+  // Undo History Stack for Roof Boundary Edits
+  const undoHistoryRef = useRef<{ roofPolygon: Point2D[]; exclusionPolygons: Point2D[][] }[]>([]);
 
   // Stage 2 Property Zoom Progression
   const [zoomLevel, setZoomLevel] = useState<'CITY' | 'NEIGHBOURHOOD' | 'PROPERTY' | 'ROOFTOP'>('CITY');
@@ -178,11 +179,37 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       isUserConfirmed: false,
     };
     setSelectedLocation(enrichedLoc);
+    undoHistoryRef.current = [];
     setStage(2);
+  };
+
+  // Push current state to Undo history before modifying polygon
+  const pushUndoState = () => {
+    undoHistoryRef.current.push({
+      roofPolygon: JSON.parse(JSON.stringify(selectedLocation.roofPolygon)),
+      exclusionPolygons: JSON.parse(JSON.stringify(selectedLocation.exclusionPolygons || [])),
+    });
+    if (undoHistoryRef.current.length > 20) undoHistoryRef.current.shift();
+  };
+
+  // Undo Roof Boundary Modification
+  const handleUndo = () => {
+    if (undoHistoryRef.current.length === 0) return;
+    const prev = undoHistoryRef.current.pop()!;
+    const metrics = recalculateRoofMetrics(prev.roofPolygon, prev.exclusionPolygons, selectedLocation.lat, selectedLocation.zoom || 20.2);
+    setSelectedLocation((loc) => ({
+      ...loc,
+      roofPolygon: prev.roofPolygon,
+      exclusionPolygons: prev.exclusionPolygons,
+      totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
+      obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+    }));
   };
 
   // Callback when user drags/edits roof polygon vertices in ADJUST ROOF mode (Stage 4)
   const handleRoofPolygonChanged = (newPoly: Point2D[]) => {
+    pushUndoState();
     const metrics = recalculateRoofMetrics(newPoly, selectedLocation.exclusionPolygons || [], selectedLocation.lat, selectedLocation.zoom || 20.2);
     setSelectedLocation((prev) => ({
       ...prev,
@@ -194,8 +221,31 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     }));
   };
 
+  // Add Point midpoint action
+  const handleAddPoint = () => {
+    pushUndoState();
+    const poly = [...selectedLocation.roofPolygon];
+    if (poly.length < 3) return;
+    // Insert point between vertex 0 and 1
+    const newPt = {
+      x: (poly[0].x + poly[1].x) / 2,
+      y: (poly[0].y + poly[1].y) / 2,
+    };
+    poly.splice(1, 0, newPt);
+    const metrics = recalculateRoofMetrics(poly, selectedLocation.exclusionPolygons || [], selectedLocation.lat, selectedLocation.zoom || 20.2);
+    setSelectedLocation((prev) => ({
+      ...prev,
+      roofPolygon: poly,
+      totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
+      obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+      buildingConfidence: 'USER-CONFIRMED ROOF',
+    }));
+  };
+
   // Add custom user obstacle exclusion zone
   const handleAddObstacle = () => {
+    pushUndoState();
     const currentEx = selectedLocation.exclusionPolygons || [];
     const newEx: Point2D[] = [
       { x: 44, y: 44 },
@@ -338,6 +388,54 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         </div>
       </header>
 
+      {/* FLOATING COMPACT EDITOR BAR (ONLY IN STAGE 4 ADJUST ROOF) */}
+      {stage === 4 && (
+        <div className="relative z-30 flex items-center justify-center pt-3 pointer-events-none">
+          <div className="bg-slate-950/95 border border-amber-500/40 p-2 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center gap-2 pointer-events-auto animate-in slide-in-from-top-4 duration-300">
+            <span className="text-xs font-mono font-bold text-amber-400 px-3 flex items-center gap-1.5 border-r border-slate-800">
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>ADJUST ROOF BOUNDARY</span>
+            </span>
+
+            <button
+              onClick={handleAddPoint}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-mono text-slate-200 font-semibold flex items-center gap-1.5 transition-all"
+              title="Add Point"
+            >
+              <PlusCircle className="w-3.5 h-3.5 text-sky-400" />
+              <span>+ Add Point</span>
+            </button>
+
+            <button
+              onClick={handleAddObstacle}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-mono text-rose-300 font-semibold flex items-center gap-1.5 transition-all"
+              title="Add Obstacle"
+            >
+              <PlusCircle className="w-3.5 h-3.5 text-rose-400" />
+              <span>+ Add Obstacle</span>
+            </button>
+
+            <button
+              onClick={handleUndo}
+              disabled={undoHistoryRef.current.length === 0}
+              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-mono text-slate-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40"
+              title="Undo"
+            >
+              <Undo2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>Undo</span>
+            </button>
+
+            <button
+              onClick={handleConfirmRoof}
+              className="px-4 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/20"
+            >
+              <CheckCheck className="w-4 h-4" />
+              <span>Confirm Roof →</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* CENTER HUD & STAGE CONTAINERS */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-between p-4 sm:p-8 pointer-events-none">
         
@@ -397,7 +495,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                   <span className="text-amber-400 font-bold">{selectedLocation.totalRoofAreaSqFt} sq.ft</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">USABLE AREA:</span>
+                  <span className="text-slate-400">USABLE AREA (0.5m Setback):</span>
                   <span className="text-emerald-400 font-bold">{selectedLocation.estimatedUsableAreaSqFt} sq.ft</span>
                 </div>
               </div>
@@ -428,7 +526,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           </div>
         )}
 
-        {/* STATE 4: ADJUST ROOF (INTERACTIVE CANVAS EDITING HUD) */}
+        {/* STATE 4: ADJUST ROOF (LIVE AREA TELEMETRY HUD) */}
         {stage === 4 && (
           <div className="w-full flex justify-between items-start pointer-events-none">
             <div className="bg-slate-950/95 p-5 rounded-2xl border border-amber-500/40 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm space-y-3 animate-in zoom-in-95">
@@ -437,33 +535,24 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 <span>SPATIAL ROOF EDITOR ACTIVE</span>
               </div>
 
-              <h2 className="text-xl font-black text-white">ADJUST ROOF BOUNDARY</h2>
+              <h2 className="text-xl font-black text-white">LIVE GEOMETRY TELEMETRY</h2>
               <p className="text-xs text-slate-300 leading-relaxed font-mono">
-                • Drag handles (●) to align roof corners<br />
-                • Click '+' to add vertex<br />
-                • Right-click handle to delete vertex
+                • Drag corners (●) or edges to align structure<br />
+                • Telemetry updates live while dragging
               </p>
 
               <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1">
                 <div className="flex justify-between">
                   <span className="text-slate-400">TOTAL ROOF AREA:</span>
-                  <span className="text-amber-400 font-bold">{selectedLocation.totalRoofAreaSqFt} sq.ft</span>
+                  <span className="text-amber-400 font-bold text-sm">{selectedLocation.totalRoofAreaSqFt} sq.ft</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">USABLE ROOF AREA:</span>
-                  <span className="text-emerald-400 font-bold">{selectedLocation.estimatedUsableAreaSqFt} sq.ft</span>
+                  <span className="text-slate-400">USABLE AREA (Setback):</span>
+                  <span className="text-emerald-400 font-bold text-sm">{selectedLocation.estimatedUsableAreaSqFt} sq.ft</span>
                 </div>
               </div>
 
               <div className="pt-1 flex flex-col gap-2">
-                <button
-                  onClick={handleAddObstacle}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-rose-300 border border-rose-500/30 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-all"
-                >
-                  <PlusCircle className="w-3.5 h-3.5 text-rose-400" />
-                  <span>+ ADD OBSTACLE EXCLUSION</span>
-                </button>
-
                 <button
                   onClick={handleConfirmRoof}
                   className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
@@ -476,7 +565,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
             <div className="bg-slate-950/85 px-4 py-2.5 rounded-xl border border-amber-500/30 text-xs font-mono text-amber-400 pointer-events-auto flex items-center gap-2 animate-pulse">
               <Sparkles className="w-4 h-4" />
-              <span>Editing: Click and drag handles over satellite image</span>
+              <span>Drag corners or edges to edit shape</span>
             </div>
           </div>
         )}

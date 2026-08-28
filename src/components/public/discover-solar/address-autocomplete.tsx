@@ -10,7 +10,7 @@ interface AddressAutocompleteProps {
   initialValue?: string;
 }
 
-import { recalculateRoofMetrics } from './roof-packing-algorithm';
+import { recalculateRoofMetrics, generateRealisticRoofGeometry } from './roof-packing-algorithm';
 
 const rawPresets = [
   {

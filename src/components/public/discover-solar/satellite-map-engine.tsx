@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { SatelliteLocation, VisualMode, Point2D } from './types';
-import { computePanelPlacement, isPointInPolygon } from './roof-packing-algorithm';
+import { computePanelPlacement, computeInnerUsablePolygon, isPointInPolygon } from './roof-packing-algorithm';
 
 interface SatelliteMapEngineProps {
   location: SatelliteLocation;
@@ -56,19 +56,19 @@ export function SatelliteMapEngine({
   // Geographic Center Coordinates (Lat, Lng) & Float Zoom Level
   const [centerLat, setCenterLat] = useState(location.lat);
   const [centerLng, setCenterLng] = useState(location.lng);
-
-  // Property-First Ultra-Tight Zoom Level (20.2 to 20.5)
   const [geoZoom, setGeoZoom] = useState(20.2);
 
   // Tile Cache: Map<tileKey, HTMLImageElement>
   const tileCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Interactive Vertex Dragging & Editor State (Stage 4 ADJUST ROOF)
+  // Interactive Vertex & Edge Dragging Editor State (Stage 4 ADJUST ROOF)
   const activeVertexIndex = useRef<number | null>(null);
-  const activeObstacleIndex = useRef<{ polyIdx: number; pointIdx: number } | null>(null);
+  const activeEdgeIndex = useRef<number | null>(null);
+  const edgeDragStart = useRef<Point2D | null>(null);
   const hoverVertexIndex = useRef<number | null>(null);
+  const hoverEdgeIndex = useRef<number | null>(null);
 
-  // Inertial Drag Panning State (NO MOUSE TILT)
+  // Inertial Drag Panning State
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
@@ -128,13 +128,12 @@ export function SatelliteMapEngine({
     [scaleX, scaleY]
   );
 
-  // Mouse Handlers for Interactive Vertex Dragging & Editing (Stage 4)
+  // Mouse Handlers for Interactive Vertex & Edge Editing (Stage 4)
   const handleMouseDown = (e: React.MouseEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    // Canvas center relative coordinates
     const mouseX = e.clientX - rect.left - rect.width / 2;
     const mouseY = e.clientY - rect.top - rect.height / 2;
 
@@ -142,22 +141,21 @@ export function SatelliteMapEngine({
     const integerZoom = Math.min(19, Math.floor(currentZoom));
     const zoomFraction = Math.pow(2, currentZoom - integerZoom);
 
-    // Unscale mouse coordinates back to unscaled canvas space
     const unscaledMouseX = mouseX / zoomFraction;
     const unscaledMouseY = mouseY / zoomFraction;
 
-    // STAGE 4: ADJUST ROOF MODE (INTERACTIVE VERTEX & OBSTACLE EDITOR)
+    // STAGE 4: ADJUST ROOF MODE
     if (stage === 4) {
       const poly = location.roofPolygon || [];
 
-      // 1. Check if hit existing vertex handle (within 14px)
+      // 1. Check if hit existing vertex handle (Generous 16px touch/mouse target)
       for (let i = 0; i < poly.length; i++) {
         const pt = normToCanvas(poly[i]);
         const dist = Math.hypot(pt.x - unscaledMouseX, pt.y - unscaledMouseY);
 
-        if (dist <= 14) {
-          // Check for right-click to delete vertex
+        if (dist <= 16) {
           if (e.button === 2) {
+            // Right-click to delete vertex (enforce >= 3 vertices minimum)
             e.preventDefault();
             if (poly.length > 3 && onRoofPolygonChanged) {
               const updated = poly.filter((_, idx) => idx !== i);
@@ -171,7 +169,7 @@ export function SatelliteMapEngine({
         }
       }
 
-      // 2. Check if hit edge midpoint handle to ADD NEW VERTEX (within 10px)
+      // 2. Check if hit edge midpoint handle to ADD NEW VERTEX (within 12px)
       for (let i = 0; i < poly.length; i++) {
         const j = (i + 1) % poly.length;
         const pt1 = normToCanvas(poly[i]);
@@ -180,13 +178,34 @@ export function SatelliteMapEngine({
         const midY = (pt1.y + pt2.y) / 2;
 
         const dist = Math.hypot(midX - unscaledMouseX, midY - unscaledMouseY);
-        if (dist <= 10 && onRoofPolygonChanged) {
-          // Insert new vertex at midpoint
+        if (dist <= 12 && onRoofPolygonChanged) {
           const newNormPt = canvasToNorm(midX, midY);
           const updated = [...poly];
           updated.splice(i + 1, 0, newNormPt);
           onRoofPolygonChanged(updated);
           activeVertexIndex.current = i + 1;
+          return;
+        }
+      }
+
+      // 3. Check if hit edge segment to DRAG FULL EDGE (perpendicular distance <= 10px)
+      for (let i = 0; i < poly.length; i++) {
+        const j = (i + 1) % poly.length;
+        const p1 = normToCanvas(poly[i]);
+        const p2 = normToCanvas(poly[j]);
+
+        // Distance from point to line segment formula
+        const l2 = Math.hypot(p2.x - p1.x, p2.y - p1.y) ** 2;
+        if (l2 === 0) continue;
+        let t = ((unscaledMouseX - p1.x) * (p2.x - p1.x) + (unscaledMouseY - p1.y) * (p2.y - p1.y)) / l2;
+        t = Math.max(0, Math.min(1, t));
+        const projX = p1.x + t * (p2.x - p1.x);
+        const projY = p1.y + t * (p2.y - p1.y);
+        const distToEdge = Math.hypot(unscaledMouseX - projX, unscaledMouseY - projY);
+
+        if (distToEdge <= 10) {
+          activeEdgeIndex.current = i;
+          edgeDragStart.current = canvasToNorm(unscaledMouseX, unscaledMouseY);
           return;
         }
       }
@@ -215,7 +234,6 @@ export function SatelliteMapEngine({
       const unscaledMouseY = mouseY / zoomFraction;
 
       const newNormPt = canvasToNorm(unscaledMouseX, unscaledMouseY);
-      // Clamp within 2..98 space
       newNormPt.x = Math.max(2, Math.min(98, newNormPt.x));
       newNormPt.y = Math.max(2, Math.min(98, newNormPt.y));
 
@@ -225,7 +243,45 @@ export function SatelliteMapEngine({
       return;
     }
 
-    // 2. INERTIAL MAP PANNING
+    // 2. STAGE 4 ACTIVE EDGE DRAGGING (Moves both adjacent vertices in tandem)
+    if (stage === 4 && activeEdgeIndex.current !== null && edgeDragStart.current && onRoofPolygonChanged) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left - rect.width / 2;
+      const mouseY = e.clientY - rect.top - rect.height / 2;
+
+      const currentZoom = geoZoom;
+      const integerZoom = Math.min(19, Math.floor(currentZoom));
+      const zoomFraction = Math.pow(2, currentZoom - integerZoom);
+
+      const unscaledMouseX = mouseX / zoomFraction;
+      const unscaledMouseY = mouseY / zoomFraction;
+
+      const currentMouseNorm = canvasToNorm(unscaledMouseX, unscaledMouseY);
+      const deltaX = currentMouseNorm.x - edgeDragStart.current.x;
+      const deltaY = currentMouseNorm.y - edgeDragStart.current.y;
+      edgeDragStart.current = currentMouseNorm;
+
+      const poly = [...(location.roofPolygon || [])];
+      const i = activeEdgeIndex.current;
+      const j = (i + 1) % poly.length;
+
+      poly[i] = {
+        x: Math.max(2, Math.min(98, poly[i].x + deltaX)),
+        y: Math.max(2, Math.min(98, poly[i].y + deltaY)),
+      };
+      poly[j] = {
+        x: Math.max(2, Math.min(98, poly[j].x + deltaX)),
+        y: Math.max(2, Math.min(98, poly[j].y + deltaY)),
+      };
+
+      onRoofPolygonChanged(poly);
+      return;
+    }
+
+    // 3. INERTIAL MAP PANNING
     if (!isDragging.current) return;
     const dx = e.clientX - dragStart.current.x;
     const dy = e.clientY - dragStart.current.y;
@@ -245,7 +301,8 @@ export function SatelliteMapEngine({
 
   const handleMouseUp = () => {
     activeVertexIndex.current = null;
-    activeObstacleIndex.current = null;
+    activeEdgeIndex.current = null;
+    edgeDragStart.current = null;
     isDragging.current = false;
   };
 
@@ -422,7 +479,7 @@ export function SatelliteMapEngine({
     // Dynamic Sun Lighting Overlay
     drawSunLightingLayer(ctx, sunTime, width, height);
 
-    // REQUIREMENT #2, #3, #4: Data-Driven Roof Polygon & Interactive Vertex Handle Overlay
+    // Data-Driven Outer Roof & Inner Usable Region Overlay
     if (stage >= 3 && visualMode !== 'SATELLITE') {
       drawRoofAnalysisOverlay(
         ctx,
@@ -434,7 +491,7 @@ export function SatelliteMapEngine({
       );
     }
 
-    // REQUIREMENT #6, #10, #11, #17: Dynamic Solar Panel Array Layout Driven by Confirmed Polygon
+    // Dynamic Solar Panel Array Layout Driven Strictly by Usable Roof Polygon
     if (stage >= 5) {
       drawRealisticSolarPanels(
         ctx,
@@ -477,7 +534,7 @@ export function SatelliteMapEngine({
     ctx.fillRect(-w, -h, w * 2, h * 2);
   };
 
-  // DATA-DRIVEN ROOF POLYGON & INTERACTIVE SPATIAL VERTEX EDITOR (STAGE 4 ADJUST ROOF)
+  // VISUALIZE OUTER ROOF BOUNDARY & INNER USABLE REGION (SETBACK VISUALIZATION)
   const drawRoofAnalysisOverlay = (
     ctx: CanvasRenderingContext2D,
     poly: Point2D[],
@@ -491,7 +548,7 @@ export function SatelliteMapEngine({
     ctx.save();
     const pts = poly.map(normToCanvas);
 
-    // Draw Roof Polygon Outline
+    // 1. Draw Outer Roof Polygon Boundary
     ctx.beginPath();
     pts.forEach((pt, i) => {
       if (i === 0) ctx.moveTo(pt.x, pt.y);
@@ -500,17 +557,45 @@ export function SatelliteMapEngine({
     ctx.closePath();
 
     if (currentStage === 4) {
-      // STAGE 4: ADJUST ROOF MODE (Glowing amber spatial edit boundary)
+      // STAGE 4 ADJUST ROOF: Glowing amber spatial edit line
       ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2.5;
       ctx.setLineDash([8, 4]);
       ctx.stroke();
-
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
-      ctx.fill();
-
-      // Draw Midpoint Add Handles '+' between vertices
+    } else {
+      // CONFIRMED ROOF: Subtle cyan outer roof line
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+      ctx.lineWidth = 2;
       ctx.setLineDash([]);
+      ctx.stroke();
+    }
+
+    // 2. Draw Inner Usable Roof Region (Setback Inset Region - Emerald Green)
+    const innerPoly = computeInnerUsablePolygon(poly, 0.5, centerLat, geoZoom);
+    if (innerPoly.length >= 3) {
+      const innerPts = innerPoly.map(normToCanvas);
+
+      ctx.beginPath();
+      innerPts.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.closePath();
+
+      ctx.strokeStyle = '#10b981'; // Vibrant emerald stroke
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 3]);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)'; // Restrained 8% emerald tint
+      ctx.fill();
+    }
+
+    // 3. Draw Premium Handles strictly ONLY in STAGE 4 (ADJUST ROOF MODE)
+    if (currentStage === 4) {
+      ctx.setLineDash([]);
+
+      // Draw Edge Midpoint '+' handles for vertex insertion
       for (let i = 0; i < pts.length; i++) {
         const j = (i + 1) % pts.length;
         const midX = (pts[i].x + pts[j].x) / 2;
@@ -518,48 +603,37 @@ export function SatelliteMapEngine({
 
         ctx.fillStyle = '#38bdf8';
         ctx.beginPath();
-        ctx.arc(midX, midY, 5, 0, Math.PI * 2);
+        ctx.arc(midX, midY, 4, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(midX - 2.5, midY);
-        ctx.lineTo(midX + 2.5, midY);
-        ctx.moveTo(midX, midY - 2.5);
-        ctx.lineTo(midX, midY + 2.5);
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
 
-      // Draw Interactive Vertex Handles '●'
+      // Draw Premium Corner Handles '●' (Small core + subtle outer halo)
       pts.forEach((pt, i) => {
         const isDraggingThis = activeVertexIndex.current === i;
 
-        ctx.fillStyle = isDraggingThis ? '#fbbf24' : '#ffffff';
+        // Outer halo ring
+        ctx.fillStyle = isDraggingThis ? 'rgba(251, 191, 36, 0.45)' : 'rgba(245, 158, 11, 0.25)';
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, isDraggingThis ? 8 : 6, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, isDraggingThis ? 9 : 7, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Inner solid core
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, isDraggingThis ? 5 : 4, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = isDraggingThis ? 3 : 2;
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       });
-    } else {
-      // CONFIRMED ROOF BOUNDARY (STAGE 5+)
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 2.5;
-      ctx.setLineDash([]);
-      ctx.stroke();
-
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-      ctx.fill();
     }
 
-    // Draw Obstacle Exclusion Zones (Stairwell / Water Tank / User Obstacles)
+    // 4. Draw Obstacle Exclusion Zones (Stairwell / Water Tank / User Obstacles)
     if (currentStage >= 4) {
       exclusions.forEach((exPoly) => {
         const exPts = exPoly.map(normToCanvas);
@@ -570,7 +644,7 @@ export function SatelliteMapEngine({
         });
         ctx.closePath();
 
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
         ctx.strokeStyle = '#ef4444';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 2]);
@@ -579,40 +653,10 @@ export function SatelliteMapEngine({
       });
     }
 
-    // Scanning Beam Pass (Stage 6-7)
-    if (isScanning && scanProgress < 0.9) {
-      const scanY = -180 + scanProgress * 360;
-
-      ctx.save();
-      ctx.beginPath();
-      pts.forEach((pt, i) => {
-        if (i === 0) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      });
-      ctx.closePath();
-      ctx.clip(); // Restrict scan beam strictly inside polygon
-
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(-250, scanY);
-      ctx.lineTo(250, scanY);
-      ctx.stroke();
-
-      const grad = ctx.createLinearGradient(0, scanY - 30, 0, scanY);
-      grad.addColorStop(0, 'rgba(56, 189, 248, 0)');
-      grad.addColorStop(1, 'rgba(56, 189, 248, 0.25)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(-250, scanY - 30, 500, 30);
-
-      ctx.restore();
-    }
-
     ctx.restore();
   };
 
-  // REALISTIC PHOTOVOLTAIC MODULE RENDERING (SOURCE OF TRUTH POLYGON DRIVE)
+  // REALISTIC PHOTOVOLTAIC MODULE RENDERING (DRIVEN STRICTLY BY USABLE POLYGON)
   const drawRealisticSolarPanels = (
     ctx: CanvasRenderingContext2D,
     poly: Point2D[],
@@ -627,8 +671,8 @@ export function SatelliteMapEngine({
 
     ctx.save();
 
-    // Run dynamic 2D packing algorithm strictly inside arbitrary confirmed roof polygon
-    const placement = computePanelPlacement(poly, exclusions, orientationDeg, count);
+    // Run dynamic 2D packing algorithm strictly inside inner usable polygon & outside obstacles
+    const placement = computePanelPlacement(poly, exclusions, orientationDeg, count, 0.5);
     const visiblePanels = placement.panels;
 
     let renderLimit = visiblePanels.length;

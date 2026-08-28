@@ -23,11 +23,6 @@ export function isPointInPolygon(point: Point2D, polygon: Point2D[]): boolean {
 
 /**
  * Calculates true physical polygon area in square meters (m²) using Web Mercator geographic resolution
- * @param polygon Normalized 0..100 roof boundary points
- * @param lat Property latitude in degrees
- * @param zoom Map zoom level (default 20.2)
- * @param scaleX Canvas horizontal scaling factor (default 4.2)
- * @param scaleY Canvas vertical scaling factor (default 3.6)
  */
 export function calculateGeographicPolygonAreaM2(
   polygon: Point2D[],
@@ -66,8 +61,40 @@ export function calculateGeographicPolygonAreaM2(
 }
 
 /**
+ * COMPUTES INNER USABLE POLYGON INSET BY SETBACK DISTANCE (e.g. 0.5 meters)
+ */
+export function computeInnerUsablePolygon(
+  roofPolygon: Point2D[],
+  setbackMeters: number = 0.5,
+  lat: number = 18.559,
+  zoom: number = 20.2
+): Point2D[] {
+  if (!roofPolygon || roofPolygon.length < 3) return [];
+
+  // Calculate roof center centroid
+  let cx = 0,
+    cy = 0;
+  roofPolygon.forEach((pt) => {
+    cx += pt.x;
+    cy += pt.y;
+  });
+  cx /= roofPolygon.length;
+  cy /= roofPolygon.length;
+
+  // Approximate scale factor: 1 meter ~ 2.2 units in 0..100 normalized space
+  const insetFactor = Math.min(0.18, (setbackMeters * 2.2) / 100);
+
+  // Scale vertices inward toward centroid by insetFactor
+  const innerPolygon = roofPolygon.map((pt) => ({
+    x: pt.x + (cx - pt.x) * insetFactor,
+    y: pt.y + (cy - pt.y) * insetFactor,
+  }));
+
+  return innerPolygon;
+}
+
+/**
  * RECALCULATES REAL PHYSICAL ROOF METRICS (GEOGRAPHIC SOURCE OF TRUTH)
- * Returns explicit unit values in m² and sq.ft
  */
 export function recalculateRoofMetrics(
   roofPolygon: Point2D[],
@@ -88,29 +115,27 @@ export function recalculateRoofMetrics(
   const totalRoofAreaM2 = calculateGeographicPolygonAreaM2(roofPolygon, lat, zoom);
   const totalRoofAreaSqFt = Math.round(totalRoofAreaM2 * SQM_TO_SQFT);
 
-  // 2. Total Exclusion / Obstruction Area in m² and sq.ft
+  // 2. Inner Usable Polygon inset by 0.5m setback
+  const innerUsablePoly = computeInnerUsablePolygon(roofPolygon, 0.5, lat, zoom);
+  let rawUsableAreaM2 = calculateGeographicPolygonAreaM2(innerUsablePoly, lat, zoom);
+
+  // 3. Subtract Obstacle Exclusion Area
   let obstructionAreaM2 = 0;
   exclusionPolygons.forEach((ex) => {
     obstructionAreaM2 += calculateGeographicPolygonAreaM2(ex, lat, zoom);
   });
   const obstructionAreaSqFt = Math.round(obstructionAreaM2 * SQM_TO_SQFT);
 
-  // 3. Perimeter Setback Buffer Deduction (0.5m setback along roof edges ~12% roof area)
-  const edgeSetbackDeductionM2 = Math.min(totalRoofAreaM2 * 0.12, totalRoofAreaM2 - obstructionAreaM2 - 5);
-  const estimatedUsableAreaM2 = Math.max(10, totalRoofAreaM2 - obstructionAreaM2 - Math.max(0, edgeSetbackDeductionM2));
+  const estimatedUsableAreaM2 = Math.max(5, rawUsableAreaM2 - obstructionAreaM2);
   const estimatedUsableAreaSqFt = Math.round(estimatedUsableAreaM2 * SQM_TO_SQFT);
 
-  // Development Diagnostics & Sanity Check
+  // Development Diagnostics
   if (process.env.NODE_ENV !== 'production') {
     console.log(
       `[Roof Metrics Diagnostic] lat=${lat}, zoom=${zoom} | Vertices: ${roofPolygon.length} | ` +
       `Total: ${totalRoofAreaM2.toFixed(2)} m² (${totalRoofAreaSqFt} sq.ft) | ` +
       `Usable: ${estimatedUsableAreaM2.toFixed(2)} m² (${estimatedUsableAreaSqFt} sq.ft)`
     );
-
-    if (totalRoofAreaSqFt > 15000) {
-      console.warn(`[Sanity Warning] Calculated roof area (${totalRoofAreaSqFt} sq.ft) is implausibly large for a single building roof.`);
-    }
   }
 
   return {
@@ -125,7 +150,6 @@ export function recalculateRoofMetrics(
 
 /**
  * Deterministically generates realistic building roof footprint geometry seeded by latitude & longitude
- * Calibrated to standard residential building proportions (~950 to 1,200 sq.ft)
  */
 export function generateRealisticRoofGeometry(lat: number, lng: number): {
   roofPolygon: Point2D[];
@@ -207,13 +231,14 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
 
 /**
  * DYNAMIC 2D PANEL PACKING ALGORITHM (SOURCE OF TRUTH)
- * Calculates optimal photovoltaic module placement coordinates inside arbitrary N-point polygon.
+ * Panel candidates MUST fit strictly inside inner usable polygon & outside all exclusion zones.
  */
 export function computePanelPlacement(
   roofPolygon: Point2D[],
   exclusionPolygons: Point2D[][] = [],
   roofOrientationDeg: number = 0,
-  requestedCount: number = 24
+  requestedCount: number = 24,
+  setbackMeters: number = 0.5
 ): {
   panels: PanelModulePosition[];
   totalPositionsAvailable: number;
@@ -222,24 +247,25 @@ export function computePanelPlacement(
     return { panels: [], totalPositionsAvailable: 0 };
   }
 
-  // Find bounding box of arbitrary N-point roof polygon
+  // Compute inner usable polygon inset by setback distance
+  const usablePoly = computeInnerUsablePolygon(roofPolygon, setbackMeters);
+
+  // Find bounding box of inner usable polygon
   let minX = 100,
     maxX = 0,
     minY = 100,
     maxY = 0;
-  roofPolygon.forEach((pt) => {
+  usablePoly.forEach((pt) => {
     if (pt.x < minX) minX = pt.x;
     if (pt.x > maxX) maxX = pt.x;
     if (pt.y < minY) minY = pt.y;
     if (pt.y > maxY) maxY = pt.y;
   });
 
-  // Panel Module Specifications in normalized roof space:
-  // Standard 1.76m x 1.13m panel mapped to ~6.8 units x 4.2 units in 0..100 space
-  const pW = 6.8; // Panel width
-  const pH = 4.2; // Panel height
-  const gap = 0.6; // Inter-panel clearance gap
-  const setback = 2.0; // Edge setback buffer
+  // Panel Module Specifications in normalized space (~6.6 x 4.0 units)
+  const pW = 6.6;
+  const pH = 4.0;
+  const gap = 0.6;
 
   // Rotation transform helpers
   const rad = (roofOrientationDeg * Math.PI) / 180;
@@ -261,20 +287,19 @@ export function computePanelPlacement(
   const candidateList: PanelModulePosition[] = [];
   let candidateId = 0;
 
-  // Grid scan across roof bounding box
+  // Grid scan across inner usable polygon bounding box
   const stepX = pW + gap;
   const stepY = pH + gap;
 
-  const startX = minX + setback + pW / 2;
-  const endX = maxX - setback - pW / 2;
-  const startY = minY + setback + pH / 2;
-  const endY = maxY - setback - pH / 2;
+  const startX = minX + pW / 2;
+  const endX = maxX - pW / 2;
+  const startY = minY + pH / 2;
+  const endY = maxY - pH / 2;
 
   let row = 0;
   for (let y = startY; y <= endY; y += stepY) {
     let col = 0;
     for (let x = startX; x <= endX; x += stepX) {
-      // Test 4 corners of proposed panel module
       const halfW = pW / 2;
       const halfH = pH / 2;
 
@@ -285,25 +310,22 @@ export function computePanelPlacement(
         { x: x - halfW, y: y + halfH },
       ];
 
-      // Apply roof orientation rotation around roof center
       const corners = unrotatedCorners.map((pt) => rotatePoint(centerRoofX, centerRoofY, pt.x, pt.y));
       const centerPt = rotatePoint(centerRoofX, centerRoofY, x, y);
 
-      // Check 1: All 4 corners AND center MUST lie strictly inside arbitrary roof polygon
-      const centerInside = isPointInPolygon(centerPt, roofPolygon);
-      const c1Inside = isPointInPolygon(corners[0], roofPolygon);
-      const c2Inside = isPointInPolygon(corners[1], roofPolygon);
-      const c3Inside = isPointInPolygon(corners[3], roofPolygon);
-      const c4Inside = isPointInPolygon(corners[2], roofPolygon);
+      // Check 1: All 4 corners AND center MUST lie strictly inside inner usable polygon
+      const centerInside = isPointInPolygon(centerPt, usablePoly);
+      const c1Inside = isPointInPolygon(corners[0], usablePoly);
+      const c2Inside = isPointInPolygon(corners[1], usablePoly);
+      const c3Inside = isPointInPolygon(corners[2], usablePoly);
+      const c4Inside = isPointInPolygon(corners[3], usablePoly);
 
-      const isFullyInsideRoof = centerInside && c1Inside && c2Inside && c3Inside && c4Inside;
-
-      if (!isFullyInsideRoof) {
+      if (!centerInside || !c1Inside || !c2Inside || !c3Inside || !c4Inside) {
         col++;
         continue;
       }
 
-      // Check 2: Must NOT overlap with any user/auto exclusion polygon (water tank, stairwell)
+      // Check 2: Must NOT overlap with any exclusion polygon (water tank, stairwell, obstacles)
       let overlapsExclusion = false;
       for (const exPoly of exclusionPolygons) {
         if (!exPoly || exPoly.length < 3) continue;
@@ -324,9 +346,9 @@ export function computePanelPlacement(
         continue;
       }
 
-      // Calculate Solar Suitability Score (prefer central/southern roof area)
+      // Solar Suitability Score
       const distFromCenter = Math.hypot(centerPt.x - centerRoofX, centerPt.y - centerRoofY);
-      const southBias = (centerPt.y - minY) / (maxY - minY || 1); // Higher score for southern plane
+      const southBias = (centerPt.y - minY) / (maxY - minY || 1);
       const score = 100 - distFromCenter * 0.8 + southBias * 25;
 
       candidateList.push({
@@ -346,10 +368,7 @@ export function computePanelPlacement(
     row++;
   }
 
-  // Sort candidates by highest solar suitability score
   candidateList.sort((a, b) => b.score - a.score);
-
-  // Return requested count of panels, fallback to available if less
   const selectedPanels = candidateList.slice(0, Math.min(requestedCount, candidateList.length));
 
   return {
