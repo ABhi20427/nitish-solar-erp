@@ -10,7 +10,7 @@ interface AddressAutocompleteProps {
   initialValue?: string;
 }
 
-import { recalculateRoofMetrics, generateRealisticRoofGeometry } from './roof-packing-algorithm';
+import { generateRealisticRoofGeometry } from './roof-packing-algorithm';
 
 const rawPresets = [
   {
@@ -22,13 +22,6 @@ const rawPresets = [
     lng: 73.7868,
     zoom: 20.2,
     source: 'address' as const,
-    roofPolygon: [
-      { x: 30, y: 26 },
-      { x: 70, y: 26 },
-      { x: 70, y: 74 },
-      { x: 30, y: 74 },
-    ],
-    exclusionPolygons: [[{ x: 52, y: 32 }, { x: 62, y: 32 }, { x: 62, y: 42 }, { x: 52, y: 42 }]],
     solarIrradiance: 4.85,
   },
   {
@@ -40,13 +33,6 @@ const rawPresets = [
     lng: 77.0895,
     zoom: 20.2,
     source: 'address' as const,
-    roofPolygon: [
-      { x: 26, y: 24 },
-      { x: 74, y: 24 },
-      { x: 74, y: 76 },
-      { x: 26, y: 76 },
-    ],
-    exclusionPolygons: [[{ x: 54, y: 34 }, { x: 64, y: 34 }, { x: 64, y: 44 }, { x: 54, y: 44 }]],
     solarIrradiance: 4.92,
   },
   {
@@ -58,13 +44,6 @@ const rawPresets = [
     lng: 77.6408,
     zoom: 20.2,
     source: 'address' as const,
-    roofPolygon: [
-      { x: 32, y: 26 },
-      { x: 68, y: 26 },
-      { x: 68, y: 74 },
-      { x: 32, y: 74 },
-    ],
-    exclusionPolygons: [[{ x: 50, y: 32 }, { x: 60, y: 32 }, { x: 60, y: 42 }, { x: 50, y: 42 }]],
     solarIrradiance: 4.65,
   },
   {
@@ -76,13 +55,6 @@ const rawPresets = [
     lng: 72.828,
     zoom: 20.2,
     source: 'address' as const,
-    roofPolygon: [
-      { x: 32, y: 28 },
-      { x: 68, y: 28 },
-      { x: 68, y: 72 },
-      { x: 32, y: 72 },
-    ],
-    exclusionPolygons: [[{ x: 52, y: 34 }, { x: 62, y: 34 }, { x: 62, y: 44 }, { x: 52, y: 44 }]],
     solarIrradiance: 4.75,
   },
   {
@@ -94,13 +66,6 @@ const rawPresets = [
     lng: 72.5074,
     zoom: 20.2,
     source: 'address' as const,
-    roofPolygon: [
-      { x: 26, y: 22 },
-      { x: 74, y: 22 },
-      { x: 74, y: 78 },
-      { x: 26, y: 78 },
-    ],
-    exclusionPolygons: [[{ x: 52, y: 32 }, { x: 64, y: 32 }, { x: 64, y: 44 }, { x: 52, y: 44 }]],
     solarIrradiance: 5.4,
   },
   {
@@ -112,25 +77,29 @@ const rawPresets = [
     lng: 78.4347,
     zoom: 20.2,
     source: 'address' as const,
-    roofPolygon: [
-      { x: 28, y: 25 },
-      { x: 72, y: 25 },
-      { x: 72, y: 75 },
-      { x: 28, y: 75 },
-    ],
-    exclusionPolygons: [[{ x: 52, y: 32 }, { x: 62, y: 32 }, { x: 62, y: 42 }, { x: 52, y: 42 }]],
     solarIrradiance: 5.12,
   },
 ];
 
+// PRESET GEOMETRY MUST COME FROM THE SAME GENERATOR USED WHEN A LOCATION IS SELECTED
+// (generateRealisticRoofGeometry is the single canonical source for any given lat/lng).
+// Previously each preset carried its own hand-authored roofPolygon that was only ever
+// used to compute the numbers shown in this dropdown, while selecting the preset threw
+// that polygon away and regenerated a different one — producing two disagreeing areas
+// for the same address. Deriving both from the same call eliminates that split.
 export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = rawPresets.map((p) => {
-  const metrics = recalculateRoofMetrics(p.roofPolygon, p.exclusionPolygons, p.lat, p.zoom);
+  const geo = generateRealisticRoofGeometry(p.lat, p.lng);
   return {
     ...p,
-    totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-    estimatedUsableAreaSqFt: metrics.usableRoofAreaSqFt,
-    obstructionAreaSqFt: metrics.obstructionAreaSqFt,
-    metrics,
+    roofPolygon: geo.roofPolygon,
+    exclusionPolygons: geo.exclusionPolygons,
+    roofOrientationDeg: geo.roofOrientationDeg,
+    totalRoofAreaSqFt: geo.metrics.totalRoofAreaSqFt,
+    estimatedUsableAreaSqFt: geo.metrics.usableRoofAreaSqFt,
+    obstructionAreaSqFt: geo.metrics.obstructionAreaSqFt,
+    metrics: geo.metrics,
+    buildingConfidence: 'ESTIMATED ROOF' as const,
+    isUserConfirmed: false,
   };
 });
 

@@ -29,7 +29,6 @@ import {
   ShieldCheck,
   ChevronRight,
   ChevronLeft,
-  Sparkles,
 } from 'lucide-react';
 
 const TRUST_INDICATORS = [
@@ -346,7 +345,6 @@ export default function HomePage() {
         transparentOverlay
         lightTheme
         onOpenQuoteModal={() => setIsQuoteOpen(true)}
-        onOpenDiscoverSolar={() => setIsDiscoverSolarOpen(true)}
       />
 
       {/* 1. HERO BACKGROUND (100VH / 100SVH / 100DVH FULL-SCREEN CINEMATIC) */}
@@ -354,66 +352,58 @@ export default function HomePage() {
         {/* Background Visual Layer (Video-ready container for future video asset) */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <Image
-            src="/images/hero_light.png"
+            src="/images/solar-vision-hero.jpg"
             alt="nitish solar clean energy infrastructure"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center filter contrast-105 saturate-105"
+            className="object-cover object-center filter contrast-105 saturate-[1.02]"
           />
-          {/* Layered Sophisticated Dark Gradient Overlays for Video/Image Readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/30" />
-          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/80 via-black/40 to-transparent pointer-events-none" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0B0F17] via-[#0B0F17]/60 to-transparent pointer-events-none" />
+          {/* Layered Dark Gradient Overlays for Legibility — restrained, no color wash */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/15" />
+          <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none" />
+          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0B0F17] via-[#0B0F17]/50 to-transparent pointer-events-none" />
         </div>
 
         {/* Hero Content Container */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pt-16 sm:pt-20">
-          <div className="max-w-3xl space-y-6 sm:space-y-8">
-            {/* Tag Kicker */}
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-slate-900/80 backdrop-blur-md border border-slate-700/80 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest hero-animate-1 shadow-lg">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-              <span>Next-Generation Clean Energy Infrastructure</span>
+          <div className="max-w-3xl space-y-7 sm:space-y-9">
+            {/* Tag Kicker — plain tracked label, no glow/pulse */}
+            <div className="flex items-center gap-2.5 text-white/70 text-[11px] font-semibold uppercase tracking-[0.2em] hero-animate-1">
+              <span className="w-4 h-px bg-amber-400" />
+              <span>Real Roofs. Real Geography. Real Energy Data.</span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-8xl font-black tracking-tight text-white leading-[1.05] drop-shadow-lg hero-animate-2">
-              Powering a <span className="text-amber-400">Cleaner Future</span>.
+            <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl xl:text-[5.25rem] font-semibold tracking-tight text-white leading-[1.06] hero-animate-2">
+              Precision solar engineering, designed around{' '}
+              <span className="text-amber-400">your roof</span>.
             </h1>
 
             {/* Supporting Text */}
-            <p className="text-base sm:text-xl lg:text-2xl text-slate-200 font-light leading-relaxed max-w-2xl drop-shadow-sm hero-animate-3">
-              Reliable solar solutions for homes, businesses, and industry.
+            <p className="text-base sm:text-xl text-white/75 font-light leading-relaxed max-w-xl hero-animate-3">
+              We map your property, model its real geometry, and design a solar system built on data — not estimates.
             </p>
 
-            {/* CTAs */}
-            <div className="flex flex-wrap items-center gap-4 pt-2 sm:pt-4 hero-animate-4">
+            {/* Primary CTA — single, strengthened action */}
+            <div className="pt-2 sm:pt-4 hero-animate-4">
               <Button
                 variant="accent"
                 size="lg"
                 onClick={() => setIsDiscoverSolarOpen(true)}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-8 py-4 rounded-xl shadow-2xl shadow-amber-500/20 transition-all duration-300 group border-0 text-base flex items-center gap-2.5 hover:scale-105"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-9 py-4 rounded-lg transition-all duration-300 group border-0 text-base sm:text-lg flex items-center gap-3"
                 icon={<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
               >
-                DISCOVER YOUR SOLAR →
+                Discover Your Solar
               </Button>
-              <Link href="/solutions">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-white/20 hover:border-white/60 font-semibold px-8 py-4 rounded-xl shadow-lg transition-all duration-300 text-base"
-                >
-                  Explore Solar
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
 
         {/* Minimal Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-slate-300 text-xs font-mono font-medium drop-shadow-md hero-animate-4">
-          <span className="uppercase tracking-widest text-[10px] text-slate-400">Scroll to explore</span>
-          <ChevronDown className="w-4 h-4 animate-bounce text-amber-400" />
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-white/60 text-[11px] font-medium hero-animate-4">
+          <span className="uppercase tracking-[0.2em]">Scroll to explore</span>
+          <ChevronDown className="w-4 h-4 animate-bounce" />
         </div>
       </section>
 
@@ -423,10 +413,10 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
             <div className="lg:col-span-6 space-y-6">
-              <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">
                 Editorial Overview
               </span>
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+              <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-tight">
                 Energy that works for tomorrow.
               </h2>
               <p className="text-slate-300 text-base sm:text-lg font-light leading-relaxed">
@@ -436,7 +426,7 @@ export default function HomePage() {
                 Whether deploying residential rooftop solar installations, commercial net-metered arrays, or utility-scale megawatt projects, our end-to-end EPC workflow ensures optimal tilt geometry, 3D shadow modeling, DISCOM grid synchronization, and 30-year linear performance guarantees.
               </p>
               <div className="pt-2">
-                <Link href="/about" className="inline-flex items-center gap-2 text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors group">
+                <Link href="/about" className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-amber-400 transition-colors group">
                   <span>Discover nitish solar's Engineering Philosophy</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -445,7 +435,7 @@ export default function HomePage() {
 
             {/* Right Architectural Image */}
             <div className="lg:col-span-6">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-800/80 group">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-800/60 group">
                 <div className="aspect-[4/3] relative">
                   <Image
                     src="/images/industrial_light.png"
@@ -456,8 +446,8 @@ export default function HomePage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
                   <div className="absolute bottom-6 left-6 right-6 text-white space-y-1">
-                    <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest block">Industrial Rooftop Installation</span>
-                    <p className="text-sm font-bold">1.2 MWp High-Efficiency Bifacial Solar System • Pune MIDC</p>
+                    <span className="text-[11px] font-semibold text-white/60 uppercase tracking-[0.15em] block">Industrial Rooftop Installation</span>
+                    <p className="text-sm font-semibold">1.2 MWp High-Efficiency Bifacial Solar System • Pune MIDC</p>
                   </div>
                 </div>
               </div>
@@ -471,40 +461,24 @@ export default function HomePage() {
         {/* Sticky Viewport Container (All scene layers contained within 100vh viewport) */}
         <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
           
-          {/* Integrated Ambient Energy Atmosphere (Inside sticky viewport) */}
+          {/* Ambient Depth (neutral vignette only — no colored glow blobs / motion lines) */}
           <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-            {/* Soft gradient blend ensuring seamless transition with surrounding sections */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/60 to-[#0B0F17]" />
-            
-            {/* Background Parallax Energy Flow Streams (Slow Movement: -solutionsProgress * 14vw) */}
             <div
-              className="absolute inset-0 opacity-20 transition-transform duration-150 ease-out"
+              className="absolute left-1/2 top-1/2 w-[900px] h-[560px] rounded-full bg-slate-800/25 blur-[120px] transition-transform duration-300 ease-out"
               style={{
-                transform: `translateX(${-solutionsProgress * 14}vw)`,
-                willChange: 'transform',
-              }}
-            >
-              <div className="absolute top-1/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent animate-energy-flow" />
-              <div className="absolute top-1/2 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-slate-600/25 to-transparent animate-energy-flow" style={{ animationDelay: '-14s' }} />
-              <div className="absolute top-3/4 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-amber-400/15 to-transparent animate-energy-flow" style={{ animationDelay: '-7s' }} />
-            </div>
-
-            {/* Dynamic Active Card Spotlight Glow (Moves smoothly with solutionsProgress) */}
-            <div
-              className="absolute left-1/2 top-1/2 w-[620px] h-[400px] rounded-full bg-gradient-to-r from-amber-500/12 via-blue-600/8 to-amber-400/12 blur-3xl transition-transform duration-300 ease-out opacity-75"
-              style={{
-                transform: `translate(-50%, -50%) translateX(${(0.5 - solutionsProgress) * -52}vw)`,
+                transform: `translate(-50%, -50%) translateX(${(0.5 - solutionsProgress) * -30}vw)`,
                 willChange: 'transform',
               }}
             />
           </div>
 
           {/* Anchored Section Heading (Always visible below fixed navbar) */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-2 relative z-30 shrink-0">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block drop-shadow-sm">
-              OUR SOLUTIONS
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3 relative z-30 shrink-0">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">
+              Our Solutions
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight drop-shadow-md">
+            <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl font-semibold text-white tracking-tight">
               Solar engineered for every scale.
             </h2>
             <p className="text-slate-400 text-sm sm:text-base font-light max-w-xl mx-auto">
@@ -518,20 +492,21 @@ export default function HomePage() {
               // Compute continuous relative position for card idx
               // When solutionsProgress = 0, idx 0 is at 0 (center), idx 1 is at 1 (peeking right), idx 2 is at 2 (far right)
               const relPos = idx - solutionsProgress * 2;
-              const isCentral = Math.abs(relPos) < 0.35;
+              const absPos = Math.abs(relPos);
+              const isCentral = absPos < 0.35;
 
               let opacity = 1;
               let scale = 1;
               let brightness = 1;
 
               if (relPos < 0) {
-                // Moving Left towards / off left edge: opacity 1 -> 0.45 -> 0.05, scale 1 -> 0.94 -> 0.88
-                const distLeft = Math.abs(relPos);
+                // Moving left towards / off the edge: opacity 1 -> 0.45 -> 0.05, scale 1 -> 0.94 -> 0.88
+                const distLeft = absPos;
                 opacity = Math.max(0.05, 1 - distLeft * 0.55);
                 scale = Math.max(0.88, 1 - distLeft * 0.06);
                 brightness = Math.max(0.5, 1 - distLeft * 0.25);
               } else if (relPos > 0) {
-                // Positioned on the right / entering from right edge
+                // Positioned on the right / entering from the right edge
                 const distRight = relPos;
                 opacity = Math.max(0.1, 1 - distRight * 0.25);
                 scale = Math.max(0.9, 1 - distRight * 0.04);
@@ -539,8 +514,14 @@ export default function HomePage() {
               }
 
               // Active/central card (relPos closest to 0) gets highest z-index
-              const zIndex = 30 - Math.round(Math.abs(relPos) * 10);
+              const zIndex = 30 - Math.round(absPos * 10);
               const translateX = relPos * 52; // Horizontal translation in viewport width percentage
+
+              // Clip-path reveal: the image crops in from its leading edge as the card
+              // arrives and un-crops as it departs, so cards feel like they surface
+              // through a mask rather than simply sliding past one another.
+              const clipInset = Math.max(0, Math.min(40, absPos * 55));
+              const clipPath = `inset(0 ${relPos > 0 ? clipInset : 0}% 0 ${relPos < 0 ? clipInset : 0}% round 1rem)`;
 
               return (
                 <div
@@ -555,36 +536,31 @@ export default function HomePage() {
                     pointerEvents: opacity < 0.2 ? 'none' : 'auto',
                   }}
                 >
-                  {/* Subtle Light Motion Trail Behind Cards Moving Left */}
-                  {relPos < 0.3 && relPos > -1.5 && (
-                    <div
-                      className="absolute -right-10 top-1/2 -translate-y-1/2 w-40 h-3/4 bg-gradient-to-r from-amber-500/15 via-amber-400/5 to-transparent blur-2xl rounded-full pointer-events-none transition-opacity duration-300"
-                      style={{ opacity: Math.max(0, Math.min(0.2, (0.3 - relPos) * 0.25)) }}
-                    />
-                  )}
-
                   <div
-                    className={`border transition-all duration-500 rounded-3xl p-6 lg:p-7 shadow-2xl flex flex-col md:flex-row items-center gap-6 lg:gap-8 group relative z-20 overflow-hidden ${
+                    className={`border transition-colors duration-500 rounded-3xl p-6 lg:p-7 shadow-2xl shadow-black/50 flex flex-col md:flex-row items-center gap-6 lg:gap-8 group relative z-20 overflow-hidden ${
                       isCentral
-                        ? 'bg-gradient-to-br from-[#18233C] via-[#131B2E] to-[#0F172A] border-amber-400/40 shadow-amber-500/10'
-                        : 'bg-[#131B2E]/95 border-slate-800/90 shadow-black/90'
+                        ? 'bg-[#131B2E] border-slate-700/70'
+                        : 'bg-[#131B2E]/95 border-slate-800/70'
                     }`}
                   >
-                    {/* LEFT SIDE — PHOTO WITH IMAGE PARALLAX */}
-                    <div className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner">
+                    {/* LEFT SIDE — PHOTO WITH CLIP-PATH REVEAL + PARALLAX */}
+                    <div
+                      className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner transition-[clip-path] duration-300 ease-out"
+                      style={{ clipPath, willChange: 'clip-path' }}
+                    >
                       <Image
                         src={story.image}
                         alt={story.heading}
                         fill
                         sizes="(max-width: 1024px) 50vw, 45vw"
                         style={{
-                          transform: `scale(${isCentral ? 1.04 : 1.0}) translateX(${-relPos * 3.5}%)`,
-                          filter: `brightness(${isCentral ? 1.02 : 0.88})`,
+                          transform: `scale(${isCentral ? 1.06 : 1.0}) translateX(${-relPos * 3.5}%)`,
+                          filter: `brightness(${isCentral ? 1.0 : 0.85})`,
                           willChange: 'transform, filter',
                         }}
                         className="object-cover transition-transform duration-500 ease-out"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
                     </div>
 
                     {/* RIGHT SIDE — CONTENT WITH MICRO-PARALLAX */}
@@ -594,11 +570,11 @@ export default function HomePage() {
                         transform: `translateX(${relPos * -4}px)`,
                       }}
                     >
-                      <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-amber-400/90 block">
                         {story.type}
                       </span>
 
-                      <h3 className="text-xl lg:text-3xl font-black text-white tracking-tight leading-snug">
+                      <h3 className="font-display text-xl lg:text-3xl font-semibold text-white tracking-tight leading-snug">
                         {story.heading}
                       </h3>
 
@@ -609,7 +585,7 @@ export default function HomePage() {
                       <ul className="space-y-1.5 pt-0.5">
                         {story.bullets.map((b) => (
                           <li key={b} className="flex items-start gap-2 text-xs lg:text-sm text-slate-200 font-medium">
-                            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <CheckCircle2 className="w-4 h-4 text-amber-400/80 shrink-0 mt-0.5" />
                             <span>{b}</span>
                           </li>
                         ))}
@@ -620,7 +596,7 @@ export default function HomePage() {
                           <Button
                             variant="accent"
                             size="sm"
-                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-6 py-2 rounded-xl text-xs lg:text-sm border-0 shadow-lg shadow-amber-500/10 flex items-center gap-2 group/btn"
+                            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-6 py-2 rounded-lg text-xs lg:text-sm border-0 flex items-center gap-2 group/btn"
                             icon={<ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />}
                           >
                             {story.cta}
@@ -634,16 +610,16 @@ export default function HomePage() {
             })}
           </div>
 
-          {/* Premium Solutions Scene Progress Indicator: 01 ━━━━━ [Line] ━━━━━ 03 */}
-          <div className="flex flex-col items-center gap-2 relative z-30 pb-3 shrink-0 max-w-md mx-auto w-full px-6">
-            <div className="flex items-center justify-between w-full text-[11px] font-mono font-bold tracking-widest">
-              <span className={`transition-colors duration-300 ${solutionsStep === 0 ? 'text-amber-400' : 'text-slate-500'}`}>01 RESIDENTIAL</span>
-              <span className={`transition-colors duration-300 ${solutionsStep === 1 ? 'text-amber-400' : 'text-slate-500'}`}>02 COMMERCIAL</span>
-              <span className={`transition-colors duration-300 ${solutionsStep === 2 ? 'text-amber-400' : 'text-slate-500'}`}>03 INDUSTRIAL</span>
+          {/* Solutions Scene Progress Indicator */}
+          <div className="flex flex-col items-center gap-2.5 relative z-30 pb-3 shrink-0 max-w-md mx-auto w-full px-6">
+            <div className="flex items-center justify-between w-full text-[11px] font-semibold uppercase tracking-[0.15em]">
+              <span className={`transition-colors duration-300 ${solutionsStep === 0 ? 'text-white' : 'text-slate-500'}`}>Residential</span>
+              <span className={`transition-colors duration-300 ${solutionsStep === 1 ? 'text-white' : 'text-slate-500'}`}>Commercial</span>
+              <span className={`transition-colors duration-300 ${solutionsStep === 2 ? 'text-white' : 'text-slate-500'}`}>Industrial</span>
             </div>
-            <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden relative">
+            <div className="w-full h-[3px] bg-slate-800 rounded-full overflow-hidden relative">
               <div
-                className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 rounded-full transition-all duration-200 ease-out shadow-sm shadow-amber-400/50"
+                className="h-full bg-amber-400 rounded-full transition-all duration-200 ease-out"
                 style={{ width: `${Math.max(12, Math.min(100, (solutionsProgress + 0.1) * 88))}%` }}
               />
             </div>
@@ -654,10 +630,10 @@ export default function HomePage() {
       {/* Mobile: Clean Vertically Readable Card Stack */}
       <section className="block md:hidden py-16 pt-24 bg-[#0B0F17] px-4 space-y-8 border-t border-slate-800/80">
         <div className="text-center space-y-2 mb-8">
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
-            OUR SOLUTIONS
+          <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">
+            Our Solutions
           </span>
-          <h2 className="text-2xl font-black text-white tracking-tight">
+          <h2 className="font-display text-2xl font-semibold text-white tracking-tight">
             Solar engineered for every scale.
           </h2>
           <p className="text-slate-400 text-xs font-light max-w-sm mx-auto">
@@ -682,10 +658,10 @@ export default function HomePage() {
               </div>
 
               <div className="space-y-3">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-amber-400 block">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-amber-400/90 block">
                   {story.type}
                 </span>
-                <h3 className="text-xl font-black text-white tracking-tight leading-snug">
+                <h3 className="font-display text-xl font-semibold text-white tracking-tight leading-snug">
                   {story.heading}
                 </h3>
                 <p className="text-slate-300 text-xs font-light leading-relaxed">
@@ -694,7 +670,7 @@ export default function HomePage() {
                 <ul className="space-y-2 pt-1">
                   {story.bullets.map((b) => (
                     <li key={b} className="flex items-start gap-2 text-xs text-slate-200 font-medium">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-400/80 shrink-0 mt-0.5" />
                       <span>{b}</span>
                     </li>
                   ))}
@@ -704,7 +680,7 @@ export default function HomePage() {
                     <Button
                       variant="accent"
                       size="sm"
-                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs border-0 flex items-center justify-center gap-2"
+                      className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-4 py-2.5 rounded-lg text-xs border-0 flex items-center justify-center gap-2"
                       icon={<ArrowRight className="w-4 h-4" />}
                     >
                       {story.cta}
@@ -722,17 +698,11 @@ export default function HomePage() {
         {/* Sticky Viewport Container (100vh full viewport) */}
         <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
           
-          {/* Soft Ambient Background Energy Glow (Dynamic color depending on DC / AC stage) */}
+          {/* Soft Ambient Depth (single restrained tone, no rainbow color-shifting) */}
           <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/80 to-[#0B0F17]" />
             <div
-              className={`absolute left-1/2 top-1/2 w-[700px] h-[450px] rounded-full blur-3xl transition-all duration-700 ease-out opacity-75 ${
-                plantStageIdx < 2
-                  ? 'bg-gradient-to-r from-amber-500/15 via-amber-400/10 to-amber-600/15'
-                  : plantStageIdx === 2
-                  ? 'bg-gradient-to-r from-amber-500/10 via-sky-500/15 to-blue-600/15'
-                  : 'bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-emerald-500/15'
-              }`}
+              className="absolute left-1/2 top-1/2 w-[700px] h-[450px] rounded-full bg-slate-800/25 blur-[110px] transition-transform duration-700 ease-out"
               style={{
                 transform: `translate(-50%, -50%) translateX(${(2 - plantStageIdx) * 14}vw)`,
               }}
@@ -741,46 +711,46 @@ export default function HomePage() {
 
           {/* Main 2-Column Desktop Grid Layout (Guarantees Text Safe Zone vs Visual Stage) */}
           <div className="max-w-7xl mx-auto px-6 sm:px-8 w-full flex-1 grid grid-cols-12 gap-8 items-center relative z-20 my-auto">
-            
+
             {/* LEFT 5-COL: Dedicated Text Safe Zone (Title + Stage Info + Layer Explanation) */}
             <div className="col-span-5 space-y-5 text-left shrink-0">
-              
+
               {/* Section Eyebrow */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
-                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                <span>INSIDE A SOLAR PLANT</span>
+              <div className="flex items-center gap-2 text-white/50 text-[11px] font-semibold uppercase tracking-[0.2em]">
+                <span className="w-4 h-px bg-amber-400" />
+                <span>Inside a Solar Plant</span>
               </div>
 
               {/* Headline */}
-              <h2 className="text-3xl lg:text-4xl xl:text-5xl font-black text-white tracking-tight leading-tight">
+              <h2 className="font-display text-3xl lg:text-4xl xl:text-5xl font-semibold text-white tracking-tight leading-tight">
                 See how sunlight becomes power.
               </h2>
 
               {/* Stage Badge & Title */}
               <div className="space-y-1 pt-2 border-t border-slate-800/80">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold text-amber-400">
-                    STAGE {PLANT_STAGES[plantStageIdx].code} / 05
+                  <span className="text-xs font-semibold text-amber-400 tracking-wide">
+                    Stage {PLANT_STAGES[plantStageIdx].code} / 05
                   </span>
-                  <span className="text-[11px] font-mono text-slate-500 uppercase">
+                  <span className="text-[11px] text-slate-500 uppercase tracking-wide">
                     {PLANT_STAGES[plantStageIdx].subtitle}
                   </span>
                 </div>
-                <h3 className="text-2xl font-black text-white tracking-tight">
+                <h3 className="font-display text-2xl font-semibold text-white tracking-tight">
                   {PLANT_STAGES[plantStageIdx].title}
                 </h3>
               </div>
 
               {/* Stage Concise 1-Sentence Explanation */}
-              <p className="text-slate-300 text-sm font-light leading-relaxed bg-[#131B2E]/90 p-4 rounded-2xl border border-slate-800 shadow-lg">
+              <p className="text-slate-300 text-sm font-light leading-relaxed bg-[#131B2E]/90 p-4 rounded-2xl border border-slate-800/70">
                 {PLANT_STAGES[plantStageIdx].shortDesc}
               </p>
 
               {/* Active Exploded Layer Detail Card */}
-              <div className="bg-[#0F172A] border border-slate-800 rounded-2xl p-4 space-y-2 text-xs">
-                <div className="flex items-center justify-between text-slate-400 font-mono text-[11px]">
+              <div className="bg-[#0F172A] border border-slate-800/70 rounded-2xl p-4 space-y-2 text-xs">
+                <div className="flex items-center justify-between text-slate-400 text-[11px]">
                   <span>Active Layer:</span>
-                  <span className="text-amber-400 font-bold">
+                  <span className="text-amber-400 font-semibold">
                     {PLANT_STAGES[plantStageIdx].layers[plantLayerIdx]?.name}
                   </span>
                 </div>
@@ -791,14 +761,14 @@ export default function HomePage() {
                   <button
                     onClick={() => setPlantLayerIdx((prev) => Math.max(0, prev - 1))}
                     disabled={plantLayerIdx === 0}
-                    className="text-[11px] font-mono text-slate-400 hover:text-white disabled:opacity-30 flex items-center gap-1"
+                    className="text-[11px] text-slate-400 hover:text-white disabled:opacity-30 flex items-center gap-1"
                   >
                     <ChevronLeft className="w-3.5 h-3.5" /> Prev Layer
                   </button>
                   <button
                     onClick={() => setPlantLayerIdx((prev) => Math.min(PLANT_STAGES[plantStageIdx].layers.length - 1, prev + 1))}
                     disabled={plantLayerIdx === PLANT_STAGES[plantStageIdx].layers.length - 1}
-                    className="text-[11px] font-mono text-amber-400 hover:text-amber-300 disabled:opacity-30 font-bold flex items-center gap-1"
+                    className="text-[11px] text-amber-400 hover:text-amber-300 disabled:opacity-30 font-semibold flex items-center gap-1"
                   >
                     Next Layer <ChevronRight className="w-3.5 h-3.5" />
                   </button>
@@ -807,13 +777,13 @@ export default function HomePage() {
             </div>
 
             {/* RIGHT 7-COL: Interactive Five Cinematic Engineering SVG Gadgets Container */}
-            <div className="col-span-7 relative min-h-[440px] lg:min-h-[480px] flex flex-col items-center justify-between overflow-hidden rounded-3xl border border-slate-800/80 bg-[#070A10]/95 shadow-2xl p-6">
-              
+            <div className="col-span-7 relative min-h-[440px] lg:min-h-[480px] flex flex-col items-center justify-between overflow-hidden rounded-3xl border border-slate-800/70 bg-[#070A10]/95 shadow-2xl shadow-black/40 p-6">
+
               {/* 1. Continuous Infrastructure Journey Header */}
-              <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[11px] font-mono font-bold z-20 shrink-0">
+              <div className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/90 border border-slate-800/70 text-[11px] font-semibold z-20 shrink-0">
                 {PLANT_STAGES.map((stg, i) => (
                   <React.Fragment key={stg.id}>
-                    {i > 0 && <span className="text-slate-600">➔</span>}
+                    {i > 0 && <span className="text-slate-600">→</span>}
                     <span
                       onClick={() => {
                         setPlantStageIdx(i);
@@ -824,8 +794,8 @@ export default function HomePage() {
                           window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
                         }
                       }}
-                      className={`cursor-pointer transition-all duration-300 ${
-                        plantStageIdx === i ? 'text-amber-400 font-extrabold scale-105' : 'text-slate-500 hover:text-slate-300'
+                      className={`cursor-pointer transition-colors duration-300 ${
+                        plantStageIdx === i ? 'text-amber-400 font-bold' : 'text-slate-500 hover:text-slate-300'
                       }`}
                     >
                       {stg.title}
@@ -1034,14 +1004,14 @@ export default function HomePage() {
               </div>
 
               {/* 3. Bottom Energy Stream Status Bar */}
-              <div className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between text-xs font-mono z-20 shrink-0">
-                <span className="text-slate-400">GADGET STATE:</span>
-                <span className="font-bold text-amber-400">
-                  {plantStageIdx === 0 && '⚡ 01 SOLAR: PHOTON ACTIVATION'}
-                  {plantStageIdx === 1 && '⚡ 02 DC: 1500V STRING CONVERGENCE'}
-                  {plantStageIdx === 2 && '⚡ 03 INVERTER: 50.0 Hz AC INVERSION'}
-                  {plantStageIdx === 3 && '⚡ 04 TRANSFORMER: 33kV STEP-UP'}
-                  {plantStageIdx === 4 && '⚡ 05 GRID: POWER DELIVERED'}
+              <div className="w-full bg-slate-900/90 border border-slate-800/70 rounded-xl p-2.5 flex items-center justify-between text-xs z-20 shrink-0">
+                <span className="text-slate-500 font-medium">Gadget State</span>
+                <span className="font-semibold text-amber-400 font-mono text-[11px]">
+                  {plantStageIdx === 0 && '01 SOLAR — Photon Activation'}
+                  {plantStageIdx === 1 && '02 DC — 1500V String Convergence'}
+                  {plantStageIdx === 2 && '03 Inverter — 50.0 Hz AC Inversion'}
+                  {plantStageIdx === 3 && '04 Transformer — 33kV Step-Up'}
+                  {plantStageIdx === 4 && '05 Grid — Power Delivered'}
                 </span>
               </div>
             </div>
@@ -1049,7 +1019,7 @@ export default function HomePage() {
 
           {/* Continuous 5-Stage Journey Progress Navigation Bar (Synchronized Click + Scroll State) */}
           <div className="max-w-4xl mx-auto w-full px-6 pt-3 pb-1 relative z-30 shrink-0">
-            <div className="flex items-center justify-between bg-[#131B2E]/95 border border-slate-800 rounded-2xl p-2 shadow-2xl">
+            <div className="flex items-center justify-between bg-[#131B2E]/95 border border-slate-800/70 rounded-2xl p-2 shadow-xl shadow-black/30">
               {PLANT_STAGES.map((stage, idx) => {
                 const isSelected = idx === plantStageIdx;
                 const IconComponent = stage.icon;
@@ -1065,14 +1035,14 @@ export default function HomePage() {
                         window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
                       }
                     }}
-                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all duration-300 ${
+                    className={`flex items-center gap-2 px-3.5 py-2 rounded-xl transition-colors duration-300 ${
                       isSelected
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/25 scale-105 ring-2 ring-amber-400'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800/80'
+                        ? 'bg-amber-500 text-slate-950 font-semibold'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/80 border border-slate-800/70'
                     }`}
                   >
                     <IconComponent className="w-4 h-4 shrink-0" />
-                    <span className="text-xs font-mono font-bold tracking-tight">
+                    <span className="text-xs font-semibold tracking-tight">
                       {stage.code} {stage.title.split(' ')[0]}
                     </span>
                   </button>
@@ -1098,7 +1068,7 @@ export default function HomePage() {
           </div>
 
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20 w-full">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block mb-6">Proven Turnkey Track Record</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block mb-6">Proven Turnkey Track Record</span>
             {TRUST_INDICATORS.map((metric, idx) => {
               const isActive = impactStep === idx;
               return (
@@ -1107,10 +1077,10 @@ export default function HomePage() {
                   className={`transition-all duration-700 ease-out space-y-4 ${isActive ? 'opacity-100 scale-100 relative' : 'opacity-0 scale-95 absolute pointer-events-none'
                     }`}
                 >
-                  <span className="text-5xl sm:text-8xl font-black text-white tracking-tight drop-shadow-lg block font-mono">
+                  <span className="font-display text-5xl sm:text-8xl font-semibold text-white tracking-tight block tabular-nums">
                     {metric.val}
                   </span>
-                  <h3 className="text-xl sm:text-3xl font-bold text-amber-400 tracking-tight">{metric.label}</h3>
+                  <h3 className="text-xl sm:text-3xl font-semibold text-amber-400 tracking-tight">{metric.label}</h3>
                   <p className="text-slate-300 text-sm sm:text-base font-light max-w-lg mx-auto">{metric.desc}</p>
                 </div>
               );
@@ -1122,10 +1092,10 @@ export default function HomePage() {
       {/* 7. SECTION 7 — SOLAR CALCULATOR & PROPOSAL REQUEST */}
       <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#0B0F17]/90 rounded-3xl p-8 sm:p-12 border border-slate-800/90 shadow-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center bg-[#0B0F17]/90 rounded-3xl p-8 sm:p-12 border border-slate-800/70 shadow-2xl shadow-black/40">
             <div className="lg:col-span-6 space-y-6">
-              <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">Financial ROI Estimator</span>
-              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">Financial ROI Estimator</span>
+              <h2 className="font-display text-3xl sm:text-4xl font-semibold text-white tracking-tight">
                 See what solar can do for your facility.
               </h2>
               <p className="text-slate-300 text-sm font-light leading-relaxed">
@@ -1136,7 +1106,7 @@ export default function HomePage() {
                 <div>
                   <div className="flex justify-between items-center text-sm font-semibold mb-2">
                     <span className="text-slate-300">Monthly Electric Bill</span>
-                    <span className="text-xl font-black text-amber-400 font-mono">₹{formatIndianNumber(quickBill)}</span>
+                    <span className="text-xl font-semibold text-amber-400 tabular-nums">₹{formatIndianNumber(quickBill)}</span>
                   </div>
                   <input
                     type="range"
@@ -1149,30 +1119,30 @@ export default function HomePage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#131B2E] p-4 rounded-2xl border border-slate-800/80 text-xs shadow-md">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#131B2E] p-4 rounded-2xl border border-slate-800/70 text-xs">
                   <div>
                     <span className="text-slate-400 block">Recommended Capacity:</span>
-                    <span className="text-lg font-black text-white">{quickCalc.recommendedCapacityKw} kWp</span>
+                    <span className="text-lg font-semibold text-white">{quickCalc.recommendedCapacityKw} kWp</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Est. Annual Savings:</span>
-                    <span className="text-lg font-black text-emerald-400">₹{formatIndianNumber(quickCalc.annualSavingsEst)}</span>
+                    <span className="text-lg font-semibold text-emerald-400">₹{formatIndianNumber(quickCalc.annualSavingsEst)}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Est. Subsidy / Benefit:</span>
-                    <span className="text-sm font-bold text-amber-400">₹{formatIndianNumber(quickCalc.subsidyEstimate)}</span>
+                    <span className="text-sm font-semibold text-amber-400">₹{formatIndianNumber(quickCalc.subsidyEstimate)}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Payback Horizon:</span>
-                    <span className="text-sm font-bold text-white">{quickCalc.paybackPeriodYears} Years</span>
+                    <span className="text-sm font-semibold text-white">{quickCalc.paybackPeriodYears} Years</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Right Quick Inquiry Form */}
-            <div className="lg:col-span-6 bg-[#131B2E] p-6 sm:p-8 rounded-2xl border border-slate-800/80 space-y-4 shadow-xl">
-              <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="lg:col-span-6 bg-[#131B2E] p-6 sm:p-8 rounded-2xl border border-slate-800/70 space-y-4 shadow-xl shadow-black/30">
+              <h3 className="font-display text-xl font-semibold text-white flex items-center gap-2">
                 <Send className="w-5 h-5 text-amber-400" /> Request Custom System Proposal
               </h3>
               <p className="text-xs text-slate-400">
@@ -1279,10 +1249,10 @@ export default function HomePage() {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10 space-y-8">
-          <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight leading-tight drop-shadow-md">
-            Let’s build a cleaner energy future.
+          <h2 className="font-display text-4xl sm:text-6xl font-semibold text-white tracking-tight leading-tight">
+            Let's build a cleaner energy future.
           </h2>
-          <p className="text-slate-200 text-base sm:text-xl font-light leading-relaxed max-w-2xl mx-auto drop-shadow-sm">
+          <p className="text-slate-200 text-base sm:text-xl font-light leading-relaxed max-w-2xl mx-auto">
             Partner with <strong className="text-white font-semibold">nitish solar</strong> to transition your home, enterprise, or industrial complex to turnkey solar power.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -1290,7 +1260,7 @@ export default function HomePage() {
               <Button
                 variant="accent"
                 size="lg"
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8 py-4 rounded-xl text-base shadow-2xl transition-all border-0"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-8 py-4 rounded-lg text-base transition-all border-0"
                 icon={<ArrowRight className="w-5 h-5" />}
               >
                 Get a Quote
@@ -1300,7 +1270,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="lg"
-                className="border-white/30 bg-black/40 backdrop-blur-md text-white hover:bg-white/20 px-8 py-4 rounded-xl text-base font-semibold shadow-lg"
+                className="border-white/25 bg-black/30 backdrop-blur-sm text-white hover:bg-white/10 px-8 py-4 rounded-lg text-base font-medium"
               >
                 Speak with an Engineer
               </Button>

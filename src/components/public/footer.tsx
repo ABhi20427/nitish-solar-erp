@@ -16,8 +16,8 @@ export function PublicFooter() {
             <p className="text-sm text-slate-400 max-w-sm leading-relaxed font-light">
               nitish solar provides engineering-driven rooftop and ground-mounted photovoltaic solar energy solutions for residential homes, commercial enterprises, and heavy industrial facilities.
             </p>
-            <div className="flex items-center gap-2 text-xs text-amber-400 bg-slate-900/90 border border-slate-800/80 rounded-lg p-2.5 w-fit">
-              <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400" />
+            <div className="flex items-center gap-2 text-xs text-slate-300 w-fit">
+              <ShieldCheck className="w-4 h-4 shrink-0 text-amber-400/80" />
               <span>Engineering Quality & Solar Standards Certified</span>
             </div>
           </div>

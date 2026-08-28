@@ -50,6 +50,7 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        display: ["var(--font-manrope)", "var(--font-inter)", "system-ui", "sans-serif"],
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(135deg, #7C3AED 0%, #2563EB 50%, #D946EF 100%)',
