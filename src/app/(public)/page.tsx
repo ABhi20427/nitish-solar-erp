@@ -1049,7 +1049,7 @@ export default function HomePage() {
                       <div
                         key={stage.id}
                         onClick={() => jumpToPlantStage(idx)}
-                        className={`flex flex-col items-center cursor-pointer group transition-all duration-500 ease-out select-none ${
+                        className={`${isActive ? 'flex' : 'hidden sm:flex'} flex-col items-center cursor-pointer group transition-all duration-500 ease-out select-none ${
                           isActive ? 'scale-110 sm:scale-115 z-20' : 'opacity-55 hover:opacity-100 hover:scale-105 z-10'
                         }`}
                       >
@@ -1182,7 +1182,7 @@ export default function HomePage() {
                     as the slider moves, giving the estimator a genuine "instrument"
                     feel instead of a static number grid. Pure SVG stroke-dashoffset,
                     GPU-cheap, no extra libraries. */}
-                <div className="flex items-center gap-5 sm:gap-7 bg-[#131B2E] p-5 rounded-2xl border border-slate-800/70">
+                <div className="flex flex-col sm:flex-row items-center gap-5 sm:gap-7 bg-[#131B2E] p-5 rounded-2xl border border-slate-800/70">
                   <div className="relative shrink-0 w-24 h-24 sm:w-28 sm:h-28">
                     <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
                       <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="7" />
@@ -1207,7 +1207,7 @@ export default function HomePage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-3.5 text-xs flex-1 min-w-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-3 sm:gap-y-3.5 text-xs flex-1 min-w-0 w-full">
                     <div>
                       <div className="flex items-center gap-1.5 text-slate-400 mb-1">
                         <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />

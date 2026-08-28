@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/badge';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { QuotationBuilderModal } from '@/components/quotations/quotation-builder-modal';
 import { useToast } from '@/hooks/use-toast';
+import { COMPANY_INFO } from '@/config/site';
 import {
   FileText,
   Printer,
@@ -264,8 +265,8 @@ export default function QuotationDetailPage() {
           <div className="border-t border-slate-200 pt-6 text-xs text-slate-500 grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div className="space-y-1">
               <span className="font-bold text-navy-900 block">nitish solar Engineering Desk</span>
-              <p className="text-[10px]">nitish solar Technology Park, Industrial Estate, Pune - 411057</p>
-              <p className="text-[10px]">Phone: +91 98765 43210 • Email: info@nitishsolar.com</p>
+              <p className="text-[10px]">{COMPANY_INFO.address}</p>
+              <p className="text-[10px]">Phone: {COMPANY_INFO.phone} • Email: {COMPANY_INFO.email}</p>
             </div>
 
             <div className="text-right space-y-2">

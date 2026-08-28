@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { BrandLogo } from '@/components/public/brand-logo';
 import { ShieldCheck, Mail, Phone, MapPin } from 'lucide-react';
+import { COMPANY_INFO } from '@/config/site';
 
 export function PublicFooter() {
   return (
@@ -52,15 +53,15 @@ export function PublicFooter() {
             <ul className="space-y-3 text-sm text-slate-400 font-light">
               <li className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                <span>nitish solar Technology Park, Industrial Estate, Pune - 411057</span>
+                <span>{COMPANY_INFO.address}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>+91 98765 43210 / 1800-SOLAR</span>
+                <span>{COMPANY_INFO.phone}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>info@nitishsolar.com</span>
+                <span>{COMPANY_INFO.email}</span>
               </li>
             </ul>
           </div>
