@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   MapPin,
@@ -53,7 +53,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     isUserConfirmed: false,
   };
 
-  // 8 VISUAL STATES ARCHITECTURE (Requirement #14)
+  // 8 VISUAL STATES ARCHITECTURE
   // 1: LOCATING PROPERTY, 2: PROPERTY FOUND, 3: ROOF DETECTED, 4: ADJUST ROOF,
   // 5: ROOF CONFIRMED, 6: CALCULATING SOLAR POTENTIAL, 7: OPTIMISING PANEL LAYOUT, 8: SOLAR ARRAY READY
   const [stage, setStage] = useState<SolarEngineState>(1);
@@ -63,14 +63,14 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const [zoomLevel, setZoomLevel] = useState<'CITY' | 'NEIGHBOURHOOD' | 'PROPERTY' | 'ROOFTOP'>('CITY');
   const [flyInText, setFlyInText] = useState('PUNE REGION SATELLITE FEED');
 
-  // Requirement #14 Data-Driven 8-Step Roof Scan Sequence
+  // 8-Step Roof Scan Sequence
   const [scanStepText, setScanStepText] = useState<string>('STATE 6 — CALCULATING SOLAR POTENTIAL');
   const [scanProgress, setScanProgress] = useState<number>(0);
 
   // System Size Panel Config (6, 12, 18, 24, 30)
   const [panelCount, setPanelCount] = useState<number>(24);
 
-  // Requirement #13 Live Derived Solar Metrics
+  // Live Derived Solar Metrics
   const [capacityKw, setCapacityKw] = useState<number>(10.8);
   const [annualGenKwh, setAnnualGenKwh] = useState<number>(14800);
   const [annualSavings, setAnnualSavings] = useState<number>(142000);
@@ -92,8 +92,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadSuccess, setLeadSuccess] = useState(false);
 
-  // REQUIREMENT #11, #13, #22: SINGLE SOURCE OF TRUTH METRICS CASCADE
-  // Recalculates metrics live whenever panelCount or roofPolygon/exclusionPolygons change!
+  // SINGLE SOURCE OF TRUTH METRICS CASCADE
+  // Recalculates metrics live whenever panelCount or roof area metrics change!
   useEffect(() => {
     const kw = Number(((panelCount * 450) / 1000).toFixed(1));
     const kwhPerKw = selectedLocation.solarIrradiance * 365 * 0.78;
@@ -107,7 +107,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     setCo2Offset(co2);
   }, [panelCount, selectedLocation.solarIrradiance, selectedLocation.totalRoofAreaSqFt, selectedLocation.estimatedUsableAreaSqFt]);
 
-  // Stage 2 Property Zoom Controller (Progression: CITY -> NEIGHBOURHOOD -> PROPERTY -> ROOFTOP)
+  // Stage 2 Property Zoom Controller
   useEffect(() => {
     if (stage !== 2) return;
 
@@ -136,7 +136,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     };
   }, [stage, selectedLocation]);
 
-  // Requirement #14 Data-Driven Roof Analysis Controller (State 6 & 7)
+  // Roof Analysis Controller (State 6 & 7)
   useEffect(() => {
     if (stage !== 6) return;
 
@@ -183,7 +183,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
   // Callback when user drags/edits roof polygon vertices in ADJUST ROOF mode (Stage 4)
   const handleRoofPolygonChanged = (newPoly: Point2D[]) => {
-    const metrics = recalculateRoofMetrics(newPoly, selectedLocation.exclusionPolygons || []);
+    const metrics = recalculateRoofMetrics(newPoly, selectedLocation.exclusionPolygons || [], selectedLocation.lat, selectedLocation.zoom || 20.2);
     setSelectedLocation((prev) => ({
       ...prev,
       roofPolygon: newPoly,
@@ -197,15 +197,14 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   // Add custom user obstacle exclusion zone
   const handleAddObstacle = () => {
     const currentEx = selectedLocation.exclusionPolygons || [];
-    // Insert new obstacle box centered in middle of roof
     const newEx: Point2D[] = [
-      { x: 42, y: 42 },
-      { x: 58, y: 42 },
-      { x: 58, y: 56 },
-      { x: 42, y: 56 },
+      { x: 44, y: 44 },
+      { x: 56, y: 44 },
+      { x: 56, y: 56 },
+      { x: 44, y: 56 },
     ];
     const updatedEx = [...currentEx, newEx];
-    const metrics = recalculateRoofMetrics(selectedLocation.roofPolygon, updatedEx);
+    const metrics = recalculateRoofMetrics(selectedLocation.roofPolygon, updatedEx, selectedLocation.lat, selectedLocation.zoom || 20.2);
     setSelectedLocation((prev) => ({
       ...prev,
       exclusionPolygons: updatedEx,
@@ -216,7 +215,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     }));
   };
 
-  // Confirm roof boundary action (Requirement #4, #22: Single Source of Truth)
+  // Confirm roof boundary action
   const handleConfirmRoof = () => {
     setSelectedLocation((prev) => ({
       ...prev,
@@ -303,7 +302,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             <Sun className="w-5 h-5 text-amber-400" />
             <span>SOLAR VISION</span>
             <span className="text-xs bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-mono font-normal">
-              EDITABLE ROOF ENGINE
+              REAL GEOGRAPHIC ENGINE
             </span>
           </div>
 
@@ -347,7 +346,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           <div className="my-auto w-full max-w-2xl text-center space-y-6 pointer-events-auto bg-slate-950/95 p-8 sm:p-12 rounded-3xl border border-slate-800/80 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-300">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
               <Sparkles className="w-4 h-4" />
-              <span>AUTOMATIC + EDITABLE ROOF ENGINE</span>
+              <span>REAL GEOGRAPHIC ROOF ENGINE</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
@@ -355,7 +354,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             </h1>
 
             <p className="text-slate-300 text-sm sm:text-base font-light max-w-lg mx-auto leading-relaxed">
-              Enter your address, coordinates, or Google Maps link to auto-detect your building footprint and design your solar array.
+              Enter your address, coordinates, or Google Maps link to measure your actual roof geometry and design your solar system.
             </p>
 
             <div className="pt-2">
@@ -381,7 +380,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           </div>
         )}
 
-        {/* STATE 3: ROOF DETECTED (AUTO BOUNDARY REVIEW HUD - REQUIREMENT #3, #18, #19) */}
+        {/* STATE 3: ROOF DETECTED (AUTO BOUNDARY REVIEW HUD) */}
         {stage === 3 && (
           <div className="w-full flex justify-between items-start pointer-events-none">
             <div className="bg-slate-950/90 p-5 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm space-y-3">
@@ -429,7 +428,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           </div>
         )}
 
-        {/* STATE 4: ADJUST ROOF (INTERACTIVE CANVAS EDITING HUD - REQUIREMENT #3, #9, #18) */}
+        {/* STATE 4: ADJUST ROOF (INTERACTIVE CANVAS EDITING HUD) */}
         {stage === 4 && (
           <div className="w-full flex justify-between items-start pointer-events-none">
             <div className="bg-slate-950/95 p-5 rounded-2xl border border-amber-500/40 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm space-y-3 animate-in zoom-in-95">
@@ -506,7 +505,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           </div>
         )}
 
-        {/* STATE 8: SOLAR ARRAY READY (COMPACT INSTRUMENT HUD & LIVE DERIVED TELEMETRY) */}
+        {/* STATE 8: SOLAR ARRAY READY */}
         {stage === 8 && (
           <div className="w-full flex flex-col md:flex-row items-end justify-between gap-4 pointer-events-none mt-auto">
             {/* Left Compact Information Instrument Panel */}
@@ -524,7 +523,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 </div>
               </div>
 
-              {/* Requirement #13, #15: Real calculated roof metrics */}
+              {/* Real calculated roof metrics */}
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400 block text-[9px]">TOTAL ROOF AREA</span>

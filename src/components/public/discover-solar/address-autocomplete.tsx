@@ -10,7 +10,9 @@ interface AddressAutocompleteProps {
   initialValue?: string;
 }
 
-export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
+import { recalculateRoofMetrics } from './roof-packing-algorithm';
+
+const rawPresets = [
   {
     address: 'Baner Road, Baner, Pune, Maharashtra',
     city: 'Pune',
@@ -19,17 +21,15 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 18.559,
     lng: 73.7868,
     zoom: 20.2,
-    source: 'address',
+    source: 'address' as const,
     roofPolygon: [
-      { x: 30, y: 24 },
-      { x: 72, y: 24 },
-      { x: 76, y: 76 },
-      { x: 24, y: 76 },
+      { x: 30, y: 26 },
+      { x: 70, y: 26 },
+      { x: 70, y: 74 },
+      { x: 30, y: 74 },
     ],
+    exclusionPolygons: [[{ x: 52, y: 32 }, { x: 62, y: 32 }, { x: 62, y: 42 }, { x: 52, y: 42 }]],
     solarIrradiance: 4.85,
-    totalRoofAreaSqFt: 1850,
-    estimatedUsableAreaSqFt: 1450,
-    obstructionAreaSqFt: 400,
   },
   {
     address: 'DLF Cyber City, Phase 2, Gurugram, Haryana',
@@ -39,17 +39,15 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 28.495,
     lng: 77.0895,
     zoom: 20.2,
-    source: 'address',
+    source: 'address' as const,
     roofPolygon: [
-      { x: 22, y: 20 },
-      { x: 78, y: 20 },
-      { x: 78, y: 80 },
-      { x: 22, y: 80 },
+      { x: 26, y: 24 },
+      { x: 74, y: 24 },
+      { x: 74, y: 76 },
+      { x: 26, y: 76 },
     ],
+    exclusionPolygons: [[{ x: 54, y: 34 }, { x: 64, y: 34 }, { x: 64, y: 44 }, { x: 54, y: 44 }]],
     solarIrradiance: 4.92,
-    totalRoofAreaSqFt: 2750,
-    estimatedUsableAreaSqFt: 2200,
-    obstructionAreaSqFt: 550,
   },
   {
     address: '100 Feet Road, Indiranagar, Bengaluru, Karnataka',
@@ -59,17 +57,15 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 12.9784,
     lng: 77.6408,
     zoom: 20.2,
-    source: 'address',
+    source: 'address' as const,
     roofPolygon: [
-      { x: 28, y: 22 },
-      { x: 72, y: 22 },
-      { x: 68, y: 78 },
-      { x: 24, y: 78 },
+      { x: 32, y: 26 },
+      { x: 68, y: 26 },
+      { x: 68, y: 74 },
+      { x: 32, y: 74 },
     ],
+    exclusionPolygons: [[{ x: 50, y: 32 }, { x: 60, y: 32 }, { x: 60, y: 42 }, { x: 50, y: 42 }]],
     solarIrradiance: 4.65,
-    totalRoofAreaSqFt: 1650,
-    estimatedUsableAreaSqFt: 1300,
-    obstructionAreaSqFt: 350,
   },
   {
     address: 'Pali Hill, Bandra West, Mumbai, Maharashtra',
@@ -79,17 +75,15 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 19.0622,
     lng: 72.828,
     zoom: 20.2,
-    source: 'address',
+    source: 'address' as const,
     roofPolygon: [
-      { x: 32, y: 26 },
-      { x: 68, y: 26 },
-      { x: 68, y: 74 },
-      { x: 32, y: 74 },
+      { x: 32, y: 28 },
+      { x: 68, y: 28 },
+      { x: 68, y: 72 },
+      { x: 32, y: 72 },
     ],
+    exclusionPolygons: [[{ x: 52, y: 34 }, { x: 62, y: 34 }, { x: 62, y: 44 }, { x: 52, y: 44 }]],
     solarIrradiance: 4.75,
-    totalRoofAreaSqFt: 1400,
-    estimatedUsableAreaSqFt: 1100,
-    obstructionAreaSqFt: 300,
   },
   {
     address: 'SG Highway, Bodakdev, Ahmedabad, Gujarat',
@@ -99,17 +93,15 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 23.0396,
     lng: 72.5074,
     zoom: 20.2,
-    source: 'address',
+    source: 'address' as const,
     roofPolygon: [
-      { x: 18, y: 18 },
-      { x: 82, y: 18 },
-      { x: 82, y: 82 },
-      { x: 18, y: 82 },
+      { x: 26, y: 22 },
+      { x: 74, y: 22 },
+      { x: 74, y: 78 },
+      { x: 26, y: 78 },
     ],
+    exclusionPolygons: [[{ x: 52, y: 32 }, { x: 64, y: 32 }, { x: 64, y: 44 }, { x: 52, y: 44 }]],
     solarIrradiance: 5.4,
-    totalRoofAreaSqFt: 3400,
-    estimatedUsableAreaSqFt: 2800,
-    obstructionAreaSqFt: 600,
   },
   {
     address: 'Road No. 12, Banjara Hills, Hyderabad, Telangana',
@@ -119,19 +111,27 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     lat: 17.4156,
     lng: 78.4347,
     zoom: 20.2,
-    source: 'address',
+    source: 'address' as const,
     roofPolygon: [
-      { x: 26, y: 24 },
-      { x: 74, y: 24 },
-      { x: 74, y: 76 },
-      { x: 26, y: 76 },
+      { x: 28, y: 25 },
+      { x: 72, y: 25 },
+      { x: 72, y: 75 },
+      { x: 28, y: 75 },
     ],
+    exclusionPolygons: [[{ x: 52, y: 32 }, { x: 62, y: 32 }, { x: 62, y: 42 }, { x: 52, y: 42 }]],
     solarIrradiance: 5.12,
-    totalRoofAreaSqFt: 2000,
-    estimatedUsableAreaSqFt: 1600,
-    obstructionAreaSqFt: 400,
   },
 ];
+
+export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = rawPresets.map((p) => {
+  const metrics = recalculateRoofMetrics(p.roofPolygon, p.exclusionPolygons, p.lat, p.zoom);
+  return {
+    ...p,
+    totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
+    estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
+    obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+  };
+});
 
 export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: AddressAutocompleteProps) {
   const [address, setAddress] = useState(initialValue);
@@ -205,6 +205,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     // 1. Direct Coordinates or Pre-extracted Google Maps URL Coordinates
     if (parsedInput.lat !== null && parsedInput.lng !== null && isValidLatLng(parsedInput.lat, parsedInput.lng)) {
       console.log(`Google Maps location parsed directly: { latitude: ${parsedInput.lat}, longitude: ${parsedInput.lng} }`);
+      const geo = generateRealisticRoofGeometry(parsedInput.lat, parsedInput.lng);
       const normalizedLoc: SatelliteLocation = {
         address: parsedInput.displayAddress || address,
         city: 'Mapped Location',
@@ -212,18 +213,16 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         state: 'India',
         lat: parsedInput.lat,
         lng: parsedInput.lng,
-        zoom: 19.8,
+        zoom: 20.2,
         source: parsedInput.source,
-        roofPolygon: [
-          { x: 25, y: 22 },
-          { x: 75, y: 22 },
-          { x: 75, y: 78 },
-          { x: 25, y: 78 },
-        ],
+        roofPolygon: geo.roofPolygon,
+        exclusionPolygons: geo.exclusionPolygons,
+        roofOrientationDeg: geo.roofOrientationDeg,
         solarIrradiance: 4.85,
-        totalRoofAreaSqFt: 1900,
-        estimatedUsableAreaSqFt: 1500,
-        obstructionAreaSqFt: 400,
+        totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
+        estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
+        obstructionAreaSqFt: geo.obstructionAreaSqFt,
+        buildingConfidence: 'ESTIMATED ROOF',
       };
       onSelectLocation(normalizedLoc);
       return;
@@ -248,6 +247,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           console.log(`Google Maps location resolved via API: { latitude: ${data.lat}, longitude: ${data.lng} }`);
           setStatusMessage(`Location resolved (${data.lat.toFixed(4)}, ${data.lng.toFixed(4)})`);
 
+          const geo = generateRealisticRoofGeometry(data.lat, data.lng);
           const resolvedLoc: SatelliteLocation = {
             address: data.displayAddress || address,
             city: 'Mapped Region',
@@ -255,18 +255,16 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
             state: 'India',
             lat: data.lat,
             lng: data.lng,
-            zoom: 19.8,
+            zoom: 20.2,
             source: 'google-maps-link',
-            roofPolygon: [
-              { x: 25, y: 22 },
-              { x: 75, y: 22 },
-              { x: 75, y: 78 },
-              { x: 25, y: 78 },
-            ],
+            roofPolygon: geo.roofPolygon,
+            exclusionPolygons: geo.exclusionPolygons,
+            roofOrientationDeg: geo.roofOrientationDeg,
             solarIrradiance: 4.85,
-            totalRoofAreaSqFt: 1900,
-            estimatedUsableAreaSqFt: 1500,
-            obstructionAreaSqFt: 400,
+            totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
+            estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
+            obstructionAreaSqFt: geo.obstructionAreaSqFt,
+            buildingConfidence: 'ESTIMATED ROOF',
           };
           onSelectLocation(resolvedLoc);
           return;
@@ -309,6 +307,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         const lat = parseFloat(geoData[0].lat);
         const lng = parseFloat(geoData[0].lon);
         if (isValidLatLng(lat, lng)) {
+          const geo = generateRealisticRoofGeometry(lat, lng);
           const addressLoc: SatelliteLocation = {
             address: geoData[0].display_name || address,
             city: geoData[0].address?.city || 'Local Region',
@@ -316,18 +315,16 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
             state: geoData[0].address?.state || 'India',
             lat,
             lng,
-            zoom: 19.8,
+            zoom: 20.2,
             source: 'address',
-            roofPolygon: [
-              { x: 25, y: 22 },
-              { x: 75, y: 22 },
-              { x: 75, y: 78 },
-              { x: 25, y: 78 },
-            ],
+            roofPolygon: geo.roofPolygon,
+            exclusionPolygons: geo.exclusionPolygons,
+            roofOrientationDeg: geo.roofOrientationDeg,
             solarIrradiance: 4.8,
-            totalRoofAreaSqFt: 1800,
-            estimatedUsableAreaSqFt: 1400,
-            obstructionAreaSqFt: 400,
+            totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
+            estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
+            obstructionAreaSqFt: geo.obstructionAreaSqFt,
+            buildingConfidence: 'ESTIMATED ROOF',
           };
           onSelectLocation(addressLoc);
           return;
@@ -373,6 +370,7 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           }
         } catch (e) {}
 
+        const geo = generateRealisticRoofGeometry(lat, lng);
         const currentLocationLoc: SatelliteLocation = {
           address: displayAddr,
           city,
@@ -380,18 +378,16 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           state,
           lat,
           lng,
-          zoom: 19.8,
+          zoom: 20.2,
           source: 'current-location',
-          roofPolygon: [
-            { x: 26, y: 22 },
-            { x: 74, y: 22 },
-            { x: 74, y: 78 },
-            { x: 26, y: 78 },
-          ],
+          roofPolygon: geo.roofPolygon,
+          exclusionPolygons: geo.exclusionPolygons,
+          roofOrientationDeg: geo.roofOrientationDeg,
           solarIrradiance: 4.85,
-          totalRoofAreaSqFt: 1750,
-          estimatedUsableAreaSqFt: 1400,
-          obstructionAreaSqFt: 350,
+          totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
+          estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
+          obstructionAreaSqFt: geo.obstructionAreaSqFt,
+          buildingConfidence: 'ESTIMATED ROOF',
         };
 
         setAddress(displayAddr);

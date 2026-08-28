@@ -22,55 +22,110 @@ export function isPointInPolygon(point: Point2D, polygon: Point2D[]): boolean {
 }
 
 /**
- * Calculate polygon area using Shoelace formula (normalised 0..100 space)
+ * Calculates true physical polygon area in square meters (m²) using Web Mercator geographic resolution
+ * @param polygon Normalized 0..100 roof boundary points
+ * @param lat Property latitude in degrees
+ * @param zoom Map zoom level (default 20.2)
+ * @param scaleX Canvas horizontal scaling factor (default 4.2)
+ * @param scaleY Canvas vertical scaling factor (default 3.6)
  */
-export function calculatePolygonArea(polygon: Point2D[]): number {
+export function calculateGeographicPolygonAreaM2(
+  polygon: Point2D[],
+  lat: number = 18.559,
+  zoom: number = 20.2,
+  scaleX: number = 4.2,
+  scaleY: number = 3.6
+): number {
   if (!polygon || polygon.length < 3) return 0;
-  let area = 0;
-  for (let i = 0; i < polygon.length; i++) {
-    const j = (i + 1) % polygon.length;
-    area += polygon[i].x * polygon[j].y;
-    area -= polygon[j].x * polygon[i].y;
+
+  // Web Mercator resolution equation: meters per pixel at latitude & float zoom
+  const latRad = (lat * Math.PI) / 180;
+  const metersPerPixelUnscaled = (Math.cos(latRad) * 40075016.6855) / (256 * Math.pow(2, zoom));
+
+  const integerZoom = Math.min(19, Math.floor(zoom));
+  const zoomFraction = Math.pow(2, zoom - integerZoom);
+
+  // Resolution per canvas unit in unscaled space
+  const metersPerCanvasUnit = metersPerPixelUnscaled / (zoomFraction || 1);
+
+  // Convert each normalized 0..100 point to physical meters (origin at center (50, 50))
+  const pointsMeters = polygon.map((pt) => ({
+    x: (pt.x - 50) * scaleX * metersPerCanvasUnit,
+    y: (pt.y - 50) * scaleY * metersPerCanvasUnit,
+  }));
+
+  // Shoelace formula for polygon area in m²
+  let areaM2 = 0;
+  for (let i = 0; i < pointsMeters.length; i++) {
+    const j = (i + 1) % pointsMeters.length;
+    areaM2 += pointsMeters[i].x * pointsMeters[j].y;
+    areaM2 -= pointsMeters[j].x * pointsMeters[i].y;
   }
-  return Math.abs(area) / 2;
+
+  return Math.abs(areaM2) / 2;
 }
 
 /**
- * Recalculates real physical roof areas (sq.ft) dynamically from any arbitrary polygon & exclusion zones
+ * RECALCULATES REAL PHYSICAL ROOF METRICS (GEOGRAPHIC SOURCE OF TRUTH)
+ * Returns explicit unit values in m² and sq.ft
  */
 export function recalculateRoofMetrics(
   roofPolygon: Point2D[],
-  exclusionPolygons: Point2D[][] = []
+  exclusionPolygons: Point2D[][] = [],
+  lat: number = 18.559,
+  zoom: number = 20.2
 ): {
+  totalRoofAreaM2: number;
   totalRoofAreaSqFt: number;
+  obstructionAreaM2: number;
   obstructionAreaSqFt: number;
+  estimatedUsableAreaM2: number;
   estimatedUsableAreaSqFt: number;
 } {
-  const rawAreaNorm = calculatePolygonArea(roofPolygon);
-  // Scale factor: 100x100 normalised space maps to approx 32m x 26m footprint (~830 sq.m / ~2400 sq.ft)
-  const totalRoofAreaSqFt = Math.round(rawAreaNorm * 32.5);
+  const SQM_TO_SQFT = 10.7639104;
 
-  let exAreaNorm = 0;
+  // 1. Total Physical Roof Area in m² and sq.ft
+  const totalRoofAreaM2 = calculateGeographicPolygonAreaM2(roofPolygon, lat, zoom);
+  const totalRoofAreaSqFt = Math.round(totalRoofAreaM2 * SQM_TO_SQFT);
+
+  // 2. Total Exclusion / Obstruction Area in m² and sq.ft
+  let obstructionAreaM2 = 0;
   exclusionPolygons.forEach((ex) => {
-    exAreaNorm += calculatePolygonArea(ex);
+    obstructionAreaM2 += calculateGeographicPolygonAreaM2(ex, lat, zoom);
   });
-  const obstructionAreaSqFt = Math.round(exAreaNorm * 32.5);
+  const obstructionAreaSqFt = Math.round(obstructionAreaM2 * SQM_TO_SQFT);
 
-  // Usable area accounts for edge setback deduction (approx 15% buffer)
-  const estimatedUsableAreaSqFt = Math.max(
-    100,
-    totalRoofAreaSqFt - obstructionAreaSqFt - Math.round(totalRoofAreaSqFt * 0.15)
-  );
+  // 3. Perimeter Setback Buffer Deduction (0.5m setback along roof edges ~12% roof area)
+  const edgeSetbackDeductionM2 = Math.min(totalRoofAreaM2 * 0.12, totalRoofAreaM2 - obstructionAreaM2 - 5);
+  const estimatedUsableAreaM2 = Math.max(10, totalRoofAreaM2 - obstructionAreaM2 - Math.max(0, edgeSetbackDeductionM2));
+  const estimatedUsableAreaSqFt = Math.round(estimatedUsableAreaM2 * SQM_TO_SQFT);
+
+  // Development Diagnostics & Sanity Check
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(
+      `[Roof Metrics Diagnostic] lat=${lat}, zoom=${zoom} | Vertices: ${roofPolygon.length} | ` +
+      `Total: ${totalRoofAreaM2.toFixed(2)} m² (${totalRoofAreaSqFt} sq.ft) | ` +
+      `Usable: ${estimatedUsableAreaM2.toFixed(2)} m² (${estimatedUsableAreaSqFt} sq.ft)`
+    );
+
+    if (totalRoofAreaSqFt > 15000) {
+      console.warn(`[Sanity Warning] Calculated roof area (${totalRoofAreaSqFt} sq.ft) is implausibly large for a single building roof.`);
+    }
+  }
 
   return {
+    totalRoofAreaM2: Number(totalRoofAreaM2.toFixed(2)),
     totalRoofAreaSqFt,
+    obstructionAreaM2: Number(obstructionAreaM2.toFixed(2)),
     obstructionAreaSqFt,
+    estimatedUsableAreaM2: Number(estimatedUsableAreaM2.toFixed(2)),
     estimatedUsableAreaSqFt,
   };
 }
 
 /**
  * Deterministically generates realistic building roof footprint geometry seeded by latitude & longitude
+ * Calibrated to standard residential building proportions (~950 to 1,200 sq.ft)
  */
 export function generateRealisticRoofGeometry(lat: number, lng: number): {
   roofPolygon: Point2D[];
@@ -94,50 +149,50 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
   let roofPolygon: Point2D[] = [];
 
   if (style === 0) {
-    // L-Shaped Building Footprint
+    // L-Shaped Building Footprint (~1,050 sq.ft)
     roofPolygon = [
-      { x: 18, y: 18 },
-      { x: 82, y: 18 },
-      { x: 82, y: 52 },
-      { x: 52, y: 52 },
-      { x: 52, y: 82 },
-      { x: 18, y: 82 },
+      { x: 28, y: 26 },
+      { x: 72, y: 26 },
+      { x: 72, y: 50 },
+      { x: 50, y: 50 },
+      { x: 50, y: 74 },
+      { x: 28, y: 74 },
     ];
   } else if (style === 1) {
-    // Irregular Hip Roof with Chamfered Corners
+    // Irregular Hip Roof with Chamfered Corners (~1,120 sq.ft)
     roofPolygon = [
-      { x: 22, y: 18 },
-      { x: 78, y: 18 },
-      { x: 86, y: 28 },
-      { x: 86, y: 72 },
-      { x: 76, y: 82 },
-      { x: 24, y: 82 },
-      { x: 14, y: 72 },
-      { x: 14, y: 28 },
+      { x: 30, y: 26 },
+      { x: 70, y: 26 },
+      { x: 76, y: 34 },
+      { x: 76, y: 66 },
+      { x: 68, y: 74 },
+      { x: 32, y: 74 },
+      { x: 24, y: 66 },
+      { x: 24, y: 34 },
     ];
   } else {
-    // Standard High-Efficiency Rectangular Roof
+    // Standard High-Efficiency Rectangular Roof (~980 sq.ft)
     roofPolygon = [
-      { x: 16, y: 20 },
-      { x: 84, y: 20 },
-      { x: 84, y: 80 },
-      { x: 16, y: 80 },
+      { x: 28, y: 27 },
+      { x: 72, y: 27 },
+      { x: 72, y: 73 },
+      { x: 28, y: 73 },
     ];
   }
 
   // Exclusion Zone 1: Stairwell headroom or Water Tank
-  const exX1 = 54 + seed2 * 14;
-  const exY1 = 26 + seed * 14;
+  const exX1 = 52 + seed2 * 10;
+  const exY1 = 32 + seed * 10;
   const exclusion1: Point2D[] = [
     { x: exX1, y: exY1 },
-    { x: exX1 + 16, y: exY1 },
-    { x: exX1 + 16, y: exY1 + 14 },
-    { x: exX1, y: exY1 + 14 },
+    { x: exX1 + 10, y: exY1 },
+    { x: exX1 + 10, y: exY1 + 10 },
+    { x: exX1, y: exY1 + 10 },
   ];
 
   const exclusionPolygons = [exclusion1];
 
-  const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons);
+  const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons, lat, 20.2);
 
   return {
     roofPolygon,
@@ -180,11 +235,11 @@ export function computePanelPlacement(
   });
 
   // Panel Module Specifications in normalized roof space:
-  // Standard 1.76m x 1.13m panel mapped to ~8.2 units x 5.0 units in 0..100 space
-  const pW = 8.2; // Panel width
-  const pH = 5.0; // Panel height
-  const gap = 0.8; // Inter-panel clearance gap
-  const setback = 2.5; // Edge setback buffer
+  // Standard 1.76m x 1.13m panel mapped to ~6.8 units x 4.2 units in 0..100 space
+  const pW = 6.8; // Panel width
+  const pH = 4.2; // Panel height
+  const gap = 0.6; // Inter-panel clearance gap
+  const setback = 2.0; // Edge setback buffer
 
   // Rotation transform helpers
   const rad = (roofOrientationDeg * Math.PI) / 180;
@@ -238,8 +293,8 @@ export function computePanelPlacement(
       const centerInside = isPointInPolygon(centerPt, roofPolygon);
       const c1Inside = isPointInPolygon(corners[0], roofPolygon);
       const c2Inside = isPointInPolygon(corners[1], roofPolygon);
-      const c3Inside = isPointInPolygon(corners[2], roofPolygon);
-      const c4Inside = isPointInPolygon(corners[3], roofPolygon);
+      const c3Inside = isPointInPolygon(corners[3], roofPolygon);
+      const c4Inside = isPointInPolygon(corners[2], roofPolygon);
 
       const isFullyInsideRoof = centerInside && c1Inside && c2Inside && c3Inside && c4Inside;
 
