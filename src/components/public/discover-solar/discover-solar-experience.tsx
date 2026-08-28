@@ -28,7 +28,7 @@ import {
 import { AddressAutocomplete, PRESET_SATELLITE_LOCATIONS } from './address-autocomplete';
 import { SatelliteMapEngine } from './satellite-map-engine';
 import { SatelliteLocation, VisualMode, Point2D, SolarEngineState } from './types';
-import { generateRealisticRoofGeometry, recalculateRoofMetrics } from './roof-packing-algorithm';
+import { generateRealisticRoofGeometry, recalculateRoofMetrics, computePanelPlacement } from './roof-packing-algorithm';
 import { useSolarStore } from '@/lib/store-context';
 
 interface DiscoverSolarExperienceProps {
@@ -653,19 +653,34 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                   </button>
                 </div>
                 <div className="grid grid-cols-5 gap-1">
-                  {[6, 12, 18, 24, 30].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => setPanelCount(count)}
-                      className={`py-1.5 text-xs font-mono font-bold rounded-xl transition-all ${
-                        panelCount === count
-                          ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
-                          : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
-                      }`}
-                    >
-                      {count}P
-                    </button>
-                  ))}
+                  {[6, 12, 18, 24, 30].map((count) => {
+                    const maxAvail = computePanelPlacement(
+                      selectedLocation.roofPolygon,
+                      selectedLocation.exclusionPolygons || [],
+                      selectedLocation.roofOrientationDeg || 0,
+                      100,
+                      0.5
+                    ).totalPositionsAvailable;
+                    const isExceeded = count > maxAvail;
+                    const isSelected = panelCount === count || (count === 30 && panelCount > maxAvail && panelCount === maxAvail);
+
+                    return (
+                      <button
+                        key={count}
+                        onClick={() => setPanelCount(Math.min(count, Math.max(1, maxAvail)))}
+                        className={`py-1.5 text-xs font-mono font-bold rounded-xl transition-all relative ${
+                          isSelected
+                            ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20'
+                            : isExceeded
+                            ? 'bg-slate-900/50 text-slate-500 hover:bg-slate-900 border border-slate-800/60 line-through'
+                            : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                        }`}
+                        title={isExceeded ? `Maximum ${maxAvail} panels fit on usable roof` : `${count} Panels`}
+                      >
+                        {count}P
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

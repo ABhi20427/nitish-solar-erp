@@ -129,15 +129,6 @@ export function recalculateRoofMetrics(
   const estimatedUsableAreaM2 = Math.max(5, rawUsableAreaM2 - obstructionAreaM2);
   const estimatedUsableAreaSqFt = Math.round(estimatedUsableAreaM2 * SQM_TO_SQFT);
 
-  // Development Diagnostics
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(
-      `[Roof Metrics Diagnostic] lat=${lat}, zoom=${zoom} | Vertices: ${roofPolygon.length} | ` +
-      `Total: ${totalRoofAreaM2.toFixed(2)} m² (${totalRoofAreaSqFt} sq.ft) | ` +
-      `Usable: ${estimatedUsableAreaM2.toFixed(2)} m² (${estimatedUsableAreaSqFt} sq.ft)`
-    );
-  }
-
   return {
     totalRoofAreaM2: Number(totalRoofAreaM2.toFixed(2)),
     totalRoofAreaSqFt,
@@ -242,9 +233,27 @@ export function computePanelPlacement(
 ): {
   panels: PanelModulePosition[];
   totalPositionsAvailable: number;
+  effectiveAngleDeg: number;
 } {
   if (!roofPolygon || roofPolygon.length < 3) {
-    return { panels: [], totalPositionsAvailable: 0 };
+    return { panels: [], totalPositionsAvailable: 0, effectiveAngleDeg: 0 };
+  }
+
+  // Calculate dominant roof edge angle (angle of longest edge of polygon)
+  let maxEdgeLen = 0;
+  let dominantAngleDeg = roofOrientationDeg;
+  for (let i = 0; i < roofPolygon.length; i++) {
+    const j = (i + 1) % roofPolygon.length;
+    const dx = roofPolygon[j].x - roofPolygon[i].x;
+    const dy = roofPolygon[j].y - roofPolygon[i].y;
+    const len = Math.hypot(dx, dy);
+    if (len > maxEdgeLen) {
+      maxEdgeLen = len;
+      let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      if (angle > 90) angle -= 180;
+      if (angle < -90) angle += 180;
+      dominantAngleDeg = Math.round(angle * 10) / 10;
+    }
   }
 
   // Compute inner usable polygon inset by setback distance
@@ -268,7 +277,7 @@ export function computePanelPlacement(
   const gap = 0.6;
 
   // Rotation transform helpers
-  const rad = (roofOrientationDeg * Math.PI) / 180;
+  const rad = (dominantAngleDeg * Math.PI) / 180;
   const cos = Math.cos(rad);
   const sin = Math.sin(rad);
 
@@ -357,7 +366,7 @@ export function computePanelPlacement(
         y: centerPt.y,
         width: pW,
         length: pH,
-        angleDeg: roofOrientationDeg,
+        angleDeg: dominantAngleDeg,
         row,
         col,
         score,
@@ -374,5 +383,6 @@ export function computePanelPlacement(
   return {
     panels: selectedPanels,
     totalPositionsAvailable: candidateList.length,
+    effectiveAngleDeg: dominantAngleDeg,
   };
 }
