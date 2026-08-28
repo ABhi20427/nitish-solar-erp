@@ -352,15 +352,15 @@ export default function HomePage() {
         {/* Background Visual Layer (Video-ready container for future video asset) */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <Image
-            src="/images/solar-vision-hero.png"
+            src="/images/solar-vision-hero.jpg"
             alt="nitish solar clean energy infrastructure"
             fill
             priority
             sizes="100vw"
-            className="object-cover object-center filter contrast-110 saturate-[1.05] brightness-95"
+            className="object-cover object-[85%_center]"
           />
-          {/* Layered Dark Gradient Overlays for Legibility — restrained, no color wash */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/45 to-black/15" />
+          {/* Layered Dark Gradient Overlays preserving glowing sun on right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent pointer-events-none" />
           <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/70 via-black/30 to-transparent pointer-events-none" />
           <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0B0F17] via-[#0B0F17]/50 to-transparent pointer-events-none" />
         </div>
