@@ -8,21 +8,25 @@ interface BrandLogoProps {
 }
 
 export function BrandLogo({ variant = 'dark', className = '', showTextSuffix = true }: BrandLogoProps) {
-  const isLight = variant === 'light';
-
   return (
-    <div className={`flex items-center gap-2.5 ${className}`}>
-      {/* Official Uploaded nitish Logo Asset */}
+    <div className={`flex items-center gap-2 sm:gap-2.5 select-none ${className}`}>
+      {/* Official nitish Logo Asset */}
       <img
         src="/logo.png"
-        alt="nitish solar"
+        alt="nitish"
         className="h-7 sm:h-8.5 w-auto object-contain shrink-0 mix-blend-screen"
       />
 
       {showTextSuffix && (
-        <span className={`text-lg sm:text-xl font-black tracking-wider uppercase font-mono ${isLight ? 'text-amber-400' : 'text-amber-400'}`}>
-          solar
-        </span>
+        <>
+          {/* Thin Vertical Divider Line */}
+          <span className="h-5 sm:h-6 w-[1.5px] bg-white/40 shrink-0" />
+
+          {/* Clean White "Solar" Text */}
+          <span className="text-lg sm:text-xl font-medium tracking-tight text-white font-sans">
+            Solar
+          </span>
+        </>
       )}
     </div>
   );
