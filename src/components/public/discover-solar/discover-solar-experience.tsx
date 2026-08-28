@@ -19,10 +19,12 @@ import {
   Sliders,
   Compass,
   Check,
+  ShieldCheck,
 } from 'lucide-react';
 import { AddressAutocomplete, PRESET_SATELLITE_LOCATIONS } from './address-autocomplete';
 import { SatelliteMapEngine } from './satellite-map-engine';
 import { SatelliteLocation, VisualMode } from './types';
+import { generateRealisticRoofGeometry } from './roof-packing-algorithm';
 import { useSolarStore } from '@/lib/store-context';
 
 interface DiscoverSolarExperienceProps {
@@ -33,35 +35,47 @@ interface DiscoverSolarExperienceProps {
 export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperienceProps) {
   const { addLead } = useSolarStore();
 
+  // Initial setup with realistic geometry
+  const initialGeo = generateRealisticRoofGeometry(PRESET_SATELLITE_LOCATIONS[0].lat, PRESET_SATELLITE_LOCATIONS[0].lng);
+  const initialLoc: SatelliteLocation = {
+    ...PRESET_SATELLITE_LOCATIONS[0],
+    roofPolygon: initialGeo.roofPolygon,
+    exclusionPolygons: initialGeo.exclusionPolygons,
+    roofOrientationDeg: initialGeo.roofOrientationDeg,
+    totalRoofAreaSqFt: initialGeo.totalRoofAreaSqFt,
+    estimatedUsableAreaSqFt: initialGeo.estimatedUsableAreaSqFt,
+    obstructionAreaSqFt: initialGeo.obstructionAreaSqFt,
+    buildingConfidence: initialGeo.confidence,
+  };
+
   // STAGE MANAGEMENT (1 to 12)
   const [stage, setStage] = useState<number>(1);
-  const [selectedLocation, setSelectedLocation] = useState<SatelliteLocation>(PRESET_SATELLITE_LOCATIONS[0]);
+  const [selectedLocation, setSelectedLocation] = useState<SatelliteLocation>(initialLoc);
 
-  // Stage 2 Cinematic Zoom Progression
+  // Stage 2 Property Zoom Progression
   const [zoomLevel, setZoomLevel] = useState<'CITY' | 'NEIGHBOURHOOD' | 'PROPERTY' | 'ROOFTOP'>('CITY');
   const [flyInText, setFlyInText] = useState('PUNE REGION SATELLITE FEED');
 
-  // Requirement #5 Data-Driven 6-Step Scan Sequence
-  const [scanStepIndex, setScanStepIndex] = useState<number>(0);
-  const [scanStepText, setScanStepText] = useState<string>('STEP 1 — ANALYSING PROPERTY');
+  // Requirement #6 Data-Driven 7-Step Roof Scan Sequence
+  const [scanStepText, setScanStepText] = useState<string>('STATE 1 — ANALYSING PROPERTY');
   const [scanProgress, setScanProgress] = useState<number>(0);
 
-  // Stage 7 Panel Config (6, 12, 18, 24, 30)
+  // System Size Panel Config (6, 12, 18, 24, 30)
   const [panelCount, setPanelCount] = useState<number>(24);
 
-  // Requirement #10 & #11 Live Derived Solar Metrics
+  // Requirement #14 Live Derived Solar Metrics
   const [capacityKw, setCapacityKw] = useState<number>(10.8);
   const [annualGenKwh, setAnnualGenKwh] = useState<number>(14800);
   const [annualSavings, setAnnualSavings] = useState<number>(142000);
   const [co2Offset, setCo2Offset] = useState<number>(12.4);
 
-  // Stage 9 Sun Slider (06:00 to 18:00)
+  // Sun Position Slider (06:00 to 18:00)
   const [sunTime, setSunTime] = useState<number>(12);
 
-  // Stage 10 Visual Mode
+  // Visual Mode
   const [visualMode, setVisualMode] = useState<VisualMode>('PANEL_LAYOUT');
 
-  // Stage 12 Lead Capture Form
+  // Lead Form State
   const [leadForm, setLeadForm] = useState({
     name: '',
     phone: '',
@@ -71,7 +85,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadSuccess, setLeadSuccess] = useState(false);
 
-  // Requirement #10 & #11: Calculate LIVE derived metrics from selectedLocation & panelCount
+  // Calculate LIVE derived metrics from selectedLocation & panelCount
   useEffect(() => {
     // 450W N-type TOPCon module standard specification
     const kw = Number(((panelCount * 450) / 1000).toFixed(1));
@@ -86,12 +100,12 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     setCo2Offset(co2);
   }, [panelCount, selectedLocation]);
 
-  // Stage 2 Cinematic Location Zoom Controller
+  // Stage 2 Property Zoom Controller (Progression: CITY -> NEIGHBOURHOOD -> PROPERTY -> ROOFTOP)
   useEffect(() => {
     if (stage !== 2) return;
 
     setZoomLevel('CITY');
-    setFlyInText(`${selectedLocation.state.toUpperCase()} AERIAL SECTOR`);
+    setFlyInText(`${selectedLocation.state.toUpperCase()} SATELLITE SECTOR`);
 
     const t1 = setTimeout(() => {
       setZoomLevel('NEIGHBOURHOOD');
@@ -100,7 +114,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
     const t2 = setTimeout(() => {
       setZoomLevel('PROPERTY');
-      setFlyInText('TARGET PROPERTY IDENTIFIED');
+      setFlyInText('PROPERTY IDENTIFIED — FRAMING BUILDING');
     }, 1500);
 
     const t3 = setTimeout(() => {
@@ -115,7 +129,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     };
   }, [stage, selectedLocation]);
 
-  // Requirement #5 Data-Driven 6-Step Roof Scanning Sequence Controller
+  // Requirement #6 Data-Driven 7-Step Roof Analysis Controller
   useEffect(() => {
     if (stage !== 5) return;
 
@@ -124,24 +138,20 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       p += 0.04;
       setScanProgress(Math.min(1, p));
 
-      if (p < 0.18) {
-        setScanStepIndex(1);
-        setScanStepText('STEP 1 — ANALYSING PROPERTY');
-      } else if (p < 0.36) {
-        setScanStepIndex(2);
-        setScanStepText('STEP 2 — DETECTING ROOF');
-      } else if (p < 0.54) {
-        setScanStepIndex(3);
-        setScanStepText('STEP 3 — ROOF SURFACE MAPPED');
-      } else if (p < 0.72) {
-        setScanStepIndex(4);
-        setScanStepText('STEP 4 — REMOVING OBSTRUCTIONS');
+      if (p < 0.15) {
+        setScanStepText('STATE 1 — ANALYSING PROPERTY');
+      } else if (p < 0.3) {
+        setScanStepText('STATE 2 — DETECTING ROOF BOUNDARY');
+      } else if (p < 0.45) {
+        setScanStepText('STATE 3 — MAPPING ROOF SURFACE');
+      } else if (p < 0.6) {
+        setScanStepText('STATE 4 — IDENTIFYING EXCLUSIONS');
+      } else if (p < 0.75) {
+        setScanStepText('STATE 5 — CALCULATING USABLE AREA');
       } else if (p < 0.9) {
-        setScanStepIndex(5);
-        setScanStepText('STEP 5 — CALCULATING USABLE AREA');
+        setScanStepText('STATE 6 — OPTIMISING PANEL LAYOUT');
       } else {
-        setScanStepIndex(6);
-        setScanStepText('STEP 6 — OPTIMISING PANEL LAYOUT');
+        setScanStepText('STATE 7 — SOLAR ARRAY READY');
       }
 
       if (p >= 1) {
@@ -156,7 +166,19 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   if (!isOpen) return null;
 
   const handleSelectLocation = (loc: SatelliteLocation) => {
-    setSelectedLocation(loc);
+    // Generate realistic roof geometry for selected coordinates
+    const geo = generateRealisticRoofGeometry(loc.lat, loc.lng);
+    const enrichedLoc: SatelliteLocation = {
+      ...loc,
+      roofPolygon: geo.roofPolygon,
+      exclusionPolygons: geo.exclusionPolygons,
+      roofOrientationDeg: geo.roofOrientationDeg,
+      totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
+      obstructionAreaSqFt: geo.obstructionAreaSqFt,
+      buildingConfidence: geo.confidence,
+    };
+    setSelectedLocation(enrichedLoc);
     setStage(2);
   };
 
@@ -177,7 +199,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           propertyType: 'RESIDENTIAL',
           requiredCapacity: capacityKw,
           monthlyBill: Math.round(annualSavings / 12),
-          message: `Real Roof Solar Lead: Coordinates (${selectedLocation.lat}, ${selectedLocation.lng}), Roof Area ${selectedLocation.totalRoofAreaSqFt} sq.ft, Usable Area ${selectedLocation.estimatedUsableAreaSqFt} sq.ft, ${panelCount} panels, ${capacityKw} kW, Est generation ${annualGenKwh} kWh/yr. ${leadForm.notes}`,
+          message: `Real Roof Solar Lead: (${selectedLocation.lat}, ${selectedLocation.lng}), Roof Area ${selectedLocation.totalRoofAreaSqFt} sq.ft, Usable Area ${selectedLocation.estimatedUsableAreaSqFt} sq.ft, ${panelCount} modules, ${capacityKw} kW, Est generation ${annualGenKwh} kWh/yr. ${leadForm.notes}`,
           source: 'Discover Your Solar Experience',
         }),
       });
@@ -194,7 +216,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         monthlyBillAmount: Math.round(annualSavings / 12),
         roofAreaSqFt: selectedLocation.estimatedUsableAreaSqFt,
         source: 'Discover Your Solar Experience',
-        notes: `Qualified Real-Rooftop Lead: Coordinates: ${selectedLocation.lat}, ${selectedLocation.lng}. Roof Area: ${selectedLocation.totalRoofAreaSqFt} sq.ft, Usable: ${selectedLocation.estimatedUsableAreaSqFt} sq.ft. Configured: ${panelCount} Panels (${capacityKw} kWp), Est. Generation: ${annualGenKwh} kWh/yr, Est. Savings: ₹${annualSavings.toLocaleString('en-IN')}.`,
+        notes: `Qualified Real-Rooftop Lead: Coordinates: ${selectedLocation.lat}, ${selectedLocation.lng}. Roof Area: ${selectedLocation.totalRoofAreaSqFt} sq.ft, Usable: ${selectedLocation.estimatedUsableAreaSqFt} sq.ft. Configured: ${panelCount} Modules (${capacityKw} kWp), Est. Generation: ${annualGenKwh} kWh/yr, Est. Savings: ₹${annualSavings.toLocaleString('en-IN')}.`,
         priority: 'HIGH',
       });
 
@@ -230,24 +252,24 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       </div>
 
       {/* TOP HEADER NAVIGATION BAR */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-4 bg-slate-950/85 border-b border-slate-800/80 backdrop-blur-xl">
+      <header className="relative z-20 flex items-center justify-between px-6 py-4 bg-slate-950/90 border-b border-slate-800/80 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-amber-400 font-extrabold tracking-wider text-base sm:text-lg">
             <Sun className="w-5 h-5 text-amber-400" />
-            <span>NITISH SOLAR</span>
-            <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20 font-mono font-normal">
+            <span>SOLAR VISION</span>
+            <span className="text-xs bg-amber-500/10 text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-500/20 font-mono font-normal">
               REAL ROOFTOP SIMULATOR
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-400 border-l border-slate-800 pl-4">
-            <span className={stage >= 1 ? 'text-amber-400 font-bold' : ''}>01 ADDRESS</span>
+            <span className={stage >= 1 ? 'text-amber-400 font-bold' : ''}>01 LOCATION</span>
             <ChevronRight className="w-3 h-3 text-slate-600" />
-            <span className={stage >= 3 ? 'text-amber-400 font-bold' : ''}>02 REAL ROOF</span>
+            <span className={stage >= 3 ? 'text-amber-400 font-bold' : ''}>02 PROPERTY</span>
             <ChevronRight className="w-3 h-3 text-slate-600" />
             <span className={stage >= 5 ? 'text-amber-400 font-bold' : ''}>03 ANALYSIS</span>
             <ChevronRight className="w-3 h-3 text-slate-600" />
-            <span className={stage >= 6 ? 'text-amber-400 font-bold' : ''}>04 LAYOUT</span>
+            <span className={stage >= 6 ? 'text-amber-400 font-bold' : ''}>04 ARRAY DESIGN</span>
             <ChevronRight className="w-3 h-3 text-slate-600" />
             <span className={stage >= 11 ? 'text-amber-400 font-bold' : ''}>05 PAYOFF</span>
           </div>
@@ -260,7 +282,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               className="text-xs font-mono text-slate-400 hover:text-white px-3 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-900 transition-colors flex items-center gap-1.5"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>RECHANGE ADDRESS</span>
+              <span>CHANGE LOCATION</span>
             </button>
           )}
 
@@ -279,18 +301,18 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         
         {/* STAGE 1: ADDRESS INPUT UI */}
         {stage === 1 && (
-          <div className="my-auto w-full max-w-2xl text-center space-y-6 pointer-events-auto bg-slate-950/90 p-8 sm:p-12 rounded-3xl border border-slate-800/80 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-300">
+          <div className="my-auto w-full max-w-2xl text-center space-y-6 pointer-events-auto bg-slate-950/95 p-8 sm:p-12 rounded-3xl border border-slate-800/80 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-300">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-mono font-bold uppercase tracking-widest">
               <Sparkles className="w-4 h-4" />
-              <span>Real Rooftop Solar Simulator</span>
+              <span>REAL SATELLITE ROOF ANALYSIS</span>
             </div>
 
             <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
-              SEE YOUR ROOF IN <span className="text-amber-400">SOLAR</span>
+              DISCOVER YOUR ROOF IN <span className="text-amber-400">SOLAR</span>
             </h1>
 
             <p className="text-slate-300 text-sm sm:text-base font-light max-w-lg mx-auto leading-relaxed">
-              Enter your address, coordinates, or Google Maps link to discover how much solar your roof could generate.
+              Enter your address, coordinates, or Google Maps link to perform immediate rooftop geometry and solar yield calculation.
             </p>
 
             <div className="pt-2">
@@ -301,10 +323,10 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
         {/* STAGE 2: CINEMATIC LOCATION TRANSITION HUD */}
         {stage === 2 && (
-          <div className="my-auto text-center space-y-4 pointer-events-auto bg-slate-950/90 px-8 py-6 rounded-2xl border border-amber-500/30 shadow-2xl backdrop-blur-2xl animate-in fade-in duration-300">
+          <div className="my-auto text-center space-y-4 pointer-events-auto bg-slate-950/95 px-8 py-6 rounded-2xl border border-amber-500/30 shadow-2xl backdrop-blur-2xl animate-in fade-in duration-300">
             <div className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center justify-center gap-2">
               <Activity className="w-4 h-4 animate-pulse" />
-              <span>CINEMATIC SATELLITE FLY-IN</span>
+              <span>SATELLITE POSITIONING</span>
             </div>
             <div className="text-2xl sm:text-4xl font-black text-white tracking-wider font-mono">
               {flyInText}
@@ -316,42 +338,42 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           </div>
         )}
 
-        {/* STAGE 3: REAL PROPERTY TARGET CONFIRMATION HUD */}
+        {/* STAGE 3: REAL PROPERTY CONFIRMATION HUD (REQUIREMENT #19: Truthful Confidence) */}
         {stage === 3 && (
           <div className="w-full flex justify-between items-start pointer-events-none">
-            <div className="bg-slate-950/85 p-5 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm space-y-2">
+            <div className="bg-slate-950/90 p-5 rounded-2xl border border-slate-800/80 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm space-y-2">
               <div className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-amber-400">
-                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                <span>SOLAR POTENTIAL DETECTED</span>
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>{selectedLocation.buildingConfidence || 'PROPERTY DETECTED'}</span>
               </div>
               <h2 className="text-2xl font-black text-white">TARGET PROPERTY</h2>
               <p className="text-xs text-slate-400 font-mono line-clamp-2">{selectedLocation.address}</p>
               <div className="text-[11px] font-mono text-amber-400 pt-1">
-                Lat: {selectedLocation.lat.toFixed(4)} • Lng: {selectedLocation.lng.toFixed(4)}
+                Lat: {selectedLocation.lat.toFixed(6)} • Lng: {selectedLocation.lng.toFixed(6)}
               </div>
               <div className="pt-2">
                 <button
                   onClick={() => setStage(5)}
                   className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
                 >
-                  <span>CONFIRM PROPERTY TARGET →</span>
+                  <span>START ROOF ANALYSIS →</span>
                 </button>
               </div>
             </div>
 
-            <div className="bg-slate-950/75 px-4 py-2 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 pointer-events-auto flex items-center gap-2">
+            <div className="bg-slate-950/85 px-4 py-2 rounded-xl border border-slate-800 text-xs font-mono text-slate-300 pointer-events-auto flex items-center gap-2">
               <Eye className="w-4 h-4 text-amber-400" />
-              <span>Drag map to position • Scroll wheel to zoom</span>
+              <span>Drag map to pan • Scroll wheel to zoom</span>
             </div>
           </div>
         )}
 
-        {/* REQUIREMENT #5: DATA-DRIVEN 6-STEP ROOF ANALYSIS HUD */}
+        {/* REQUIREMENT #6: DATA-DRIVEN 7-STEP ROOF ANALYSIS HUD */}
         {stage === 5 && (
-          <div className="my-auto text-center space-y-3 pointer-events-auto bg-slate-950/90 px-8 py-6 rounded-2xl border border-amber-500/40 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95">
+          <div className="my-auto text-center space-y-3 pointer-events-auto bg-slate-950/95 px-8 py-6 rounded-2xl border border-amber-500/40 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95">
             <div className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest flex items-center justify-center gap-2">
               <Activity className="w-4 h-4 animate-spin" />
-              <span>DATA-DRIVEN ROOF ANALYSIS</span>
+              <span>ROOFTOP COMPUTATIONAL ANALYSIS</span>
             </div>
             <div className="text-xl sm:text-2xl font-black text-white font-mono tracking-wider">
               {scanStepText}
@@ -370,15 +392,15 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           </div>
         )}
 
-        {/* STAGE 6, 7, 8, 9 & 10: COMPACT HUD & LIVE DERIVED TELEMETRY */}
+        {/* STAGE 6, 7, 8, 9 & 10: COMPACT INSTRUMENT HUD & LIVE DERIVED TELEMETRY (REQUIREMENT #15, #16) */}
         {stage >= 6 && stage <= 10 && (
           <div className="w-full flex flex-col md:flex-row items-end justify-between gap-4 pointer-events-none mt-auto">
-            {/* Left Compact Information Card (Requirement #15) */}
+            {/* Left Compact Information Instrument Panel */}
             <div className="bg-slate-950/90 p-5 rounded-3xl border border-slate-800/80 shadow-2xl backdrop-blur-2xl pointer-events-auto w-full md:max-w-sm space-y-3">
               <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
                 <div>
                   <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest block">
-                    ROOFTOP SOLAR POTENTIAL
+                    ROOFTOP SOLAR ANALYSIS
                   </span>
                   <h3 className="text-base font-black text-white">SOLAR TELEMETRY</h3>
                 </div>
@@ -388,7 +410,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 </div>
               </div>
 
-              {/* Requirement #10: Derived metrics from selected property */}
+              {/* Requirement #15: Real calculated roof metrics */}
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400 block text-[9px]">TOTAL ROOF AREA</span>
@@ -416,7 +438,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 </div>
               </div>
 
-              {/* Requirement #9: Dynamic System Size Selector */}
+              {/* Requirement #13: Dynamic System Size Selector */}
               <div className="space-y-1.5 pt-1">
                 <span className="text-xs font-semibold text-slate-300 block">System Size Selector</span>
                 <div className="grid grid-cols-5 gap-1">
@@ -465,7 +487,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
             {/* Right Controls: Visual Modes & Payoff CTA */}
             <div className="flex flex-col gap-3 pointer-events-auto w-full md:w-auto">
-              <div className="bg-slate-950/85 p-2 rounded-2xl border border-slate-800/80 backdrop-blur-xl flex items-center gap-1 shadow-2xl">
+              <div className="bg-slate-950/90 p-2 rounded-2xl border border-slate-800/80 backdrop-blur-xl flex items-center gap-1 shadow-2xl">
                 {(
                   [
                     { id: 'SATELLITE', label: 'SATELLITE' },
@@ -501,7 +523,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
         {/* STAGE 11: THE FINAL MOMENT REVEAL SCREEN */}
         {stage === 11 && (
-          <div className="my-auto w-full max-w-3xl pointer-events-auto bg-slate-950/90 p-8 sm:p-12 rounded-3xl border border-amber-500/30 shadow-2xl backdrop-blur-2xl text-center space-y-8 animate-in zoom-in-95 duration-300">
+          <div className="my-auto w-full max-w-3xl pointer-events-auto bg-slate-950/95 p-8 sm:p-12 rounded-3xl border border-amber-500/30 shadow-2xl backdrop-blur-2xl text-center space-y-8 animate-in zoom-in-95 duration-300">
             <div className="space-y-3">
               <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400 block">
                 REAL ROOF ENERGY POTENTIAL SUMMARY
@@ -645,7 +667,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-left text-xs space-y-2 font-mono text-slate-300">
                   <div className="flex justify-between">
                     <span>System Capacity:</span>
-                    <span className="text-amber-400 font-bold">{capacityKw} kW ({panelCount} Panels)</span>
+                    <span className="text-amber-400 font-bold">{capacityKw} kW ({panelCount} Modules)</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Est. Annual Generation:</span>

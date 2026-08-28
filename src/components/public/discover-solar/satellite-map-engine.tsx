@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { SatelliteLocation, VisualMode } from './types';
+import { SatelliteLocation, VisualMode, Point2D } from './types';
+import { computePanelPlacement, isPointInPolygon } from './roof-packing-algorithm';
 
 interface SatelliteMapEngineProps {
   location: SatelliteLocation;
@@ -49,12 +50,14 @@ export function SatelliteMapEngine({
   // Geographic Center Coordinates (Lat, Lng) & Float Zoom Level
   const [centerLat, setCenterLat] = useState(location.lat);
   const [centerLng, setCenterLng] = useState(location.lng);
-  const [geoZoom, setGeoZoom] = useState(19.8); // Tight framing on target house
+
+  // REQUIREMENT #2: Property-First Ultra-Tight Zoom Level (20.2 to 20.5)
+  const [geoZoom, setGeoZoom] = useState(20.2);
 
   // Tile Cache: Map<tileKey, HTMLImageElement>
   const tileCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
-  // Inertial Drag Panning State
+  // Inertial Drag Panning State (NO MOUSE TILT)
   const isDragging = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
@@ -69,15 +72,15 @@ export function SatelliteMapEngine({
     setCenterLng(location.lng);
   }, [location.lat, location.lng]);
 
-  // Sync Stage / ZoomLevel Prop to GeoZoom (Requirement #2 & #14: Close Property Framing)
+  // REQUIREMENT #2: Progression: CITY (15.0) -> NEIGHBOURHOOD (17.5) -> PROPERTY (20.2) -> ROOF (20.5)
   useEffect(() => {
-    let targetZ = 19.8;
-    if (zoomLevel === 'CITY') targetZ = 14.8;
-    else if (zoomLevel === 'NEIGHBOURHOOD') targetZ = 17.2;
-    else if (zoomLevel === 'PROPERTY') targetZ = 19.5;
-    else if (zoomLevel === 'ROOFTOP') targetZ = 19.95;
+    let targetZ = 20.2;
+    if (zoomLevel === 'CITY') targetZ = 15.0;
+    else if (zoomLevel === 'NEIGHBOURHOOD') targetZ = 17.5;
+    else if (zoomLevel === 'PROPERTY') targetZ = 20.2;
+    else if (zoomLevel === 'ROOFTOP') targetZ = 20.5;
 
-    if (stage === 2) targetZ = 15.5;
+    if (stage === 2) targetZ = 16.0;
 
     setGeoZoom(targetZ);
   }, [zoomLevel, stage]);
@@ -94,7 +97,7 @@ export function SatelliteMapEngine({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Requirement #1: NO MOUSE TILT - Spatially stable drag panning only
+  // REQUIREMENT #1: Mouse Drag Panning ONLY (Zero 2.5D Tilt)
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging.current) return;
     const dx = e.clientX - dragStart.current.x;
@@ -122,7 +125,7 @@ export function SatelliteMapEngine({
     isDragging.current = false;
   };
 
-  // Native Non-Passive Event Listeners for Geographic Map Zoom & Pan (Zero Console Warnings)
+  // Native Non-Passive Event Listeners for Map Zoom & Pan
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -130,7 +133,7 @@ export function SatelliteMapEngine({
     const onNativeWheel = (e: WheelEvent) => {
       e.preventDefault();
       const zoomDelta = -e.deltaY * 0.0025;
-      setGeoZoom((prev) => Math.max(14.0, Math.min(20.3, prev + zoomDelta)));
+      setGeoZoom((prev) => Math.max(14.0, Math.min(21.0, prev + zoomDelta)));
     };
 
     let touchStartDist = 0;
@@ -166,7 +169,7 @@ export function SatelliteMapEngine({
         const dist = Math.hypot(dx, dy);
         if (touchStartDist > 0) {
           const delta = (dist - touchStartDist) * 0.006;
-          setGeoZoom((prev) => Math.max(14.0, Math.min(20.3, prev + delta)));
+          setGeoZoom((prev) => Math.max(14.0, Math.min(21.0, prev + delta)));
         }
         touchStartDist = dist;
       }
@@ -220,7 +223,7 @@ export function SatelliteMapEngine({
     };
   }, [centerLat, centerLng, geoZoom, stage, visualMode, panelCount, sunTime, isScanning, scanProgress, location]);
 
-  // MAIN FULLSCREEN CANVAS RENDER ENGINE
+  // MAIN HIGH-RESOLUTION CANVAS RENDER ENGINE
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -288,17 +291,33 @@ export function SatelliteMapEngine({
       drawAerialCanvasGrid(ctx, width, height);
     }
 
-    // Dynamic Sun Lighting & Shadow Overlay
-    drawSunShadowLayer(ctx, sunTime, width, height);
+    // Dynamic Sun Lighting Overlay
+    drawSunLightingLayer(ctx, sunTime, width, height);
 
-    // Requirement #4 & #5: Real Data-Driven Roof Polygon & Obstruction Overlay
+    // REQUIREMENT #5, #6: Data-Driven Roof Polygon & Excluded Obstruction Area Overlay
     if (stage >= 3 && visualMode !== 'SATELLITE') {
-      drawRoofPolygonOverlay(ctx, location.roofPolygon, isScanning, scanProgress, stage);
+      drawRoofAnalysisOverlay(
+        ctx,
+        location.roofPolygon,
+        location.exclusionPolygons || [],
+        isScanning,
+        scanProgress,
+        stage
+      );
     }
 
-    // Requirement #6, #7 & #8: Dynamic Solar Panel Array Layout Overlay
+    // REQUIREMENT #7, #8, #9, #10, #11: Dynamic Photovoltaic Module Array Layout
     if (stage >= 5) {
-      drawSolarPanelsGrid(ctx, location.roofPolygon, panelCount, visualMode);
+      drawRealisticSolarPanels(
+        ctx,
+        location.roofPolygon,
+        location.exclusionPolygons || [],
+        location.roofOrientationDeg || 0,
+        panelCount,
+        visualMode,
+        isScanning,
+        scanProgress
+      );
     }
 
     ctx.restore();
@@ -318,155 +337,207 @@ export function SatelliteMapEngine({
     }
   };
 
-  const drawSunShadowLayer = (ctx: CanvasRenderingContext2D, time: number, w: number, h: number) => {
-    const normalizedTime = (time - 6) / 12;
-    const sunAngle = (normalizedTime - 0.5) * Math.PI * 0.85;
-
-    const shadowLen = Math.abs(normalizedTime - 0.5) * 55;
-    const shadowDx = Math.sin(sunAngle) * shadowLen;
-    const shadowDy = Math.cos(sunAngle) * (shadowLen * 0.5);
-
-    ctx.save();
-    ctx.fillStyle = 'rgba(7, 10, 15, 0.48)';
-    ctx.fillRect(-175 + shadowDx, -135 + shadowDy, 350, 270);
-    ctx.restore();
-
-    let sunTint = 'rgba(251, 191, 36, 0.04)';
+  const drawSunLightingLayer = (ctx: CanvasRenderingContext2D, time: number, w: number, h: number) => {
+    let sunTint = 'rgba(251, 191, 36, 0.03)';
     if (time >= 10 && time <= 14) {
-      sunTint = 'rgba(255, 255, 255, 0.07)';
+      sunTint = 'rgba(255, 255, 255, 0.05)';
     } else if (time > 14) {
-      sunTint = 'rgba(245, 158, 11, 0.07)';
+      sunTint = 'rgba(245, 158, 11, 0.06)';
     }
 
     ctx.fillStyle = sunTint;
     ctx.fillRect(-w, -h, w * 2, h * 2);
   };
 
-  // Data-Driven Roof Polygon & Excluded Obstruction Area Rendering
-  const drawRoofPolygonOverlay = (
+  // REQUIREMENT #5 & #6: DATA-DRIVEN ROOF POLYGON & COMPUTATIONAL ANALYSIS VISUALS
+  const drawRoofAnalysisOverlay = (
     ctx: CanvasRenderingContext2D,
-    poly: { x: number; y: number }[],
+    poly: Point2D[],
+    exclusions: Point2D[][],
     isScanning: boolean,
     scanProgress: number,
     currentStage: number
   ) => {
+    if (!poly || poly.length < 3) return;
+
     ctx.save();
 
-    const scaleX = 3.5;
-    const scaleY = 2.7;
+    // Map 0..100 normalized roof space into viewport scale
+    const scaleX = 4.2;
+    const scaleY = 3.6;
 
-    // Outer Roof Boundary
+    // Convert normalized point to Canvas coordinates
+    const toPx = (pt: Point2D) => ({
+      x: (pt.x - 50) * scaleX,
+      y: (pt.y - 50) * scaleY,
+    });
+
+    // STATE 2: DETECTING ROOF (Gradual line drawing)
+    const pts = poly.map(toPx);
+
     ctx.beginPath();
-    poly.forEach((pt, i) => {
-      const px = (pt.x - 50) * scaleX;
-      const py = (pt.y - 50) * scaleY;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+    pts.forEach((pt, i) => {
+      if (i === 0) ctx.moveTo(pt.x, pt.y);
+      else ctx.lineTo(pt.x, pt.y);
     });
     ctx.closePath();
 
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3.5;
-    ctx.setLineDash([10, 5]);
-    ctx.stroke();
-
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.14)';
-    ctx.fill();
-
-    // STEP 4: Render Excluded Obstruction Zones (e.g. Staircase headroom / HVAC unit)
-    if (currentStage >= 4) {
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 2]);
-
-      // Roof Tank / Stairwell exclusion zone
-      ctx.fillRect(20, -60, 45, 35);
-      ctx.strokeRect(20, -60, 45, 35);
-    }
-
-    // STEP 2: Scanning treatment over REAL satellite imagery
-    if (isScanning) {
-      const scanY = -135 + scanProgress * 270;
+    if (currentStage === 5 && scanProgress < 0.36) {
+      // Line by line drawing effect
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([12, 6]);
+      ctx.stroke();
+    } else {
+      // Solid sharp property roof border
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 2.5;
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(-175, scanY);
-      ctx.lineTo(175, scanY);
       ctx.stroke();
 
-      const grad = ctx.createLinearGradient(0, scanY - 25, 0, scanY);
+      // STATE 3 & 5: USABLE SURFACE MAPPING (Subtle grid fill)
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
+      ctx.fill();
+    }
+
+    // STATE 4: EXCLUSION ZONES (Water Tank / Stairwell)
+    if (currentStage >= 5 && scanProgress >= 0.54) {
+      exclusions.forEach((exPoly) => {
+        const exPts = exPoly.map(toPx);
+        ctx.beginPath();
+        exPts.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath();
+
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 2]);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+
+    // STATE 1 & SCAN BEAM PASS
+    if (isScanning && scanProgress < 0.9) {
+      const scanY = -180 + scanProgress * 360;
+
+      ctx.save();
+      ctx.beginPath();
+      pts.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.closePath();
+      ctx.clip(); // Restrict beam strictly inside roof boundary
+
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(-250, scanY);
+      ctx.lineTo(250, scanY);
+      ctx.stroke();
+
+      const grad = ctx.createLinearGradient(0, scanY - 30, 0, scanY);
       grad.addColorStop(0, 'rgba(56, 189, 248, 0)');
-      grad.addColorStop(1, 'rgba(56, 189, 248, 0.35)');
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0.25)');
       ctx.fillStyle = grad;
-      ctx.fillRect(-175, scanY - 25, 350, 25);
+      ctx.fillRect(-250, scanY - 30, 500, 30);
+
+      ctx.restore();
     }
 
     ctx.restore();
   };
 
-  // Requirement #6, #7, #8 & #9: Dynamic Panel Grid Layout Calculation
-  const drawSolarPanelsGrid = (
+  // REQUIREMENT #7, #8, #9, #10, #11: REALISTIC PHOTOVOLTAIC MODULE RENDERING
+  const drawRealisticSolarPanels = (
     ctx: CanvasRenderingContext2D,
-    poly: { x: number; y: number }[],
+    poly: Point2D[],
+    exclusions: Point2D[][],
+    orientationDeg: number,
     count: number,
-    mode: VisualMode
+    mode: VisualMode,
+    isScanning: boolean,
+    scanProgress: number
   ) => {
+    if (!poly || poly.length < 3) return;
+
     ctx.save();
 
-    let cols = 4;
-    if (count >= 24) cols = 6;
-    else if (count >= 18) cols = 6;
-    else if (count >= 12) cols = 4;
-    else cols = 3;
+    const scaleX = 4.2;
+    const scaleY = 3.6;
 
-    const rows = Math.ceil(count / cols);
-    const pWidth = 40;
-    const pHeight = 26;
-    const pGap = 4;
+    // Run dynamic 2D packing algorithm to compute exact module placement coordinates
+    const placement = computePanelPlacement(poly, exclusions, orientationDeg, count);
+    const visiblePanels = placement.panels;
 
-    const startX = -((cols * (pWidth + pGap)) / 2) + pWidth / 2;
-    const startY = -((rows * (pHeight + pGap)) / 2) + pHeight / 2;
+    // Number of panels to reveal based on scan/animation progress
+    let renderLimit = visiblePanels.length;
+    if (isScanning) {
+      if (scanProgress < 0.72) renderLimit = 0;
+      else {
+        const animP = (scanProgress - 0.72) / 0.28;
+        renderLimit = Math.floor(animP * visiblePanels.length);
+      }
+    }
 
-    for (let i = 0; i < count; i++) {
-      const c = i % cols;
-      const r = Math.floor(i / cols);
+    visiblePanels.forEach((p, idx) => {
+      if (idx > renderLimit) return;
 
-      const px = startX + c * (pWidth + pGap);
-      const py = startY + r * (pHeight + pGap);
+      const px = (p.x - 50) * scaleX;
+      const py = (p.y - 50) * scaleY;
+      const pW = p.width * scaleX;
+      const pH = p.length * scaleY;
 
-      // Skip placement if hitting exclusion zone (HVAC / Tank zone)
-      if (px > 10 && px < 70 && py > -70 && py < -20) continue;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate((orientationDeg * Math.PI) / 180);
 
-      ctx.fillStyle = '#0284c7';
-      ctx.fillRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
+      // 1. Dark Photovoltaic Monocrystalline Silicon Base
+      ctx.fillStyle = '#0b1329';
+      ctx.fillRect(-pW / 2, -pH / 2, pW, pH);
 
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
+      // 2. Anodized Metallic Aluminum Frame Outline
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(-pW / 2, -pH / 2, pW, pH);
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 0.5;
+      // 3. Silicon Wafer Cell Grid Matrix (6 columns x 10 rows cell lines)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 0.4;
       ctx.beginPath();
-      ctx.moveTo(px - pWidth / 2 + 13, py - pHeight / 2);
-      ctx.lineTo(px - pWidth / 2 + 13, py + pHeight / 2);
-      ctx.moveTo(px - pWidth / 2 + 26, py - pHeight / 2);
-      ctx.lineTo(px - pWidth / 2 + 26, py + pHeight / 2);
+
+      // Busbar lines (vertical silver conductors)
+      const busbar1 = -pW / 2 + pW * 0.33;
+      const busbar2 = -pW / 2 + pW * 0.66;
+      ctx.moveTo(busbar1, -pH / 2);
+      ctx.lineTo(busbar1, pH / 2);
+      ctx.moveTo(busbar2, -pH / 2);
+      ctx.lineTo(busbar2, pH / 2);
+
+      // Horizontal cell division lines
+      const cellRows = 5;
+      for (let r = 1; r < cellRows; r++) {
+        const yLine = -pH / 2 + (pH / cellRows) * r;
+        ctx.moveTo(-pW / 2, yLine);
+        ctx.lineTo(pW / 2, yLine);
+      }
       ctx.stroke();
 
-      const glassGrad = ctx.createLinearGradient(
-        px - pWidth / 2,
-        py - pHeight / 2,
-        px + pWidth / 2,
-        py + pHeight / 2
-      );
-      glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.28)');
-      glassGrad.addColorStop(0.5, 'rgba(255, 255, 255, 0)');
-      glassGrad.addColorStop(1, 'rgba(255, 255, 255, 0.12)');
+      // 4. Subtle Anti-Reflective Glass Reflection Glare
+      const glassGrad = ctx.createLinearGradient(-pW / 2, -pH / 2, pW / 2, pH / 2);
+      glassGrad.addColorStop(0, 'rgba(255, 255, 255, 0.18)');
+      glassGrad.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)');
+      glassGrad.addColorStop(1, 'rgba(255, 255, 255, 0.08)');
       ctx.fillStyle = glassGrad;
-      ctx.fillRect(px - pWidth / 2, py - pHeight / 2, pWidth, pHeight);
-    }
+      ctx.fillRect(-pW / 2, -pH / 2, pW, pH);
+
+      ctx.restore();
+    });
 
     ctx.restore();
   };
@@ -479,48 +550,28 @@ export function SatelliteMapEngine({
       onMouseUp={handleMouseUp}
       className="fixed inset-0 w-full h-full overflow-hidden cursor-grab active:cursor-grabbing select-none"
     >
-      {/* Fullscreen Map Canvas */}
+      {/* High-Resolution Fullscreen Map Canvas */}
       <canvas ref={canvasRef} className="w-full h-full object-cover" />
 
-      {/* Target Frame (Only during Stage 3 targeting) */}
-      {stage === 3 && (
-        <div className="pointer-events-none fixed inset-0 flex flex-col items-center justify-center z-20">
-          <div className="relative w-80 h-64 rounded-2xl border-2 border-dashed border-amber-400 bg-amber-400/5 shadow-2xl flex flex-col items-center justify-between p-4 animate-pulse">
-            <div className="absolute -top-2 -left-2 w-6 h-6 border-t-4 border-l-4 border-amber-400 rounded-tl-lg" />
-            <div className="absolute -top-2 -right-2 w-6 h-6 border-t-4 border-r-4 border-amber-400 rounded-tr-lg" />
-            <div className="absolute -bottom-2 -left-2 w-6 h-6 border-b-4 border-l-4 border-amber-400 rounded-bl-lg" />
-            <div className="absolute -bottom-2 -right-2 w-6 h-6 border-b-4 border-r-4 border-amber-400 rounded-br-lg" />
-
-            <span className="text-[11px] font-mono font-bold bg-amber-500 text-slate-950 px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
-              PROPERTY TARGET
-            </span>
-
-            <span className="text-xs text-amber-200 font-mono text-center bg-slate-950/80 px-3 py-1.5 rounded-xl border border-amber-500/30">
-              Position your property inside the target frame
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Subtle Controls */}
+      {/* Subtle Zoom Controls */}
       <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2 pointer-events-auto">
         <button
-          onClick={() => setGeoZoom((prev) => Math.min(20.3, prev + 0.5))}
-          className="w-10 h-10 rounded-xl bg-slate-950/80 border border-slate-800 text-amber-400 hover:bg-slate-900 font-mono text-lg font-bold shadow-2xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-105"
+          onClick={() => setGeoZoom((prev) => Math.min(21.0, prev + 0.4))}
+          className="w-10 h-10 rounded-xl bg-slate-950/90 border border-slate-800 text-amber-400 hover:bg-slate-900 font-mono text-lg font-bold shadow-2xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-105"
           title="Zoom In"
         >
           +
         </button>
         <button
-          onClick={() => setGeoZoom((prev) => Math.max(14.0, prev - 0.5))}
-          className="w-10 h-10 rounded-xl bg-slate-950/80 border border-slate-800 text-amber-400 hover:bg-slate-900 font-mono text-lg font-bold shadow-2xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-105"
+          onClick={() => setGeoZoom((prev) => Math.max(14.0, prev - 0.4))}
+          className="w-10 h-10 rounded-xl bg-slate-950/90 border border-slate-800 text-amber-400 hover:bg-slate-900 font-mono text-lg font-bold shadow-2xl backdrop-blur-md flex items-center justify-center transition-all hover:scale-105"
           title="Zoom Out"
         >
           −
         </button>
       </div>
 
-      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#070A0F]/80 via-transparent to-[#070A0F]/60" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#070A0F]/70 via-transparent to-[#070A0F]/50" />
     </div>
   );
 }

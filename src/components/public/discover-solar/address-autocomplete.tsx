@@ -18,7 +18,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Maharashtra',
     lat: 18.559,
     lng: 73.7868,
-    zoom: 19.8,
+    zoom: 20.2,
     source: 'address',
     roofPolygon: [
       { x: 30, y: 24 },
@@ -38,7 +38,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Haryana',
     lat: 28.495,
     lng: 77.0895,
-    zoom: 19.8,
+    zoom: 20.2,
     source: 'address',
     roofPolygon: [
       { x: 22, y: 20 },
@@ -58,7 +58,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Karnataka',
     lat: 12.9784,
     lng: 77.6408,
-    zoom: 19.8,
+    zoom: 20.2,
     source: 'address',
     roofPolygon: [
       { x: 28, y: 22 },
@@ -78,7 +78,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Maharashtra',
     lat: 19.0622,
     lng: 72.828,
-    zoom: 19.8,
+    zoom: 20.2,
     source: 'address',
     roofPolygon: [
       { x: 32, y: 26 },
@@ -98,7 +98,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Gujarat',
     lat: 23.0396,
     lng: 72.5074,
-    zoom: 19.8,
+    zoom: 20.2,
     source: 'address',
     roofPolygon: [
       { x: 18, y: 18 },
@@ -118,7 +118,7 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = [
     state: 'Telangana',
     lat: 17.4156,
     lng: 78.4347,
-    zoom: 19.8,
+    zoom: 20.2,
     source: 'address',
     roofPolygon: [
       { x: 26, y: 24 },
