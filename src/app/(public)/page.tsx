@@ -283,6 +283,9 @@ export default function HomePage() {
   const SOLUTIONS_STORIES = [
     {
       type: 'RESIDENTIAL SOLAR',
+      range: '3–15 kW',
+      statValue: '90%',
+      statLabel: 'Avg. bill reduction',
       heading: 'Solar designed around the way you live.',
       desc: 'Rooftop solar installations for luxury homes and housing societies. Reduce monthly electricity bills by up to 90% while benefiting from PM Surya Ghar government subsidy support.',
       image: '/images/residential_light.png',
@@ -293,6 +296,9 @@ export default function HomePage() {
     },
     {
       type: 'COMMERCIAL SOLAR INFRASTRUCTURE',
+      range: '20–250 kW',
+      statValue: '40%',
+      statLabel: 'Accelerated tax depreciation',
       heading: 'Energy infrastructure built for business.',
       desc: 'Engineered for commercial office buildings, hospitals, hotels, shopping complexes. Slash operational electricity overheads and capitalize on 40% accelerated tax depreciation.',
       image: '/images/industrial_light.png',
@@ -303,6 +309,9 @@ export default function HomePage() {
     },
     {
       type: 'INDUSTRIAL & UTILITY MEGA PROJECTS',
+      range: '500 kW – 10 MW',
+      statValue: '25%',
+      statLabel: 'Bifacial energy gain',
       heading: 'Engineered for scale and performance.',
       desc: 'For factories, manufacturing plants, cold storage units, megawatt solar farms. High-power bifacial N-type TOPCon modules engineered for heavy 24/7 industrial loads.',
       image: '/images/hero_light.png',
@@ -312,6 +321,16 @@ export default function HomePage() {
       icon: Factory,
     },
   ];
+
+  // Jump the sticky Solutions conveyor directly to a given story by scrolling the
+  // section to the scroll-fraction that centers it (mirrors the click-to-jump
+  // pattern used by the Inside-a-Solar-Plant stage nav below).
+  const jumpToSolutionStory = (idx: number) => {
+    if (!solutionsRef.current) return;
+    const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
+    const targetScrollTop = solutionsRef.current.offsetTop + (idx / 2) * totalDist;
+    window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
+  };
 
   // Projects Stories Data
   const PROJECT_STORIES = [
@@ -407,48 +426,107 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. SECTION 2 — EDITORIAL INTRODUCTION ("Energy that works for tomorrow.") */}
+      {/* 2. SECTION 2 — EDITORIAL INTRODUCTION ("Energy engineered for precision, returns & longevity.") */}
       <section className="py-20 bg-[#0F172A] text-slate-100 border-t border-slate-800/80 snap-natural">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
             {/* Left Large Editorial Statement */}
             <div className="lg:col-span-6 space-y-6">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block">
-                Editorial Overview
+              <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-amber-400 block">
+                EDITORIAL OVERVIEW & PHILOSOPHY
               </span>
               <h2 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-white leading-tight">
-                Energy that works for tomorrow.
+                Energy engineered for precision, returns & longevity.
               </h2>
               <p className="text-slate-300 text-base sm:text-lg font-light leading-relaxed">
-                At <strong className="text-white font-semibold">nitish solar</strong>, we believe energy infrastructure should be built on uncompromised engineering precision, high-efficiency solar modules, and transparent financial returns.
+                At <strong className="text-white font-semibold">nitish solar</strong>, we believe energy infrastructure must be built on uncompromised engineering precision, high-efficiency solar modules, and transparent financial performance.
               </p>
               <p className="text-slate-400 text-sm leading-relaxed font-light">
-                Whether deploying residential rooftop solar installations, commercial net-metered arrays, or utility-scale megawatt projects, our end-to-end EPC workflow ensures optimal tilt geometry, 3D shadow modeling, DISCOM grid synchronization, and 30-year linear performance guarantees.
+                Whether deploying residential rooftop solar systems, commercial net-metered arrays, or utility-scale megawatt power plants, our end-to-end EPC workflow ensures exact tilt geometry, 3D shadow analysis, DISCOM grid synchronization, and 25-year linear performance guarantees.
               </p>
               <div className="pt-2">
-                <Link href="/about" className="inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-amber-400 transition-colors group">
+                <Link href="/about" className="inline-flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors group">
                   <span>Discover nitish solar's Engineering Philosophy</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
             </div>
 
-            {/* Right Architectural Image */}
+            {/* Right Interactive Engineering & Financial Performance Dashboard */}
             <div className="lg:col-span-6">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-slate-800/60 group">
-                <div className="aspect-[4/3] relative">
-                  <Image
-                    src="/images/industrial_light.png"
-                    alt="nitish solar architectural engineering"
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
-                  <div className="absolute bottom-6 left-6 right-6 text-white space-y-1">
-                    <span className="text-[11px] font-semibold text-white/60 uppercase tracking-[0.15em] block">Industrial Rooftop Installation</span>
-                    <p className="text-sm font-semibold">1.2 MWp High-Efficiency Bifacial Solar System • Pune MIDC</p>
+              <div className="bg-slate-900/90 rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-widest block">
+                      SOLAR ENGINE SPECIFICATIONS
+                    </span>
+                    <h3 className="text-xl font-bold text-white">Engineering Performance Matrix</h3>
                   </div>
+                  <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>TIER-1 CERTIFIED</span>
+                  </div>
+                </div>
+
+                {/* Performance Metrics Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                    <span className="text-xs font-mono text-slate-400 block">GENERATION EFFICIENCY</span>
+                    <span className="text-2xl font-black text-amber-400 block">99.4%</span>
+                    <span className="text-[10px] text-slate-500 block">N-Type TOPCon PV Cells</span>
+                  </div>
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                    <span className="text-xs font-mono text-slate-400 block">AVERAGE ROI PAYBACK</span>
+                    <span className="text-2xl font-black text-emerald-400 block">3.2 Years</span>
+                    <span className="text-[10px] text-slate-500 block">With DISCOM Net-Metering</span>
+                  </div>
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                    <span className="text-xs font-mono text-slate-400 block">PERFORMANCE WARRANTY</span>
+                    <span className="text-2xl font-black text-white block">25 Years</span>
+                    <span className="text-[10px] text-slate-500 block">Linear Output Protection</span>
+                  </div>
+                  <div className="bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                    <span className="text-xs font-mono text-slate-400 block">TAX DEPRECIATION</span>
+                    <span className="text-2xl font-black text-amber-400 block">40%</span>
+                    <span className="text-[10px] text-slate-500 block">Accelerated Commercial Benefit</span>
+                  </div>
+                </div>
+
+                {/* Key Engineering Pillars List */}
+                <div className="space-y-3 pt-2 border-t border-slate-800/80">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 shrink-0">
+                      <Zap className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Geographic 3D Roof Modeling</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed font-light">
+                        Every property is mapped using high-resolution satellite imagery and shadow vector tracing to optimize azimuth tilt and panel layout.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 shrink-0">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Turnkey DISCOM Net-Metering</h4>
+                      <p className="text-xs text-slate-400 leading-relaxed font-light">
+                        Complete statutory regulatory approvals, bi-directional ABT meter synchronization, and DISCOM grid interconnection.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* CTA Button */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => setIsDiscoverSolarOpen(true)}
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl text-xs sm:text-sm flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-500/20"
+                  >
+                    <span>ANALYZE YOUR ROOF POTENTIAL NOW →</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -461,9 +539,17 @@ export default function HomePage() {
         {/* Sticky Viewport Container (All scene layers contained within 100vh viewport) */}
         <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
           
-          {/* Ambient Depth (neutral vignette only — no colored glow blobs / motion lines) */}
+          {/* Ambient Depth: neutral vignette + faint blueprint grid (no colored glow blobs / motion lines) */}
           <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-slate-950/60 to-[#0B0F17]" />
+            <div
+              className="absolute inset-0 opacity-[0.07]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)',
+                backgroundSize: '64px 64px',
+              }}
+            />
             <div
               className="absolute left-1/2 top-1/2 w-[900px] h-[560px] rounded-full bg-slate-800/25 blur-[120px] transition-transform duration-300 ease-out"
               style={{
@@ -471,6 +557,24 @@ export default function HomePage() {
                 willChange: 'transform',
               }}
             />
+          </div>
+
+          {/* Giant Index Numeral — crossfades with the active story, giving the scene
+              a sense of chapter/depth behind the cards rather than a flat backdrop */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-[5] overflow-hidden">
+            {SOLUTIONS_STORIES.map((story, idx) => {
+              const distFromActive = Math.abs(idx - solutionsProgress * 2);
+              const numOpacity = Math.max(0, 1 - distFromActive * 1.4) * 0.06;
+              return (
+                <span
+                  key={story.type}
+                  className="absolute font-display text-[38vw] leading-none font-bold text-white select-none"
+                  style={{ opacity: numOpacity, willChange: 'opacity' }}
+                >
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+              );
+            })}
           </div>
 
           {/* Anchored Section Heading (Always visible below fixed navbar) */}
@@ -526,7 +630,10 @@ export default function HomePage() {
               return (
                 <div
                   key={story.type}
-                  className="absolute left-1/2 top-1/2 transition-all duration-150 ease-out w-[88vw] max-w-[920px]"
+                  onClick={() => !isCentral && jumpToSolutionStory(idx)}
+                  className={`absolute left-1/2 top-1/2 transition-all duration-150 ease-out w-[88vw] max-w-[920px] ${
+                    !isCentral ? 'cursor-pointer' : ''
+                  }`}
                   style={{
                     transform: `translate(-50%, -50%) translateX(${translateX}vw) scale(${scale})`,
                     opacity,
@@ -561,6 +668,12 @@ export default function HomePage() {
                         className="object-cover transition-transform duration-500 ease-out"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+
+                      {/* Capacity Spec Chip */}
+                      <div className="absolute top-3.5 left-3.5 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-black/50 backdrop-blur-md border border-white/15 text-[10px] font-semibold text-white tracking-wide">
+                        <story.icon className="w-3 h-3 text-amber-400" />
+                        <span>{story.range}</span>
+                      </div>
                     </div>
 
                     {/* RIGHT SIDE — CONTENT WITH MICRO-PARALLAX */}
@@ -591,7 +704,7 @@ export default function HomePage() {
                         ))}
                       </ul>
 
-                      <div className="pt-1.5">
+                      <div className="flex items-center gap-4 pt-1.5">
                         <Link href={story.link}>
                           <Button
                             variant="accent"
@@ -602,6 +715,12 @@ export default function HomePage() {
                             {story.cta}
                           </Button>
                         </Link>
+                        <div className="shrink-0">
+                          <span className="font-display text-xl lg:text-2xl font-semibold text-white block leading-none tabular-nums">
+                            {story.statValue}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-medium block mt-0.5">{story.statLabel}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -610,12 +729,25 @@ export default function HomePage() {
             })}
           </div>
 
-          {/* Solutions Scene Progress Indicator */}
+          {/* Solutions Scene Progress Indicator — clickable, numbered index nav */}
           <div className="flex flex-col items-center gap-2.5 relative z-30 pb-3 shrink-0 max-w-md mx-auto w-full px-6">
             <div className="flex items-center justify-between w-full text-[11px] font-semibold uppercase tracking-[0.15em]">
-              <span className={`transition-colors duration-300 ${solutionsStep === 0 ? 'text-white' : 'text-slate-500'}`}>Residential</span>
-              <span className={`transition-colors duration-300 ${solutionsStep === 1 ? 'text-white' : 'text-slate-500'}`}>Commercial</span>
-              <span className={`transition-colors duration-300 ${solutionsStep === 2 ? 'text-white' : 'text-slate-500'}`}>Industrial</span>
+              {SOLUTIONS_STORIES.map((story, idx) => {
+                const label = ['Residential', 'Commercial', 'Industrial'][idx];
+                const isActive = solutionsStep === idx;
+                return (
+                  <button
+                    key={story.type}
+                    onClick={() => jumpToSolutionStory(idx)}
+                    className={`flex items-center gap-1.5 transition-colors duration-300 ${
+                      isActive ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    <span className={isActive ? 'text-amber-400' : 'text-slate-600'}>{String(idx + 1).padStart(2, '0')}</span>
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="w-full h-[3px] bg-slate-800 rounded-full overflow-hidden relative">
               <div
