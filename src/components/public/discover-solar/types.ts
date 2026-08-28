@@ -5,6 +5,8 @@ export interface Point2D {
   y: number;
 }
 
+export type BuildingConfidenceType = 'ESTIMATED ROOF' | 'USER-CONFIRMED ROOF' | 'CUSTOM ROOF' | 'PROPERTY DETECTED';
+
 export interface SatelliteLocation {
   address: string;
   city: string;
@@ -21,10 +23,21 @@ export interface SatelliteLocation {
   totalRoofAreaSqFt: number;
   estimatedUsableAreaSqFt: number;
   obstructionAreaSqFt: number;
-  buildingConfidence?: 'PROPERTY DETECTED' | 'ESTIMATED BUILDING FOOTPRINT';
+  buildingConfidence?: BuildingConfidenceType;
+  isUserConfirmed?: boolean;
 }
 
 export type VisualMode = 'SATELLITE' | 'SOLAR_ANALYSIS' | 'PANEL_LAYOUT' | 'SUN';
+
+export type SolarEngineState =
+  | 1 // LOCATING PROPERTY
+  | 2 // PROPERTY FOUND
+  | 3 // ROOF DETECTED
+  | 4 // ADJUST ROOF
+  | 5 // ROOF CONFIRMED
+  | 6 // CALCULATING SOLAR POTENTIAL
+  | 7 // OPTIMISING PANEL LAYOUT
+  | 8; // SOLAR ARRAY READY
 
 export interface PanelModulePosition {
   id: number;
@@ -47,4 +60,5 @@ export interface SolarCalculationResult {
   totalRoofAreaSqFt: number;
   usableRoofAreaSqFt: number;
 }
+
 
