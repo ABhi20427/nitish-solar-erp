@@ -864,7 +864,7 @@ export default function HomePage() {
         {/* Sticky Viewport Container (100vh full viewport) */}
         <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex flex-col justify-between pt-24 pb-6 bg-[#0B0F17] relative">
           
-          {/* Full-Screen Video Background for "Inside a Solar Plant" */}
+          {/* Full-Screen Video Background for "Inside a Solar Plant" (Bright & High Visibility) */}
           <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden bg-[#0B0F17]">
             <video
               ref={plantVideoRef}
@@ -872,10 +872,10 @@ export default function HomePage() {
               muted
               playsInline
               loop={false}
-              className="w-full h-full object-cover filter brightness-[0.45] contrast-[1.08]"
+              className="w-full h-full object-cover filter brightness-90 contrast-[1.05]"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17] via-transparent to-[#0B0F17]" />
-            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0B0F17]/60 via-transparent to-[#0B0F17]/60" />
+            <div className="absolute inset-0 bg-black/15" />
           </div>
 
           {/* Main 2-Column Desktop Grid Layout (Guarantees Text Safe Zone vs Visual Stage) */}
