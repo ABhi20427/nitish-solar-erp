@@ -901,12 +901,12 @@ export default function HomePage() {
               </div>
 
               {/* Stage Concise Description */}
-              <p className="text-slate-200 text-base sm:text-lg font-light leading-relaxed bg-[#131B2E]/90 p-5 rounded-2xl border border-slate-800/80 shadow-xl backdrop-blur-md transition-all duration-500">
+              <p className="text-slate-200 text-base sm:text-lg font-light leading-relaxed bg-slate-950/45 p-5 rounded-2xl border border-slate-700/50 shadow-xl backdrop-blur-md transition-all duration-500">
                 {PLANT_STAGES[plantStageIdx].desc}
               </p>
 
               {/* Active Stage Specs Pill List */}
-              <div className="bg-[#0F172A]/90 border border-slate-800/80 rounded-2xl p-4 space-y-2.5">
+              <div className="bg-slate-950/45 border border-slate-700/50 rounded-2xl p-4 space-y-2.5 backdrop-blur-md">
                 <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider block">
                   TECHNICAL SPECIFICATIONS & INFRASTRUCTURE
                 </span>
@@ -922,7 +922,7 @@ export default function HomePage() {
             </div>
 
             {/* RIGHT 7-COL: Connected 5-Stage Circular Node Journey (Horizontal on Desktop) */}
-            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-center min-h-[380px] sm:min-h-[440px] bg-[#070A10]/90 rounded-3xl border border-slate-800/80 p-6 sm:p-10 shadow-2xl backdrop-blur-xl my-auto overflow-hidden">
+            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-center min-h-[380px] sm:min-h-[440px] bg-slate-950/45 rounded-3xl border border-slate-700/50 p-6 sm:p-10 shadow-2xl backdrop-blur-md my-auto overflow-hidden">
               
               {/* Connected horizontal energy flow line behind circles */}
               <div className="hidden sm:block absolute top-[52%] left-12 right-12 h-px bg-slate-800 pointer-events-none z-0">
@@ -999,7 +999,7 @@ export default function HomePage() {
 
           {/* Continuous 5-Stage Journey Progress Navigation Bar */}
           <div className="max-w-4xl mx-auto w-full px-6 pt-3 pb-1 relative z-30 shrink-0">
-            <div className="flex items-center justify-between bg-[#131B2E]/95 border border-slate-800/80 rounded-2xl p-2 shadow-2xl backdrop-blur-xl">
+            <div className="flex items-center justify-between bg-slate-950/50 border border-slate-700/50 rounded-2xl p-2 shadow-2xl backdrop-blur-md">
               {PLANT_STAGES.map((stage, idx) => {
                 const isSelected = idx === plantStageIdx;
                 const IconComponent = stage.icon;
