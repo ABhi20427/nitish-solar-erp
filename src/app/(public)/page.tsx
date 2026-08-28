@@ -32,12 +32,7 @@ import {
   Layers,
 } from 'lucide-react';
 
-const TRUST_INDICATORS = [
-  { val: '1,250+', label: 'Projects Delivered', desc: 'Turnkey rooftop and ground-mount installations across India.' },
-  { val: '450+ MWp', label: 'Installed Solar Capacity', desc: 'High-power utility and commercial grid-tie solar systems.' },
-  { val: '3,800+', label: 'Satisfied Clients', desc: 'Homeowners, corporate enterprises, and industrial facilities.' },
-  { val: '12+ Years', label: 'Engineering Experience', desc: 'Pioneering solar EPC excellence and DISCOM net metering.' },
-];
+
 
 const PLANT_STAGES = [
   {
@@ -102,6 +97,19 @@ const PLANT_STAGES = [
   },
 ];
 
+// Ambient exploded solar-panel visual: 5 physically-ordered module layers,
+// bottom to top (backsheet → encapsulant → cell matrix → glass → frame).
+// `depth` drives each layer's own separation distance in the CSS animation
+// (see .animate-panel-layer / --depth in globals.css) — a plain data array,
+// not component state, so it never triggers re-renders.
+const PANEL_LAYERS = [
+  { id: 'backsheet', depth: 0, extra: 'bg-gradient-to-br from-slate-300/90 to-slate-400/80 border-slate-400/50' },
+  { id: 'encapsulant', depth: 8, extra: 'bg-white/10 border-white/15' },
+  { id: 'cells', depth: 16, extra: 'bg-[#0b1329] border-slate-700/80' },
+  { id: 'glass', depth: 24, extra: 'bg-gradient-to-br from-sky-100/20 to-white/5 border-white/20' },
+  { id: 'frame', depth: 32, extra: 'bg-transparent border-[1.5px] border-slate-400/60' },
+] as const;
+
 // Deterministic Number Formatter to guarantee 100% hydration match between Node SSR and browser client
 function formatIndianNumber(val: number): string {
   if (typeof val !== 'number' || isNaN(val)) return '0';
@@ -119,14 +127,12 @@ export default function HomePage() {
   const [solutionsStep, setSolutionsStep] = useState(0);
   const [solutionsProgress, setSolutionsProgress] = useState(0);
   const [plantStageIdx, setPlantStageIdx] = useState(0);
-  const [impactStep, setImpactStep] = useState(0);
 
   // Section Refs
   const solutionsRef = useRef<HTMLDivElement>(null);
   const plantSectionRef = useRef<HTMLDivElement>(null);
   const plantVideoRef = useRef<HTMLVideoElement>(null);
   const hasPlayedPlantVideo = useRef(false);
-  const impactRef = useRef<HTMLDivElement>(null);
 
   const jumpToPlantStage = (idx: number) => {
     setPlantStageIdx(idx);
@@ -203,22 +209,6 @@ export default function HomePage() {
               const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
               const computedStage = Math.min(4, Math.floor(progress * 5));
               setPlantStageIdx((prev) => (prev !== computedStage ? computedStage : prev));
-            }
-          }
-
-          // 3. Impact Scroll Progress
-          if (impactRef.current) {
-            const rect = impactRef.current.getBoundingClientRect();
-            const totalDist = impactRef.current.offsetHeight - window.innerHeight;
-            if (totalDist > 0) {
-              const progress = Math.max(0, Math.min(0.99, -rect.top / totalDist));
-              let nextStep = 0;
-              if (progress < 0.25) nextStep = 0;
-              else if (progress < 0.5) nextStep = 1;
-              else if (progress < 0.75) nextStep = 2;
-              else nextStep = 3;
-
-              setImpactStep((prev) => (prev !== nextStep ? nextStep : prev));
             }
           }
 
@@ -922,65 +912,145 @@ export default function HomePage() {
             </div>
 
             {/* RIGHT 7-COL: Connected 5-Stage Circular Node Journey (Horizontal on Desktop) */}
-            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-center min-h-[380px] sm:min-h-[440px] bg-slate-950/45 rounded-3xl border border-slate-700/50 p-6 sm:p-10 shadow-2xl backdrop-blur-md my-auto overflow-hidden">
-              
-              {/* Connected horizontal energy flow line behind circles */}
-              <div className="hidden sm:block absolute top-[52%] left-12 right-12 h-px bg-slate-800 pointer-events-none z-0">
-                {/* Active yellow energy progress indicator line */}
+            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-center bg-slate-950/45 rounded-3xl border border-slate-700/50 p-6 sm:p-8 shadow-2xl backdrop-blur-md my-auto overflow-hidden">
+
+              {/* Row Wrapper — the exploded panel is anchored to THIS (via top-0, not
+                  bottom-full, which ignores a parent's padding entirely), so it always
+                  sits in the reserved padding zone above the circle row no matter how
+                  tall the card ends up being, and never gets clipped by the card's own
+                  overflow-hidden. */}
+              <div className="relative pt-0 sm:pt-24 lg:pt-[116px]">
+
+                {/* Wide ambient wash across the whole reserved top band — ties the
+                    corner panel to the rest of the card instead of leaving the area
+                    above stages 2-5 looking like dead space. Purely a soft gradient,
+                    no new objects competing with the circles for attention. */}
+                <div className="hidden sm:block absolute top-0 left-0 right-0 h-20 lg:h-28 z-0 pointer-events-none">
+                  <div
+                    className="absolute inset-0 transition-opacity duration-700"
+                    style={{
+                      background: 'linear-gradient(90deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.04) 35%, transparent 75%)',
+                      opacity: plantStageIdx === 0 ? 1 : 0.4,
+                    }}
+                  />
+                </div>
+
+                {/* Ambient Exploded Solar-Panel Visual — sits in the padded zone
+                    reserved above the row, left-aligned with the first circle.
+                    `top-0` anchors it to that padding area. Pure CSS transform/opacity
+                    loop, no JS per-frame work. Most prominent for 01 SOLAR; quieter on
+                    the other four stages. */}
                 <div
-                  className="h-full bg-amber-400/90 transition-all duration-700 ease-out shadow-[0_0_12px_rgba(245,158,11,0.5)]"
-                  style={{
-                    width: `${(plantStageIdx / 4) * 100}%`,
-                  }}
-                />
-              </div>
-
-              {/* 5 Horizontal Circular Node Cards (01 SOLAR → 02 DC → 03 INVERTER → 04 TRANSFORMER → 05 GRID) */}
-              <div className="relative z-10 grid grid-cols-1 sm:grid-cols-5 gap-6 sm:gap-3 items-center justify-between">
-                {PLANT_STAGES.map((stage, idx) => {
-                  const isActive = idx === plantStageIdx;
-                  return (
-                    <div
-                      key={stage.id}
-                      onClick={() => jumpToPlantStage(idx)}
-                      className={`flex flex-col items-center cursor-pointer group transition-all duration-500 ease-out select-none ${
-                        isActive ? 'scale-110 sm:scale-115 z-20' : 'opacity-55 hover:opacity-100 hover:scale-105 z-10'
-                      }`}
-                    >
-                      {/* Stage Number & Title Above Circle */}
-                      <div className="text-center mb-3 space-y-0.5">
-                        <span className={`text-[10px] font-mono font-bold block transition-colors duration-300 ${
-                          isActive ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-400'
-                        }`}>
-                          {stage.code}
-                        </span>
-                        <span className={`text-xs font-extrabold tracking-wider block transition-colors duration-300 ${
-                          isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
-                        }`}>
-                          {stage.name}
-                        </span>
-                      </div>
-
-                      {/* Circular Image Node (◯) */}
+                  className={`hidden sm:block absolute top-0 left-0 z-[1] pointer-events-none transition-opacity duration-700 ${
+                    plantStageIdx === 0 ? 'opacity-95' : 'opacity-25'
+                  }`}
+                  style={{ perspective: '600px' }}
+                >
+                  <div
+                    className={`animate-panel-stack relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 transition-transform duration-700 ${
+                      plantStageIdx === 0 ? 'scale-100' : 'scale-[0.7]'
+                    }`}
+                    style={{ transformStyle: 'preserve-3d', filter: 'drop-shadow(0 12px 16px rgba(0,0,0,0.45))' }}
+                  >
+                    {PANEL_LAYERS.map((layer, i) => (
                       <div
-                        className={`relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden border-2 transition-all duration-500 ${
-                          isActive
-                            ? 'border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.35)] ring-4 ring-amber-400/20'
-                            : 'border-slate-800 group-hover:border-slate-600 filter contrast-90 group-hover:contrast-100'
+                        key={layer.id}
+                        className={`animate-panel-layer absolute inset-0 rounded-[5px] border overflow-hidden ${layer.extra}`}
+                        style={{ transformStyle: 'preserve-3d', animationDelay: `${i * 70}ms`, '--depth': layer.depth } as React.CSSProperties}
+                      >
+                        {layer.id === 'cells' && (
+                          <>
+                            <div
+                              className="absolute inset-0 opacity-40"
+                              style={{
+                                backgroundImage:
+                                  'linear-gradient(to right, rgba(148,163,184,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.35) 1px, transparent 1px)',
+                                backgroundSize: '34% 34%',
+                              }}
+                            />
+                            <div className="absolute left-[15%] right-[15%] top-1/2 h-px bg-amber-400/70 -translate-y-1/2" />
+                          </>
+                        )}
+                        {layer.id === 'glass' && (
+                          <div
+                            className="absolute inset-0"
+                            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.28) 0%, transparent 45%)' }}
+                          />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Connector: a faint line linking the panel down toward the row,
+                      reinforcing that it belongs to the active stage rather than
+                      floating as an isolated corner sticker. */}
+                  <div
+                    className="absolute left-1/2 top-full w-px transition-opacity duration-700"
+                    style={{
+                      height: '28px',
+                      background: 'linear-gradient(to bottom, rgba(245,158,11,0.5), transparent)',
+                      opacity: plantStageIdx === 0 ? 1 : 0,
+                    }}
+                  />
+                </div>
+
+                {/* Connected horizontal energy flow line behind circles */}
+                <div className="hidden sm:block absolute top-[52%] left-12 right-12 h-px bg-slate-800 pointer-events-none z-0">
+                  {/* Active yellow energy progress indicator line */}
+                  <div
+                    className="h-full bg-amber-400/90 transition-all duration-700 ease-out shadow-[0_0_12px_rgba(245,158,11,0.5)]"
+                    style={{
+                      width: `${(plantStageIdx / 4) * 100}%`,
+                    }}
+                  />
+                </div>
+
+                {/* 5 Horizontal Circular Node Cards (01 SOLAR → 02 DC → 03 INVERTER → 04 TRANSFORMER → 05 GRID) */}
+                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-5 gap-6 sm:gap-3 items-center justify-between">
+                  {PLANT_STAGES.map((stage, idx) => {
+                    const isActive = idx === plantStageIdx;
+                    return (
+                      <div
+                        key={stage.id}
+                        onClick={() => jumpToPlantStage(idx)}
+                        className={`flex flex-col items-center cursor-pointer group transition-all duration-500 ease-out select-none ${
+                          isActive ? 'scale-110 sm:scale-115 z-20' : 'opacity-55 hover:opacity-100 hover:scale-105 z-10'
                         }`}
                       >
-                        <Image
-                          src={stage.image}
-                          alt={stage.name}
-                          fill
-                          sizes="(max-width: 640px) 80px, 120px"
-                          className={`object-cover object-center transition-all duration-700 ${
-                            isActive ? 'scale-110 contrast-105 brightness-105' : 'scale-100 group-hover:scale-105'
+                        {/* Stage Number & Title Above Circle */}
+                        <div className="text-center mb-3 space-y-0.5">
+                          <span className={`text-[10px] font-mono font-bold block transition-colors duration-300 ${
+                            isActive ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-400'
+                          }`}>
+                            {stage.code}
+                          </span>
+                          <span className={`text-xs font-extrabold tracking-wider block transition-colors duration-300 ${
+                            isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                          }`}>
+                            {stage.name}
+                          </span>
+                        </div>
+
+                        {/* Circular Image Node (◯) */}
+                        <div
+                          className={`relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden border-2 transition-all duration-500 ${
+                            isActive
+                              ? 'border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.35)] ring-4 ring-amber-400/20'
+                              : 'border-slate-800 group-hover:border-slate-600 filter contrast-90 group-hover:contrast-100'
                           }`}
-                        />
-                        {/* Ambient Glass Highlight Overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
-                      </div>
+                        >
+                          <Image
+                            src={stage.image}
+                            alt={stage.name}
+                            fill
+                            priority
+                            sizes="(max-width: 640px) 80px, 120px"
+                            className={`object-cover object-center transition-all duration-700 ${
+                              isActive ? 'scale-110 contrast-105 brightness-105' : 'scale-100 group-hover:scale-105'
+                            }`}
+                          />
+                          {/* Ambient Glass Highlight Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
+                        </div>
 
                       {/* Active Node Indicator below circle */}
                       <div className="mt-3 h-2 flex items-center justify-center">
@@ -993,6 +1063,7 @@ export default function HomePage() {
                     </div>
                   );
                 })}
+                </div>
               </div>
             </div>
           </div>
@@ -1019,42 +1090,6 @@ export default function HomePage() {
                 );
               })}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. SECTION 6 — IMPACT SECTION (COMPACT PINNED PROGRESSIVE NUMBERS) */}
-      <section ref={impactRef} className="relative w-full h-[140vh] bg-[#070A10] text-white border-t border-slate-800/80 snap-major-scene">
-        <div className="sticky top-0 h-screen h-[100svh] w-full overflow-hidden flex items-center justify-center">
-          <div className="absolute inset-0 z-0">
-            <Image
-              src="/images/hero_light.png"
-              alt="nitish solar energy impact"
-              fill
-              sizes="100vw"
-              className="object-cover object-center filter brightness-40"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#070A10]/95 via-[#070A10]/60 to-[#070A10]/90" />
-          </div>
-
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-20 w-full">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50 block mb-6">Proven Turnkey Track Record</span>
-            {TRUST_INDICATORS.map((metric, idx) => {
-              const isActive = impactStep === idx;
-              return (
-                <div
-                  key={metric.label}
-                  className={`transition-all duration-700 ease-out space-y-4 ${isActive ? 'opacity-100 scale-100 relative' : 'opacity-0 scale-95 absolute pointer-events-none'
-                    }`}
-                >
-                  <span className="font-display text-5xl sm:text-8xl font-semibold text-white tracking-tight block tabular-nums">
-                    {metric.val}
-                  </span>
-                  <h3 className="text-xl sm:text-3xl font-semibold text-amber-400 tracking-tight">{metric.label}</h3>
-                  <p className="text-slate-300 text-sm sm:text-base font-light max-w-lg mx-auto">{metric.desc}</p>
-                </div>
-              );
-            })}
           </div>
         </div>
       </section>
