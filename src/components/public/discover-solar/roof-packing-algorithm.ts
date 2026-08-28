@@ -1,4 +1,4 @@
-import { Point2D, PanelModulePosition, BuildingConfidenceType } from './types';
+import { Point2D, PanelModulePosition, BuildingConfidenceType, CanonicalRoofMetrics } from './types';
 
 /**
  * 2D Ray-Casting Point-in-Polygon Test
@@ -22,31 +22,27 @@ export function isPointInPolygon(point: Point2D, polygon: Point2D[]): boolean {
 }
 
 /**
- * Calculates true physical polygon area in square meters (m²) using Web Mercator geographic resolution
+ * Calculates true physical polygon area in square meters (m²) using Web Mercator geographic resolution at reference zoom 19
  */
 export function calculateGeographicPolygonAreaM2(
   polygon: Point2D[],
   lat: number = 18.559,
-  zoom: number = 20.2,
-  scaleX: number = 4.2,
-  scaleY: number = 3.6
+  zoom: number = 20.2
 ): number {
   if (!polygon || polygon.length < 3) return 0;
 
-  // Web Mercator resolution equation: meters per pixel at latitude & float zoom
+  // Web Mercator meters per pixel resolution at base reference zoom 19
   const latRad = (lat * Math.PI) / 180;
-  const metersPerPixelUnscaled = (Math.cos(latRad) * 40075016.6855) / (256 * Math.pow(2, zoom));
+  const metersPerPixelAtZoom19 = (Math.cos(latRad) * 40075016.6855) / (256 * Math.pow(2, 19));
 
-  const integerZoom = Math.min(19, Math.floor(zoom));
-  const zoomFraction = Math.pow(2, zoom - integerZoom);
-
-  // Resolution per canvas unit in unscaled space
-  const metersPerCanvasUnit = metersPerPixelUnscaled / (zoomFraction || 1);
+  // Normalized 0..100 space coordinate scaling (calibration factors for physical m²)
+  const scaleXMeters = 1.12 * metersPerPixelAtZoom19;
+  const scaleYMeters = 1.00 * metersPerPixelAtZoom19;
 
   // Convert each normalized 0..100 point to physical meters (origin at center (50, 50))
   const pointsMeters = polygon.map((pt) => ({
-    x: (pt.x - 50) * scaleX * metersPerCanvasUnit,
-    y: (pt.y - 50) * scaleY * metersPerCanvasUnit,
+    x: (pt.x - 50) * scaleXMeters,
+    y: (pt.y - 50) * scaleYMeters,
   }));
 
   // Shoelace formula for polygon area in m²
@@ -81,8 +77,8 @@ export function computeInnerUsablePolygon(
   cx /= roofPolygon.length;
   cy /= roofPolygon.length;
 
-  // Approximate scale factor: 1 meter ~ 2.2 units in 0..100 normalized space
-  const insetFactor = Math.min(0.18, (setbackMeters * 2.2) / 100);
+  // Inset scale factor (~0.5m setback corresponds to ~5% inward scaling towards centroid)
+  const insetFactor = Math.min(0.12, (setbackMeters * 1.6) / 100);
 
   // Scale vertices inward toward centroid by insetFactor
   const innerPolygon = roofPolygon.map((pt) => ({
@@ -94,48 +90,77 @@ export function computeInnerUsablePolygon(
 }
 
 /**
- * RECALCULATES REAL PHYSICAL ROOF METRICS (GEOGRAPHIC SOURCE OF TRUTH)
+ * RECALCULATES REAL PHYSICAL ROOF METRICS & RETURNS CANONICAL SINGLE SOURCE OF TRUTH METRICS
  */
 export function recalculateRoofMetrics(
   roofPolygon: Point2D[],
   exclusionPolygons: Point2D[][] = [],
   lat: number = 18.559,
-  zoom: number = 20.2
-): {
-  totalRoofAreaM2: number;
-  totalRoofAreaSqFt: number;
-  obstructionAreaM2: number;
-  obstructionAreaSqFt: number;
-  estimatedUsableAreaM2: number;
-  estimatedUsableAreaSqFt: number;
-} {
+  zoom: number = 20.2,
+  requestedPanelCount: number = 24,
+  solarIrradiance: number = 4.85
+): CanonicalRoofMetrics {
   const SQM_TO_SQFT = 10.7639104;
 
-  // 1. Total Physical Roof Area in m² and sq.ft
+  // 1. Total Physical Roof Area
   const totalRoofAreaM2 = calculateGeographicPolygonAreaM2(roofPolygon, lat, zoom);
   const totalRoofAreaSqFt = Math.round(totalRoofAreaM2 * SQM_TO_SQFT);
 
-  // 2. Inner Usable Polygon inset by 0.5m setback
-  const innerUsablePoly = computeInnerUsablePolygon(roofPolygon, 0.5, lat, zoom);
-  let rawUsableAreaM2 = calculateGeographicPolygonAreaM2(innerUsablePoly, lat, zoom);
-
-  // 3. Subtract Obstacle Exclusion Area
+  // 2. Obstacle Exclusion Area
   let obstructionAreaM2 = 0;
   exclusionPolygons.forEach((ex) => {
     obstructionAreaM2 += calculateGeographicPolygonAreaM2(ex, lat, zoom);
   });
   const obstructionAreaSqFt = Math.round(obstructionAreaM2 * SQM_TO_SQFT);
 
-  const estimatedUsableAreaM2 = Math.max(5, rawUsableAreaM2 - obstructionAreaM2);
-  const estimatedUsableAreaSqFt = Math.round(estimatedUsableAreaM2 * SQM_TO_SQFT);
+  // 3. Inner Usable Polygon inset by 0.5m setback
+  const innerUsablePoly = computeInnerUsablePolygon(roofPolygon, 0.5, lat, zoom);
+  let rawUsableAreaM2 = calculateGeographicPolygonAreaM2(innerUsablePoly, lat, zoom);
+  let usableRoofAreaM2 = Math.max(5, rawUsableAreaM2 - obstructionAreaM2);
+  let usableRoofAreaSqFt = Math.round(usableRoofAreaM2 * SQM_TO_SQFT);
+
+  // STAGE-GATE INVARIANT GUARANTEE: usableRoofArea <= totalRoofArea
+  if (usableRoofAreaM2 > totalRoofAreaM2) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error(
+        `[CRITICAL INVARIANT VIOLATION] usableRoofAreaM2 (${usableRoofAreaM2}) > totalRoofAreaM2 (${totalRoofAreaM2})! Clamping values.`
+      );
+    }
+    usableRoofAreaM2 = totalRoofAreaM2;
+    usableRoofAreaSqFt = totalRoofAreaSqFt;
+  }
+
+  // 4. Panel Placement & System Telemetry
+  const placement = computePanelPlacement(roofPolygon, exclusionPolygons, 0, requestedPanelCount, 0.5);
+  const activePanels = placement.panels.length;
+  const capacityKw = Number(((activePanels * 450) / 1000).toFixed(1));
+  const kwhPerKw = solarIrradiance * 365 * 0.78;
+  const annualGenKwh = Math.round(capacityKw * kwhPerKw);
+  const annualSavings = Math.round(annualGenKwh * 9.6);
+  const co2Offset = Number((annualGenKwh * 0.00084).toFixed(1));
+
+  // Development Diagnostic Log
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(
+      `[Canonical Roof Metrics] lat=${lat}, zoom=${zoom} | Vertices: ${roofPolygon.length} | ` +
+      `Total: ${totalRoofAreaM2.toFixed(2)} m² (${totalRoofAreaSqFt} sq.ft) | ` +
+      `Usable: ${usableRoofAreaM2.toFixed(2)} m² (${usableRoofAreaSqFt} sq.ft) | ` +
+      `Panels: ${activePanels} (${capacityKw} kW)`
+    );
+  }
 
   return {
     totalRoofAreaM2: Number(totalRoofAreaM2.toFixed(2)),
     totalRoofAreaSqFt,
+    usableRoofAreaM2: Number(usableRoofAreaM2.toFixed(2)),
+    usableRoofAreaSqFt,
     obstructionAreaM2: Number(obstructionAreaM2.toFixed(2)),
     obstructionAreaSqFt,
-    estimatedUsableAreaM2: Number(estimatedUsableAreaM2.toFixed(2)),
-    estimatedUsableAreaSqFt,
+    panelCount: activePanels,
+    capacityKw,
+    annualGenKwh,
+    annualSavings,
+    co2Offset,
   };
 }
 
@@ -146,10 +171,8 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
   roofPolygon: Point2D[];
   exclusionPolygons: Point2D[][];
   roofOrientationDeg: number;
-  totalRoofAreaSqFt: number;
-  estimatedUsableAreaSqFt: number;
-  obstructionAreaSqFt: number;
   confidence: BuildingConfidenceType;
+  metrics: CanonicalRoofMetrics;
 } {
   // Hash seed from lat/lng
   const seed = Math.abs(Math.sin(lat * 12.9898 + lng * 78.233) * 43758.5453) % 1;
@@ -207,16 +230,14 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
 
   const exclusionPolygons = [exclusion1];
 
-  const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons, lat, 20.2);
+  const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons, lat, 20.2, 24, 4.85);
 
   return {
     roofPolygon,
     exclusionPolygons,
     roofOrientationDeg,
-    totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-    estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
-    obstructionAreaSqFt: metrics.obstructionAreaSqFt,
     confidence: 'ESTIMATED ROOF',
+    metrics,
   };
 }
 

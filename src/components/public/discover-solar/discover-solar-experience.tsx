@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import { AddressAutocomplete, PRESET_SATELLITE_LOCATIONS } from './address-autocomplete';
 import { SatelliteMapEngine } from './satellite-map-engine';
-import { SatelliteLocation, VisualMode, Point2D, SolarEngineState } from './types';
+import { SatelliteLocation, VisualMode, Point2D, SolarEngineState, CanonicalRoofMetrics } from './types';
 import { generateRealisticRoofGeometry, recalculateRoofMetrics, computePanelPlacement } from './roof-packing-algorithm';
 import { useSolarStore } from '@/lib/store-context';
 
@@ -39,16 +39,17 @@ interface DiscoverSolarExperienceProps {
 export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperienceProps) {
   const { addLead } = useSolarStore();
 
-  // Initial setup with realistic geometry
+  // Initial setup with realistic geometry & canonical metrics
   const initialGeo = generateRealisticRoofGeometry(PRESET_SATELLITE_LOCATIONS[0].lat, PRESET_SATELLITE_LOCATIONS[0].lng);
   const initialLoc: SatelliteLocation = {
     ...PRESET_SATELLITE_LOCATIONS[0],
     roofPolygon: initialGeo.roofPolygon,
     exclusionPolygons: initialGeo.exclusionPolygons,
     roofOrientationDeg: initialGeo.roofOrientationDeg,
-    totalRoofAreaSqFt: initialGeo.totalRoofAreaSqFt,
-    estimatedUsableAreaSqFt: initialGeo.estimatedUsableAreaSqFt,
-    obstructionAreaSqFt: initialGeo.obstructionAreaSqFt,
+    totalRoofAreaSqFt: initialGeo.metrics.totalRoofAreaSqFt,
+    estimatedUsableAreaSqFt: initialGeo.metrics.usableRoofAreaSqFt,
+    obstructionAreaSqFt: initialGeo.metrics.obstructionAreaSqFt,
+    metrics: initialGeo.metrics,
     buildingConfidence: 'ESTIMATED ROOF',
     isUserConfirmed: false,
   };
@@ -71,12 +72,6 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   // System Size Panel Config (6, 12, 18, 24, 30)
   const [panelCount, setPanelCount] = useState<number>(24);
 
-  // Live Derived Solar Metrics
-  const [capacityKw, setCapacityKw] = useState<number>(10.8);
-  const [annualGenKwh, setAnnualGenKwh] = useState<number>(14800);
-  const [annualSavings, setAnnualSavings] = useState<number>(142000);
-  const [co2Offset, setCo2Offset] = useState<number>(12.4);
-
   // Sun Position Slider (06:00 to 18:00)
   const [sunTime, setSunTime] = useState<number>(12);
 
@@ -93,20 +88,29 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [leadSuccess, setLeadSuccess] = useState(false);
 
-  // SINGLE SOURCE OF TRUTH METRICS CASCADE
-  // Recalculates metrics live whenever panelCount or roof area metrics change!
-  useEffect(() => {
-    const kw = Number(((panelCount * 450) / 1000).toFixed(1));
-    const kwhPerKw = selectedLocation.solarIrradiance * 365 * 0.78;
-    const genKwh = Math.round(kw * kwhPerKw);
-    const savings = Math.round(genKwh * 9.6);
-    const co2 = Number((genKwh * 0.00084).toFixed(1));
-
-    setCapacityKw(kw);
-    setAnnualGenKwh(genKwh);
-    setAnnualSavings(savings);
-    setCo2Offset(co2);
-  }, [panelCount, selectedLocation.solarIrradiance, selectedLocation.totalRoofAreaSqFt, selectedLocation.estimatedUsableAreaSqFt]);
+  // SINGLE CANONICAL METRICS SOURCE OF TRUTH
+  // Derived continuously from selectedLocation & panelCount
+  const metrics: CanonicalRoofMetrics = selectedLocation.metrics
+    ? {
+        ...selectedLocation.metrics,
+        // Update capacity & annual metrics based on requested panel count
+        ...(recalculateRoofMetrics(
+          selectedLocation.roofPolygon,
+          selectedLocation.exclusionPolygons || [],
+          selectedLocation.lat,
+          selectedLocation.zoom || 20.2,
+          panelCount,
+          selectedLocation.solarIrradiance
+        ))
+      }
+    : recalculateRoofMetrics(
+        selectedLocation.roofPolygon,
+        selectedLocation.exclusionPolygons || [],
+        selectedLocation.lat,
+        selectedLocation.zoom || 20.2,
+        panelCount,
+        selectedLocation.solarIrradiance
+      );
 
   // Stage 2 Property Zoom Controller
   useEffect(() => {
@@ -172,9 +176,10 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       roofPolygon: geo.roofPolygon,
       exclusionPolygons: geo.exclusionPolygons,
       roofOrientationDeg: geo.roofOrientationDeg,
-      totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
-      estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
-      obstructionAreaSqFt: geo.obstructionAreaSqFt,
+      totalRoofAreaSqFt: geo.metrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: geo.metrics.usableRoofAreaSqFt,
+      obstructionAreaSqFt: geo.metrics.obstructionAreaSqFt,
+      metrics: geo.metrics,
       buildingConfidence: 'ESTIMATED ROOF',
       isUserConfirmed: false,
     };
@@ -196,27 +201,43 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const handleUndo = () => {
     if (undoHistoryRef.current.length === 0) return;
     const prev = undoHistoryRef.current.pop()!;
-    const metrics = recalculateRoofMetrics(prev.roofPolygon, prev.exclusionPolygons, selectedLocation.lat, selectedLocation.zoom || 20.2);
+    const newMetrics = recalculateRoofMetrics(
+      prev.roofPolygon,
+      prev.exclusionPolygons,
+      selectedLocation.lat,
+      selectedLocation.zoom || 20.2,
+      panelCount,
+      selectedLocation.solarIrradiance
+    );
     setSelectedLocation((loc) => ({
       ...loc,
       roofPolygon: prev.roofPolygon,
       exclusionPolygons: prev.exclusionPolygons,
-      totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-      estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
-      obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+      totalRoofAreaSqFt: newMetrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: newMetrics.usableRoofAreaSqFt,
+      obstructionAreaSqFt: newMetrics.obstructionAreaSqFt,
+      metrics: newMetrics,
     }));
   };
 
   // Callback when user drags/edits roof polygon vertices in ADJUST ROOF mode (Stage 4)
   const handleRoofPolygonChanged = (newPoly: Point2D[]) => {
     pushUndoState();
-    const metrics = recalculateRoofMetrics(newPoly, selectedLocation.exclusionPolygons || [], selectedLocation.lat, selectedLocation.zoom || 20.2);
+    const newMetrics = recalculateRoofMetrics(
+      newPoly,
+      selectedLocation.exclusionPolygons || [],
+      selectedLocation.lat,
+      selectedLocation.zoom || 20.2,
+      panelCount,
+      selectedLocation.solarIrradiance
+    );
     setSelectedLocation((prev) => ({
       ...prev,
       roofPolygon: newPoly,
-      totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-      estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
-      obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+      totalRoofAreaSqFt: newMetrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: newMetrics.usableRoofAreaSqFt,
+      obstructionAreaSqFt: newMetrics.obstructionAreaSqFt,
+      metrics: newMetrics,
       buildingConfidence: 'USER-CONFIRMED ROOF',
     }));
   };
@@ -226,19 +247,26 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     pushUndoState();
     const poly = [...selectedLocation.roofPolygon];
     if (poly.length < 3) return;
-    // Insert point between vertex 0 and 1
     const newPt = {
       x: (poly[0].x + poly[1].x) / 2,
       y: (poly[0].y + poly[1].y) / 2,
     };
     poly.splice(1, 0, newPt);
-    const metrics = recalculateRoofMetrics(poly, selectedLocation.exclusionPolygons || [], selectedLocation.lat, selectedLocation.zoom || 20.2);
+    const newMetrics = recalculateRoofMetrics(
+      poly,
+      selectedLocation.exclusionPolygons || [],
+      selectedLocation.lat,
+      selectedLocation.zoom || 20.2,
+      panelCount,
+      selectedLocation.solarIrradiance
+    );
     setSelectedLocation((prev) => ({
       ...prev,
       roofPolygon: poly,
-      totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-      estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
-      obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+      totalRoofAreaSqFt: newMetrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: newMetrics.usableRoofAreaSqFt,
+      obstructionAreaSqFt: newMetrics.obstructionAreaSqFt,
+      metrics: newMetrics,
       buildingConfidence: 'USER-CONFIRMED ROOF',
     }));
   };
@@ -254,13 +282,21 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       { x: 44, y: 56 },
     ];
     const updatedEx = [...currentEx, newEx];
-    const metrics = recalculateRoofMetrics(selectedLocation.roofPolygon, updatedEx, selectedLocation.lat, selectedLocation.zoom || 20.2);
+    const newMetrics = recalculateRoofMetrics(
+      selectedLocation.roofPolygon,
+      updatedEx,
+      selectedLocation.lat,
+      selectedLocation.zoom || 20.2,
+      panelCount,
+      selectedLocation.solarIrradiance
+    );
     setSelectedLocation((prev) => ({
       ...prev,
       exclusionPolygons: updatedEx,
-      totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-      estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
-      obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+      totalRoofAreaSqFt: newMetrics.totalRoofAreaSqFt,
+      estimatedUsableAreaSqFt: newMetrics.usableRoofAreaSqFt,
+      obstructionAreaSqFt: newMetrics.obstructionAreaSqFt,
+      metrics: newMetrics,
       buildingConfidence: 'USER-CONFIRMED ROOF',
     }));
   };
@@ -290,9 +326,9 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
           email: leadForm.email,
           location: selectedLocation.address,
           propertyType: 'RESIDENTIAL',
-          requiredCapacity: capacityKw,
-          monthlyBill: Math.round(annualSavings / 12),
-          message: `Confirmed Roof Solar Lead: (${selectedLocation.lat}, ${selectedLocation.lng}), Roof Area ${selectedLocation.totalRoofAreaSqFt} sq.ft, Usable Area ${selectedLocation.estimatedUsableAreaSqFt} sq.ft, ${panelCount} modules, ${capacityKw} kW, Est generation ${annualGenKwh} kWh/yr. ${leadForm.notes}`,
+          requiredCapacity: metrics.capacityKw,
+          monthlyBill: Math.round(metrics.annualSavings / 12),
+          message: `Confirmed Roof Solar Lead: (${selectedLocation.lat}, ${selectedLocation.lng}), Roof Area ${metrics.totalRoofAreaSqFt} sq.ft (${metrics.totalRoofAreaM2} m²), Usable Area ${metrics.usableRoofAreaSqFt} sq.ft (${metrics.usableRoofAreaM2} m²), ${metrics.panelCount} modules, ${metrics.capacityKw} kW, Est generation ${metrics.annualGenKwh} kWh/yr. ${leadForm.notes}`,
           source: 'Discover Your Solar Experience',
         }),
       });
@@ -305,11 +341,11 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         address: selectedLocation.address,
         city: selectedLocation.city,
         state: selectedLocation.state,
-        proposedCapacityKw: capacityKw,
-        monthlyBillAmount: Math.round(annualSavings / 12),
-        roofAreaSqFt: selectedLocation.estimatedUsableAreaSqFt,
+        proposedCapacityKw: metrics.capacityKw,
+        monthlyBillAmount: Math.round(metrics.annualSavings / 12),
+        roofAreaSqFt: metrics.usableRoofAreaSqFt,
         source: 'Discover Your Solar Experience',
-        notes: `Qualified Confirmed-Roof Lead: Coordinates: ${selectedLocation.lat}, ${selectedLocation.lng}. Roof Area: ${selectedLocation.totalRoofAreaSqFt} sq.ft, Usable: ${selectedLocation.estimatedUsableAreaSqFt} sq.ft. Configured: ${panelCount} Modules (${capacityKw} kWp), Est. Generation: ${annualGenKwh} kWh/yr, Est. Savings: ₹${annualSavings.toLocaleString('en-IN')}.`,
+        notes: `Qualified Confirmed-Roof Lead: Coordinates: ${selectedLocation.lat}, ${selectedLocation.lng}. Total Roof: ${metrics.totalRoofAreaSqFt} sq.ft (${metrics.totalRoofAreaM2} m²), Usable: ${metrics.usableRoofAreaSqFt} sq.ft (${metrics.usableRoofAreaM2} m²). Configured: ${metrics.panelCount} Modules (${metrics.capacityKw} kWp), Est. Generation: ${metrics.annualGenKwh} kWh/yr, Est. Savings: ₹${metrics.annualSavings.toLocaleString('en-IN')}.`,
         priority: 'HIGH',
       });
 
@@ -489,14 +525,15 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               <h2 className="text-2xl font-black text-white">ROOF DETECTED</h2>
               <p className="text-xs text-slate-400 font-mono line-clamp-2">{selectedLocation.address}</p>
               
+              {/* CANONICAL METRICS DISPLAY */}
               <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1">
                 <div className="flex justify-between">
                   <span className="text-slate-400">TOTAL ROOF AREA:</span>
-                  <span className="text-amber-400 font-bold">{selectedLocation.totalRoofAreaSqFt} sq.ft</span>
+                  <span className="text-amber-400 font-bold">{metrics.totalRoofAreaSqFt} sq.ft ({metrics.totalRoofAreaM2} m²)</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">USABLE AREA (0.5m Setback):</span>
-                  <span className="text-emerald-400 font-bold">{selectedLocation.estimatedUsableAreaSqFt} sq.ft</span>
+                  <span className="text-slate-400">USABLE AREA (Setback):</span>
+                  <span className="text-emerald-400 font-bold">{metrics.usableRoofAreaSqFt} sq.ft ({metrics.usableRoofAreaM2} m²)</span>
                 </div>
               </div>
 
@@ -541,14 +578,15 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 • Telemetry updates live while dragging
               </p>
 
+              {/* CANONICAL METRICS DISPLAY */}
               <div className="bg-slate-900/90 p-3 rounded-xl border border-slate-800 text-xs font-mono space-y-1">
                 <div className="flex justify-between">
                   <span className="text-slate-400">TOTAL ROOF AREA:</span>
-                  <span className="text-amber-400 font-bold text-sm">{selectedLocation.totalRoofAreaSqFt} sq.ft</span>
+                  <span className="text-amber-400 font-bold text-sm">{metrics.totalRoofAreaSqFt} sq.ft ({metrics.totalRoofAreaM2} m²)</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-400">USABLE AREA (Setback):</span>
-                  <span className="text-emerald-400 font-bold text-sm">{selectedLocation.estimatedUsableAreaSqFt} sq.ft</span>
+                  <span className="text-emerald-400 font-bold text-sm">{metrics.usableRoofAreaSqFt} sq.ft ({metrics.usableRoofAreaM2} m²)</span>
                 </div>
               </div>
 
@@ -587,9 +625,9 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               />
             </div>
             <div className="grid grid-cols-3 gap-2 text-[10px] font-mono text-slate-300 pt-1">
-              <div>Confirmed Area: {selectedLocation.totalRoofAreaSqFt} sq.ft</div>
-              <div className="text-rose-300">Excluded: {selectedLocation.obstructionAreaSqFt} sq.ft</div>
-              <div className="text-amber-400 font-bold">Usable: {selectedLocation.estimatedUsableAreaSqFt} sq.ft</div>
+              <div>Confirmed Area: {metrics.totalRoofAreaSqFt} sq.ft</div>
+              <div className="text-rose-300">Excluded: {metrics.obstructionAreaSqFt} sq.ft</div>
+              <div className="text-amber-400 font-bold">Usable: {metrics.usableRoofAreaSqFt} sq.ft</div>
             </div>
           </div>
         )}
@@ -607,35 +645,35 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                   <h3 className="text-base font-black text-white">SOLAR TELEMETRY</h3>
                 </div>
                 <div className="text-right">
-                  <span className="text-xl font-black text-amber-400">{capacityKw} kW</span>
+                  <span className="text-xl font-black text-amber-400">{metrics.capacityKw} kW</span>
                   <span className="text-[10px] text-slate-400 font-mono block">CAPACITY</span>
                 </div>
               </div>
 
-              {/* Real calculated roof metrics */}
+              {/* CANONICAL METRICS INSTRUMENT GRID */}
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400 block text-[9px]">TOTAL ROOF AREA</span>
-                  <span className="text-sm font-bold text-slate-200">{selectedLocation.totalRoofAreaSqFt} sq.ft</span>
+                  <span className="text-sm font-bold text-slate-200">{metrics.totalRoofAreaSqFt} sq.ft</span>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400 block text-[9px]">USABLE ROOF AREA</span>
-                  <span className="text-sm font-bold text-amber-400">{selectedLocation.estimatedUsableAreaSqFt} sq.ft</span>
+                  <span className="text-sm font-bold text-amber-400">{metrics.usableRoofAreaSqFt} sq.ft</span>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400 block text-[9px]">PANEL COUNT</span>
-                  <span className="text-sm font-bold text-white">{panelCount} Modules</span>
+                  <span className="text-sm font-bold text-white">{metrics.panelCount} Modules</span>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
                   <span className="text-slate-400 block text-[9px]">EST. ANNUAL GEN.</span>
                   <span className="text-sm font-bold text-amber-400">
-                    {annualGenKwh.toLocaleString('en-IN')} kWh
+                    {metrics.annualGenKwh.toLocaleString('en-IN')} kWh
                   </span>
                 </div>
                 <div className="bg-slate-900/80 p-2 rounded-xl border border-slate-800 col-span-2">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 text-[9px]">EST. ANNUAL SAVINGS</span>
-                    <span className="text-sm font-bold text-emerald-400">₹{annualSavings.toLocaleString('en-IN')}</span>
+                    <span className="text-sm font-bold text-emerald-400">₹{metrics.annualSavings.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>
@@ -762,26 +800,26 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1">
                 <Zap className="w-5 h-5 text-amber-400 mx-auto" />
-                <span className="text-2xl font-black text-white block">{capacityKw} kW</span>
+                <span className="text-2xl font-black text-white block">{metrics.capacityKw} kW</span>
                 <span className="text-[11px] text-slate-400 font-mono block">SYSTEM CAPACITY</span>
               </div>
               <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1">
                 <Sun className="w-5 h-5 text-amber-400 mx-auto" />
                 <span className="text-2xl font-black text-white block">
-                  ~{annualGenKwh.toLocaleString('en-IN')}
+                  ~{metrics.annualGenKwh.toLocaleString('en-IN')}
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono block">kWh / YEAR (EST.)</span>
               </div>
               <div className="bg-slate-900/80 p-4 rounded-2xl border border-amber-500/30 bg-amber-500/5 space-y-1">
                 <IndianRupee className="w-5 h-5 text-amber-400 mx-auto" />
                 <span className="text-2xl font-black text-amber-400 block">
-                  ₹{annualSavings.toLocaleString('en-IN')}
+                  ₹{metrics.annualSavings.toLocaleString('en-IN')}
                 </span>
                 <span className="text-[11px] text-slate-400 font-mono block">EST. ANNUAL SAVINGS</span>
               </div>
               <div className="bg-slate-900/80 p-4 rounded-2xl border border-slate-800 space-y-1">
                 <TreePine className="w-5 h-5 text-emerald-400 mx-auto" />
-                <span className="text-2xl font-black text-emerald-400 block">{co2Offset} t</span>
+                <span className="text-2xl font-black text-emerald-400 block">{metrics.co2Offset} t</span>
                 <span className="text-[11px] text-slate-400 font-mono block">EST. CO₂ OFFSET</span>
               </div>
             </div>
@@ -814,8 +852,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                   </span>
                   <h2 className="text-2xl sm:text-3xl font-black text-white">GET YOUR CUSTOM SOLAR PROPOSAL</h2>
                   <p className="text-xs text-slate-400 font-mono">
-                    System: {panelCount} Panels ({capacityKw} kW) • Est. Savings: ₹
-                    {annualSavings.toLocaleString('en-IN')}/yr
+                    System: {metrics.panelCount} Panels ({metrics.capacityKw} kW) • Est. Savings: ₹
+                    {metrics.annualSavings.toLocaleString('en-IN')}/yr
                   </p>
                 </div>
 
@@ -893,15 +931,15 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-left text-xs space-y-2 font-mono text-slate-300">
                   <div className="flex justify-between">
                     <span>System Capacity:</span>
-                    <span className="text-amber-400 font-bold">{capacityKw} kW ({panelCount} Modules)</span>
+                    <span className="text-amber-400 font-bold">{metrics.capacityKw} kW ({metrics.panelCount} Modules)</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Est. Annual Generation:</span>
-                    <span className="text-white font-bold">{annualGenKwh.toLocaleString('en-IN')} kWh</span>
+                    <span className="text-white font-bold">{metrics.annualGenKwh.toLocaleString('en-IN')} kWh</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Est. Annual Savings:</span>
-                    <span className="text-emerald-400 font-bold">₹{annualSavings.toLocaleString('en-IN')}</span>
+                    <span className="text-emerald-400 font-bold">₹{metrics.annualSavings.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 

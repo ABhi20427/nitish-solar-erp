@@ -7,6 +7,24 @@ export interface Point2D {
 
 export type BuildingConfidenceType = 'ESTIMATED ROOF' | 'USER-CONFIRMED ROOF' | 'CUSTOM ROOF' | 'PROPERTY DETECTED';
 
+/**
+ * CANONICAL METRICS OBJECT (SINGLE SOURCE OF TRUTH)
+ * Invariant: usableRoofAreaM2 <= totalRoofAreaM2 AND usableRoofAreaSqFt <= totalRoofAreaSqFt
+ */
+export interface CanonicalRoofMetrics {
+  totalRoofAreaM2: number;
+  totalRoofAreaSqFt: number;
+  usableRoofAreaM2: number;
+  usableRoofAreaSqFt: number;
+  obstructionAreaM2: number;
+  obstructionAreaSqFt: number;
+  panelCount: number;
+  capacityKw: number;
+  annualGenKwh: number;
+  annualSavings: number;
+  co2Offset: number;
+}
+
 export interface SatelliteLocation {
   address: string;
   city: string;
@@ -23,6 +41,7 @@ export interface SatelliteLocation {
   totalRoofAreaSqFt: number;
   estimatedUsableAreaSqFt: number;
   obstructionAreaSqFt: number;
+  metrics?: CanonicalRoofMetrics;
   buildingConfidence?: BuildingConfidenceType;
   isUserConfirmed?: boolean;
 }
@@ -60,5 +79,3 @@ export interface SolarCalculationResult {
   totalRoofAreaSqFt: number;
   usableRoofAreaSqFt: number;
 }
-
-

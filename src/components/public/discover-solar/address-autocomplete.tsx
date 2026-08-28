@@ -128,8 +128,9 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = rawPresets.map((p
   return {
     ...p,
     totalRoofAreaSqFt: metrics.totalRoofAreaSqFt,
-    estimatedUsableAreaSqFt: metrics.estimatedUsableAreaSqFt,
+    estimatedUsableAreaSqFt: metrics.usableRoofAreaSqFt,
     obstructionAreaSqFt: metrics.obstructionAreaSqFt,
+    metrics,
   };
 });
 
@@ -219,9 +220,10 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         exclusionPolygons: geo.exclusionPolygons,
         roofOrientationDeg: geo.roofOrientationDeg,
         solarIrradiance: 4.85,
-        totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
-        estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
-        obstructionAreaSqFt: geo.obstructionAreaSqFt,
+        totalRoofAreaSqFt: geo.metrics.totalRoofAreaSqFt,
+        estimatedUsableAreaSqFt: geo.metrics.usableRoofAreaSqFt,
+        obstructionAreaSqFt: geo.metrics.obstructionAreaSqFt,
+        metrics: geo.metrics,
         buildingConfidence: 'ESTIMATED ROOF',
       };
       onSelectLocation(normalizedLoc);
@@ -261,9 +263,10 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
             exclusionPolygons: geo.exclusionPolygons,
             roofOrientationDeg: geo.roofOrientationDeg,
             solarIrradiance: 4.85,
-            totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
-            estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
-            obstructionAreaSqFt: geo.obstructionAreaSqFt,
+            totalRoofAreaSqFt: geo.metrics.totalRoofAreaSqFt,
+            estimatedUsableAreaSqFt: geo.metrics.usableRoofAreaSqFt,
+            obstructionAreaSqFt: geo.metrics.obstructionAreaSqFt,
+            metrics: geo.metrics,
             buildingConfidence: 'ESTIMATED ROOF',
           };
           onSelectLocation(resolvedLoc);
@@ -321,9 +324,10 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
             exclusionPolygons: geo.exclusionPolygons,
             roofOrientationDeg: geo.roofOrientationDeg,
             solarIrradiance: 4.8,
-            totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
-            estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
-            obstructionAreaSqFt: geo.obstructionAreaSqFt,
+            totalRoofAreaSqFt: geo.metrics.totalRoofAreaSqFt,
+            estimatedUsableAreaSqFt: geo.metrics.usableRoofAreaSqFt,
+            obstructionAreaSqFt: geo.metrics.obstructionAreaSqFt,
+            metrics: geo.metrics,
             buildingConfidence: 'ESTIMATED ROOF',
           };
           onSelectLocation(addressLoc);
@@ -384,9 +388,10 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
           exclusionPolygons: geo.exclusionPolygons,
           roofOrientationDeg: geo.roofOrientationDeg,
           solarIrradiance: 4.85,
-          totalRoofAreaSqFt: geo.totalRoofAreaSqFt,
-          estimatedUsableAreaSqFt: geo.estimatedUsableAreaSqFt,
-          obstructionAreaSqFt: geo.obstructionAreaSqFt,
+          totalRoofAreaSqFt: geo.metrics.totalRoofAreaSqFt,
+          estimatedUsableAreaSqFt: geo.metrics.usableRoofAreaSqFt,
+          obstructionAreaSqFt: geo.metrics.obstructionAreaSqFt,
+          metrics: geo.metrics,
           buildingConfidence: 'ESTIMATED ROOF',
         };
 
