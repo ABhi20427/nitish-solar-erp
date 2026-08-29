@@ -165,3 +165,103 @@ ${data.message || 'No additional message provided.'}
     }
   }
 }
+
+export async function sendCustomerProposalEmail(
+  data: EmailData,
+  pdfBuffer: Buffer,
+  quotNo: string
+) {
+  const primaryHost = process.env.ZOHO_SMTP_HOST || 'smtp.zoho.in';
+  const primaryPort = Number(process.env.ZOHO_SMTP_PORT) || 465;
+  const user = process.env.ZOHO_SMTP_USER || 'nitishsolar@zohomail.in';
+  const pass = process.env.ZOHO_SMTP_PASS || process.env.ZOHO_SMTP_PASSWORD || 'VKVV81LVARf8';
+
+  if (!data.email || !data.email.trim()) {
+    throw new Error('Customer email address is missing.');
+  }
+
+  const customerEmail = data.email.trim();
+  const filename = `Solar_Proposal_${quotNo}.pdf`;
+  const subject = `☀️ Your Official Solar EPC Proposal & Quotation (${quotNo}) — Nitish Solar`;
+
+  console.log(`[CUSTOMER MAILER] Sending proposal PDF to customer: ${customerEmail}`);
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #334155; background-color: #f8fafc; margin: 0; padding: 20px; }
+    .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
+    .header { background: linear-gradient(135deg, #0B3E73 0%, #165A9E 100%); color: #ffffff; padding: 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 1px; }
+    .header p { margin: 4px 0 0; font-size: 12px; color: #FFC78A; }
+    .content { padding: 24px; }
+    .highlight-box { background: #f0f7ff; border-left: 4px solid #F39A4A; padding: 14px; border-radius: 6px; margin: 18px 0; font-size: 13.5px; }
+    .footer { text-align: center; padding: 14px; font-size: 11px; color: #64748b; background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>NITISH SOLAR EPC</h1>
+      <p>Your Trusted Partner in Renewable Energy Solutions</p>
+    </div>
+    <div class="content">
+      <p style="font-size: 16px; font-weight: 700; color: #0B3E73;">Dear ${data.name || 'Valued Customer'},</p>
+      <p>Thank you for requesting a customized Solar EPC Proposal from <strong>Nitish Solar</strong>.</p>
+      <p>We are pleased to attach your official Solar Proposal & Quotation PDF (Ref: <strong>${quotNo}</strong>) tailored specifically for your site requirements.</p>
+
+      <div class="highlight-box">
+        <strong style="color: #0B3E73;">What's inside your PDF proposal:</strong>
+        <ul style="margin: 8px 0 0; padding-left: 20px; color: #475569;">
+          <li>Recommended Solar PV System Capacity & Specification</li>
+          <li>Itemized Equipment & Turnkey EPC Cost Breakdown</li>
+          <li>PM Surya Ghar Government Subsidy & Net Out-of-Pocket Investment</li>
+          <li>Estimated Monthly Generation, Bill Savings & Payback Period</li>
+        </ul>
+      </div>
+
+      <p>If you have any questions or would like to schedule an on-site technical inspection, please call us at <strong>+91 7010899473</strong> or email <strong>nitishsolar@zohomail.in</strong>.</p>
+      <br>
+      <p style="margin: 0;">Warm regards,</p>
+      <p style="margin: 2px 0 0; font-weight: 700; color: #0B3E73;">Nitish Solar Team</p>
+      <p style="margin: 0; font-size: 12px; color: #64748b;">Chromepet, Chennai | GSTIN: 33AAYFN9905F1ZS</p>
+    </div>
+    <div class="footer">
+      Automated Proposal Delivery — Nitish Solar Engineering Portal
+    </div>
+  </div>
+</body>
+</html>
+`;
+
+  const mailOptions: nodemailer.SendMailOptions = {
+    from: `"Nitish Solar" <${user}>`,
+    to: customerEmail,
+    subject,
+    html: htmlContent,
+    attachments: [
+      {
+        filename: filename,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
+      }
+    ]
+  };
+
+  // Attempt delivery
+  const transporter = nodemailer.createTransport({
+    host: primaryHost,
+    port: primaryPort,
+    secure: primaryPort === 465,
+    auth: { user, pass },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000
+  });
+
+  const info = await transporter.sendMail(mailOptions);
+  console.log(`[CUSTOMER MAILER SUCCESS] Delivered proposal PDF to ${customerEmail}. Message ID:`, info.messageId);
+  return info;
+}

@@ -31,6 +31,11 @@ export default function DedicatedQuotePage() {
     e.preventDefault();
     if (!form.name || !form.phone) return;
 
+    if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setErrorMessage('Please enter a valid email address to receive your solar proposal PDF.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -60,7 +65,7 @@ export default function DedicatedQuotePage() {
           fullName: form.name,
           companyName: form.company,
           phone: form.phone,
-          email: form.email || `${form.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
+          email: form.email,
           customerType: form.propertyType,
           monthlyBillAmount: Number(form.monthlyBill),
           city: form.location || 'Chennai',
@@ -71,12 +76,12 @@ export default function DedicatedQuotePage() {
           source: 'nitish solar Dedicated Quote Page',
           priority: 'HIGH',
         });
-        setFormSubmitted(true);
+        setFormSubmitted({ quotNo: data.quotNo, pdfBase64: data.pdfBase64, email: form.email, name: form.name });
       } else {
-        setErrorMessage(data.error || "We couldn't send your enquiry. Please try again.");
+        setErrorMessage(data.error || "We couldn't send your proposal. Please verify your email address and try again.");
       }
     } catch (err) {
-      setErrorMessage("We couldn't send your enquiry. Please try again.");
+      setErrorMessage("Could not connect to the proposal server. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
