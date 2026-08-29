@@ -29,8 +29,6 @@ export function PublicFooter() {
             <ul className="space-y-2.5 text-sm">
               <li><Link href="/about" className="hover:text-amber-400 transition-colors">About nitish solar</Link></li>
               <li><Link href="/solutions" className="hover:text-amber-400 transition-colors">Solar Solutions</Link></li>
-              <li><Link href="/products" className="hover:text-amber-400 transition-colors">Products Catalog</Link></li>
-              <li><Link href="/projects" className="hover:text-amber-400 transition-colors">Project Portfolio</Link></li>
               <li><Link href="/contact" className="hover:text-amber-400 transition-colors">Contact Us</Link></li>
             </ul>
           </div>

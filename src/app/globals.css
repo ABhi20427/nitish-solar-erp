@@ -67,23 +67,22 @@ body {
   }
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
+/* Native document scrollbar hidden on large screens — replaced by the
+   custom ScrollProgressRail (see components/public/scroll-progress-rail.tsx),
+   a measurement-rail-style indicator on the right edge instead of a plain
+   scrollbar thumb. Only the document/html scroller is affected; the ERP
+   dashboard scrolls its own internal <main overflow-y-auto> container and
+   keeps its native scrollbar untouched. Mobile keeps its default thin
+   overlay scrollbar. */
+@media (min-width: 1024px) {
+  html {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
 
-::-webkit-scrollbar-track {
-  background: #0B0F17;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #1E293B;
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  html::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Animation utilities */
@@ -186,6 +185,31 @@ body {
   will-change: left, opacity;
 }
 
+/* Hero scroll indicator — a small current of light traveling down a thin
+   wire, echoing the same "energy flowing through the system" motif used in
+   the closing value strip, in place of a generic bouncing chevron. */
+@keyframes scrollCurrentFlow {
+  0% {
+    top: -10%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.animate-scroll-current {
+  animation: scrollCurrentFlow 2s ease-in-out infinite;
+  will-change: top, opacity;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-animate-1,
   .hero-animate-2,
@@ -193,7 +217,8 @@ body {
   .hero-animate-4,
   .animate-panel-stack,
   .animate-panel-layer,
-  .animate-value-flow {
+  .animate-value-flow,
+  .animate-scroll-current {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

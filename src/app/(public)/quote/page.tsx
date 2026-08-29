@@ -1,12 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { PublicNavbar } from '@/components/public/navbar';
 import { PublicFooter } from '@/components/public/footer';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { useSolarStore } from '@/lib/store-context';
-import { CheckCircle2, Send, Zap, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Send, Zap } from 'lucide-react';
 
 export default function DedicatedQuotePage() {
   const { addLead } = useSolarStore();
@@ -63,8 +63,8 @@ export default function DedicatedQuotePage() {
           email: form.email || `${form.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
           customerType: form.propertyType,
           monthlyBillAmount: Number(form.monthlyBill),
-          city: form.location || 'Pune',
-          state: 'Maharashtra',
+          city: form.location || 'Chennai',
+          state: 'Tamil Nadu',
           address: 'Web Quote Form Inquiry',
           proposedCapacityKw: Number(form.requiredCapacity),
           notes: form.message || `Dedicated quote request submitted for a ${form.requiredCapacity} kW system`,
@@ -84,178 +84,220 @@ export default function DedicatedQuotePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0B0F17] text-slate-100 font-sans antialiased">
-      <PublicNavbar />
+      <PublicNavbar transparentOverlay />
 
-      <section className="bg-[#070A10] text-white py-16 border-b border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3">
-          <span className="text-xs font-mono font-bold uppercase tracking-widest text-amber-400">
-            Engineered Photovoltaic Quotation
-          </span>
-          <h1 className="text-4xl font-black tracking-tight text-white">Request a Quote from nitish solar</h1>
-          <p className="text-slate-300 max-w-2xl mx-auto text-sm font-light">
-            Receive a detailed solar sizing, government subsidy breakdown, payback horizon estimate, and free site survey.
-          </p>
+      {/* HERO — same cinematic full-bleed treatment as the rest of the site,
+          compact height since this is a utility/form page. */}
+      <section className="relative w-full min-h-[46vh] flex items-end overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/sunset.png"
+            alt="nitish solar engineered photovoltaic quotation"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/50 to-black/20" />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0B0F17] via-[#0B0F17]/40 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full pb-14 pt-32">
+          <div className="max-w-2xl space-y-5">
+            <div className="flex items-center gap-2.5 text-white/70 text-[11px] font-semibold uppercase tracking-[0.2em]">
+              <span className="w-4 h-px bg-amber-400" />
+              <span>Engineered Photovoltaic Quotation</span>
+            </div>
+            <h1 className="font-display text-4xl sm:text-5xl font-semibold tracking-tight text-white leading-[1.1]">
+              Request a Quote from <span className="text-amber-400">nitish solar.</span>
+            </h1>
+            <p className="text-base text-white/75 font-light leading-relaxed max-w-xl">
+              Receive a detailed solar sizing, government subsidy breakdown, payback horizon estimate, and free site survey.
+            </p>
+          </div>
         </div>
       </section>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <Card className="shadow-2xl border-slate-800/80 bg-[#131B2E] text-slate-100">
-          <CardHeader
-            title={<span className="text-white text-xl font-black flex items-center gap-2"><Zap className="w-5 h-5 text-amber-400" /> Solar Lead & Technical Inquiry Form</span>}
-            subtitle="Connects directly to nitish solar engineering pipeline."
+      {/* Main — same engineering-blueprint atmosphere used across the site. */}
+      <main className="relative py-20 overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div
+            className="absolute inset-0 opacity-[0.05]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)',
+              backgroundSize: '56px 56px',
+            }}
           />
-          <CardBody className="p-6 sm:p-8">
+          <div className="absolute right-[10%] top-1/3 -translate-y-1/2 w-[560px] h-[560px] rounded-full bg-amber-500/[0.05] blur-[150px]" />
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="bg-[#131B2E] rounded-3xl border border-slate-800/70 shadow-xl shadow-black/30 p-8 sm:p-10">
             {formSubmitted ? (
-              <div className="text-center py-10 space-y-5">
+              <div className="text-center py-10 space-y-4">
                 <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
-                  <CheckCircle2 className="w-10 h-10" />
+                  <CheckCircle2 className="w-9 h-9" />
                 </div>
-                <h3 className="text-2xl font-bold text-white">Enquiry Received</h3>
-                <p className="text-xs text-slate-300 max-w-md mx-auto font-light">
+                <h3 className="font-display text-2xl font-semibold text-white">Enquiry Received</h3>
+                <p className="text-sm text-slate-400 max-w-sm mx-auto font-light leading-relaxed">
                   Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.
                 </p>
                 <div className="pt-2 flex justify-center">
-                  <Button variant="accent" className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold" onClick={() => setFormSubmitted(false)}>
+                  <Button
+                    variant="accent"
+                    className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold"
+                    onClick={() => setFormSubmitted(false)}
+                  >
                     Submit Another Inquiry
                   </Button>
                 </div>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-                {/* Honeypot Field */}
-                <input
-                  type="text"
-                  name="website_hp"
-                  value={form.website_hp}
-                  onChange={(e) => setForm({ ...form, website_hp: e.target.value })}
-                  style={{ display: 'none' }}
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
-
-                {errorMessage && (
-                  <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl">
-                    {errorMessage}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Full Name *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Anish Patel"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Company / Firm Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Patel Logistics"
-                      value={form.company}
-                      onChange={(e) => setForm({ ...form, company: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
-                    />
-                  </div>
+              <>
+                <div className="mb-7 space-y-1">
+                  <h3 className="font-display text-xl sm:text-2xl font-semibold text-white tracking-tight flex items-center gap-2.5">
+                    <Zap className="w-5 h-5 text-amber-400" /> Solar Lead & Technical Inquiry Form
+                  </h3>
+                  <p className="text-xs text-slate-400 font-light">Connects directly to the nitish solar engineering pipeline.</p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Mobile Phone Number *</label>
-                    <input
-                      type="tel"
-                      required
-                      placeholder="+91 98765 43210"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Email Address</label>
-                    <input
-                      type="email"
-                      placeholder="name@domain.com"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
-                    />
-                  </div>
-                </div>
+                <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+                  {/* Honeypot Field */}
+                  <input
+                    type="text"
+                    name="website_hp"
+                    value={form.website_hp}
+                    onChange={(e) => setForm({ ...form, website_hp: e.target.value })}
+                    style={{ display: 'none' }}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-300 mb-1">City / Location</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Pune, Jaipur"
-                      value={form.location}
-                      onChange={(e) => setForm({ ...form, location: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
-                    />
+                  {errorMessage && (
+                    <div className="p-3.5 bg-red-500/10 border border-red-500/30 text-red-300 text-xs rounded-xl">
+                      {errorMessage}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">Full Name *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Anish Patel"
+                        value={form.name}
+                        onChange={(e) => setForm({ ...form, name: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">Company / Firm Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Patel Logistics"
+                        value={form.company}
+                        onChange={(e) => setForm({ ...form, company: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Property Type</label>
-                    <select
-                      value={form.propertyType}
-                      onChange={(e) => setForm({ ...form, propertyType: e.target.value as any })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white outline-none focus:border-amber-400 font-medium"
-                    >
-                      <option value="RESIDENTIAL" className="bg-[#0B0F17]">Residential</option>
-                      <option value="COMMERCIAL" className="bg-[#0B0F17]">Commercial</option>
-                      <option value="INDUSTRIAL" className="bg-[#0B0F17]">Industrial</option>
-                    </select>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">Mobile Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="+91 98765 43210"
+                        value={form.phone}
+                        onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="name@domain.com"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
                   </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">City / Location</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Chennai, Pune"
+                        value={form.location}
+                        onChange={(e) => setForm({ ...form, location: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">Property Type</label>
+                      <select
+                        value={form.propertyType}
+                        onChange={(e) => setForm({ ...form, propertyType: e.target.value as any })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white outline-none focus:border-amber-400 transition-colors font-medium"
+                      >
+                        <option value="RESIDENTIAL" className="bg-[#0B0F17]">Residential</option>
+                        <option value="COMMERCIAL" className="bg-[#0B0F17]">Commercial</option>
+                        <option value="INDUSTRIAL" className="bg-[#0B0F17]">Industrial</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-slate-300 mb-1.5">Required Capacity (kW)</label>
+                      <input
+                        type="number"
+                        value={form.requiredCapacity}
+                        onChange={(e) => setForm({ ...form, requiredCapacity: Number(e.target.value) })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-amber-400 font-semibold tabular-nums outline-none focus:border-amber-400 transition-colors"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="block font-semibold text-slate-300 mb-1">Required Capacity (kW)</label>
+                    <label className="block font-semibold text-slate-300 mb-1.5">Monthly Bill (₹)</label>
                     <input
                       type="number"
-                      value={form.requiredCapacity}
-                      onChange={(e) => setForm({ ...form, requiredCapacity: Number(e.target.value) })}
-                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white outline-none font-bold font-mono text-amber-400"
+                      value={form.monthlyBill}
+                      onChange={(e) => setForm({ ...form, monthlyBill: Number(e.target.value) })}
+                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white outline-none focus:border-amber-400 transition-colors"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Monthly Bill (₹)</label>
-                  <input
-                    type="number"
-                    value={form.monthlyBill}
-                    onChange={(e) => setForm({ ...form, monthlyBill: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white outline-none focus:border-amber-400"
-                  />
-                </div>
+                  <div>
+                    <label className="block font-semibold text-slate-300 mb-1.5">Additional Project Details</label>
+                    <textarea
+                      rows={4}
+                      placeholder="Mention roof type, sanctioned load, battery storage, or specific DISCOM utility connection..."
+                      value={form.message}
+                      onChange={(e) => setForm({ ...form, message: e.target.value })}
+                      className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-lg text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400 transition-colors"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Additional Project Details</label>
-                  <textarea
-                    rows={4}
-                    placeholder="Mention roof type, sanctioned load, battery storage, or specific DISCOM utility connection..."
-                    value={form.message}
-                    onChange={(e) => setForm({ ...form, message: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-[#0B0F17] border border-slate-800 rounded-xl text-sm text-white placeholder:text-slate-500 outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <Button
-                  variant="accent"
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 border-0 disabled:opacity-50"
-                  size="lg"
-                  icon={<Send className="w-4 h-4" />}
-                >
-                  {isSubmitting ? 'Sending Enquiry...' : 'Submit Quote Request to nitish solar'}
-                </Button>
-              </form>
+                  <Button
+                    variant="accent"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold py-3 border-0 disabled:opacity-50 hover:scale-[1.01] transition-all"
+                    size="lg"
+                    icon={<Send className="w-4 h-4" />}
+                  >
+                    {isSubmitting ? 'Sending Enquiry...' : 'Submit Quote Request to nitish solar'}
+                  </Button>
+                </form>
+              </>
             )}
-          </CardBody>
-        </Card>
+          </div>
+        </div>
       </main>
 
       <PublicFooter />

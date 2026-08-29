@@ -19,7 +19,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Send,
-  ChevronDown,
   ArrowUpRight,
   Shield,
   Activity,
@@ -299,9 +298,9 @@ export default function HomePage() {
           email: leadForm.email || `${leadForm.name.toLowerCase().replace(/\s+/g, '')}@gmail.com`,
           customerType: leadForm.propertyType,
           monthlyBillAmount: Number(quickBill),
-          city: leadForm.location || 'Pune',
-          state: 'Maharashtra',
-          address: 'Web Inquiry Location',
+          city: leadForm.location || 'Chennai',
+          state: 'Tamil Nadu',
+          address: 'Chromepet, Chennai',
           proposedCapacityKw: Number(leadForm.requiredCapacity) || quickCalc.recommendedCapacityKw,
           notes: leadForm.message || `Lead request submitted to nitish solar website homepage.`,
           source: 'nitish solar Homepage Form',
@@ -458,10 +457,14 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Minimal Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-white/60 text-[11px] font-medium hero-animate-4">
+        {/* Scroll Indicator — a small current of light traveling down a thin
+            wire instead of a generic bouncing chevron, echoing the "energy
+            flowing through the system" motif used elsewhere on the page. */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-3 text-white/60 text-[11px] font-medium hero-animate-4">
           <span className="uppercase tracking-[0.2em]">Scroll to explore</span>
-          <ChevronDown className="w-4 h-4 animate-bounce" />
+          <div className="relative h-9 w-px bg-white/15 overflow-hidden rounded-full">
+            <span className="animate-scroll-current absolute left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_6px_2px_rgba(245,158,11,0.5)]" />
+          </div>
         </div>
       </section>
 

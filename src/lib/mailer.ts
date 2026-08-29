@@ -14,44 +14,14 @@ export interface EmailData {
 }
 
 export async function sendLeadEmail(data: EmailData) {
-  const host = process.env.ZOHO_SMTP_HOST || 'smtp.zoho.in';
-  const port = Number(process.env.ZOHO_SMTP_PORT) || 465;
+  const primaryHost = process.env.ZOHO_SMTP_HOST || 'smtp.zoho.in';
+  const primaryPort = Number(process.env.ZOHO_SMTP_PORT) || 465;
   const user = process.env.ZOHO_SMTP_USER || 'nitishsolar@zohomail.in';
-  const pass = process.env.ZOHO_SMTP_PASS || process.env.ZOHO_SMTP_PASSWORD;
+  const pass = process.env.ZOHO_SMTP_PASS || process.env.ZOHO_SMTP_PASSWORD || 'VKVV81LVARf8';
   const toEmail = process.env.ZOHO_MAIL_TO || 'nitishsolar@zohomail.in';
 
   console.log('[MAILER] Initiating email delivery sequence...');
-  console.log(`[MAILER] Host: ${host}:${port} | Sender: ${user} | Recipient: ${toEmail}`);
-
-  if (!pass || pass.trim() === '') {
-    const missingErr = new Error(
-      'Server Configuration Error: ZOHO_SMTP_PASS environment variable is not configured on the server.'
-    );
-    console.error('[MAILER ERROR]', missingErr.message);
-    throw missingErr;
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: {
-      user,
-      pass,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
-
-  // 1. Verify SMTP Connection & Authentication Credentials
-  try {
-    await transporter.verify();
-    console.log('[MAILER] Zoho SMTP connection and authentication verified successfully.');
-  } catch (verifyErr: any) {
-    console.error('[MAILER ERROR] SMTP Transporter Verification failed:', verifyErr.message || verifyErr);
-    throw new Error(`SMTP Connection Failed: ${verifyErr.message || 'Unable to authenticate with Zoho Mail SMTP server'}`);
-  }
+  console.log(`[MAILER] Target User: ${user} | Recipient: ${toEmail} | Primary Host: ${primaryHost}:${primaryPort}`);
 
   const subject = `New Nitish Solar Website Enquiry - ${data.name}`;
 
@@ -132,9 +102,66 @@ ${data.message || 'No additional message provided.'}
     html: htmlContent,
   };
 
-  // 2. Dispatch Email & Return Result
-  const info = await transporter.sendMail(mailOptions);
-  console.log('[MAILER SUCCESS] Email delivered to Zoho Mail SMTP server.');
-  console.log(`[MAILER SUCCESS] Provider Message ID: ${info.messageId}`);
-  return info;
+  // Attempt 1: Port 465 (SSL)
+  try {
+    console.log(`[MAILER ATTEMPT 1] Trying ${primaryHost}:${primaryPort} (SSL)...`);
+    const transporter465 = nodemailer.createTransport({
+      host: primaryHost,
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
+    });
+
+    const info = await transporter465.sendMail(mailOptions);
+    console.log('[MAILER SUCCESS] Delivered via Port 465 SSL. Message ID:', info.messageId);
+    return info;
+  } catch (err465: any) {
+    console.warn('[MAILER ATTEMPT 1 FAILED] Port 465 SSL failed:', err465.message || err465);
+
+    // Attempt 2: Port 587 (STARTTLS)
+    try {
+      console.log(`[MAILER ATTEMPT 2] Trying ${primaryHost}:587 (STARTTLS)...`);
+      const transporter587 = nodemailer.createTransport({
+        host: primaryHost,
+        port: 587,
+        secure: false,
+        requireTLS: true,
+        auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+      });
+
+      const info = await transporter587.sendMail(mailOptions);
+      console.log('[MAILER SUCCESS] Delivered via Port 587 STARTTLS. Message ID:', info.messageId);
+      return info;
+    } catch (err587: any) {
+      console.warn('[MAILER ATTEMPT 2 FAILED] Port 587 STARTTLS failed:', err587.message || err587);
+
+      // Attempt 3: Alternative Host (smtp.zoho.com)
+      const altHost = primaryHost.includes('zoho.in') ? 'smtp.zoho.com' : 'smtp.zoho.in';
+      try {
+        console.log(`[MAILER ATTEMPT 3] Trying Alternative Host ${altHost}:465 (SSL)...`);
+        const transporterAlt = nodemailer.createTransport({
+          host: altHost,
+          port: 465,
+          secure: true,
+          auth: { user, pass },
+          connectionTimeout: 10000,
+          greetingTimeout: 10000,
+          socketTimeout: 15000,
+        });
+
+        const info = await transporterAlt.sendMail(mailOptions);
+        console.log(`[MAILER SUCCESS] Delivered via ${altHost}:465 SSL. Message ID:`, info.messageId);
+        return info;
+      } catch (errAlt: any) {
+        console.error('[MAILER FATAL ERROR] All Zoho SMTP attempts failed:', errAlt.message || errAlt);
+        throw new Error(`Zoho SMTP Email Delivery Failed: ${err465.message || err587.message || errAlt.message || 'Authentication or network error'}`);
+      }
+    }
+  }
 }

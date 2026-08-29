@@ -23,8 +23,8 @@ export function ProjectModal({ isOpen, onClose, projectToEdit }: ProjectModalPro
     electricalEngineerName: 'Anil Mehta',
     installerLeadName: 'Vikram Singh',
     systemSizeKw: 10,
-    siteAddress: 'MIDC Industrial Estate, Chakan',
-    city: 'Pune',
+    siteAddress: 'Chromepet, Chennai',
+    city: 'Chennai',
     projectValue: 450000,
     status: 'PLANNING' as ProjectStatus,
   });
@@ -39,7 +39,7 @@ export function ProjectModal({ isOpen, onClose, projectToEdit }: ProjectModalPro
         installerLeadName: projectToEdit.installerLeadName || 'Vikram Singh',
         systemSizeKw: projectToEdit.systemSizeKw || 10,
         siteAddress: projectToEdit.siteAddress || '',
-        city: projectToEdit.city || 'Pune',
+        city: projectToEdit.city || 'Chennai',
         projectValue: projectToEdit.projectValue || 450000,
         status: projectToEdit.status,
       });

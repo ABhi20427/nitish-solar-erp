@@ -22,7 +22,7 @@ export function SurveyModal({ isOpen, onClose, surveyToEdit }: SurveyModalProps)
     customerName: leads[0]?.fullName || 'Solar Prospect',
     surveyorName: 'Er. Sandeep Joshi',
     scheduledDate: new Date().toISOString().split('T')[0],
-    siteAddress: 'MIDC Industrial Estate, Pune',
+    siteAddress: 'Chromepet, Chennai',
     propertyType: 'COMMERCIAL',
     roofType: 'Terrace RCC',
     roofAreaSqFt: 1200,

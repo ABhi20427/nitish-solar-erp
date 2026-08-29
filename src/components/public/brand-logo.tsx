@@ -14,16 +14,16 @@ export function BrandLogo({ variant = 'dark', className = '', showTextSuffix = t
       <img
         src="/logo.png"
         alt="nitish"
-        className="h-7 sm:h-8.5 w-auto object-contain shrink-0 mix-blend-screen"
+        className="h-8 sm:h-10 w-auto object-contain shrink-0 mix-blend-screen"
       />
 
       {showTextSuffix && (
         <>
           {/* Thin Vertical Divider Line */}
-          <span className="h-5 sm:h-6 w-[1.5px] bg-white/40 shrink-0" />
+          <span className="h-6 sm:h-7 w-[1.5px] bg-white/40 shrink-0" />
 
           {/* Clean White "Solar" Text */}
-          <span className="text-lg sm:text-xl font-medium tracking-tight text-white font-sans">
+          <span className="text-xl sm:text-2xl font-medium tracking-tight text-white font-sans">
             Solar
           </span>
         </>

@@ -71,7 +71,7 @@ export default function InvoiceDetailPage() {
               <p className="text-xs text-slate-500 font-medium">
                 Nitish Solar Energy Pvt. Ltd. • Turnkey Engineering, Procurement & Construction (EPC)<br />
                 GSTIN: 27AABCN9842F1Z6 • HSN/SAC Code: 995468<br />
-                Plot 45, Solar Tech Park, MIDC Chakan, Pune, Maharashtra 410501
+                nitish solar, Chromepet, Chennai - 600044
               </p>
             </div>
 

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { SatelliteLocation, VisualMode, Point2D } from './types';
-import { computePanelPlacement, computeInnerUsablePolygon, isPointInPolygon } from './roof-packing-algorithm';
+import { computePanelPlacement, computeInnerUsablePolygon, isPointInPolygon, isPolygonEditValid } from './roof-packing-algorithm';
 
 interface SatelliteMapEngineProps {
   location: SatelliteLocation;
@@ -34,6 +34,44 @@ function worldPixelToLatLng(x: number, y: number, zoom: number) {
   const n = Math.PI - (2 * Math.PI * y) / scale;
   const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
   return { lat, lng };
+}
+
+// Returns the leading fraction of a closed polygon's perimeter, walked
+// vertex-by-vertex from the start and interpolated across whichever edge
+// `progress` currently falls on — used to "trace in" the confirmed-roof
+// outline instead of drawing the whole closed shape instantly.
+function getTracedPerimeterPoints(
+  pts: { x: number; y: number }[],
+  progress: number
+): { x: number; y: number }[] {
+  if (progress >= 1 || pts.length < 2) return [...pts, pts[0]];
+
+  const closed = [...pts, pts[0]];
+  const segLens: number[] = [];
+  let total = 0;
+  for (let i = 0; i < closed.length - 1; i++) {
+    const d = Math.hypot(closed[i + 1].x - closed[i].x, closed[i + 1].y - closed[i].y);
+    segLens.push(d);
+    total += d;
+  }
+  if (total === 0) return [closed[0]];
+
+  const targetLen = total * Math.max(0, progress);
+  const result: { x: number; y: number }[] = [closed[0]];
+  let acc = 0;
+  for (let i = 0; i < segLens.length; i++) {
+    if (acc + segLens[i] >= targetLen) {
+      const t = segLens[i] > 0 ? (targetLen - acc) / segLens[i] : 0;
+      result.push({
+        x: closed[i].x + (closed[i + 1].x - closed[i].x) * t,
+        y: closed[i].y + (closed[i + 1].y - closed[i].y) * t,
+      });
+      return result;
+    }
+    acc += segLens[i];
+    result.push(closed[i + 1]);
+  }
+  return result;
 }
 
 export function SatelliteMapEngine({
@@ -76,6 +114,18 @@ export function SatelliteMapEngine({
 
   // Screen Dimensions
   const [screenDim, setScreenDim] = useState({ width: 1920, height: 1080 });
+
+  // Roof-boundary "trace-in" reveal — timestamp of the moment Stage 3 was
+  // entered, so the confirmed-roof outline draws itself around the
+  // perimeter over a beat instead of appearing instantly, fully-formed.
+  const roofRevealStartRef = useRef<number | null>(null);
+  const prevStageForRevealRef = useRef(stage);
+  useEffect(() => {
+    if (stage === 3 && prevStageForRevealRef.current !== 3) {
+      roofRevealStartRef.current = performance.now();
+    }
+    prevStageForRevealRef.current = stage;
+  }, [stage]);
 
   // Sync Location Prop changes to Center Coordinates
   useEffect(() => {
@@ -239,7 +289,14 @@ export function SatelliteMapEngine({
 
       const poly = [...(location.roofPolygon || [])];
       poly[activeVertexIndex.current] = newNormPt;
-      onRoofPolygonChanged(poly);
+
+      // Reject drags that would cross the shape's own edges or collapse it
+      // into a razor-thin sliver — either way the area formula stops
+      // matching what's visually drawn. The vertex simply stops following
+      // the cursor at the boundary instead.
+      if (isPolygonEditValid(poly)) {
+        onRoofPolygonChanged(poly);
+      }
       return;
     }
 
@@ -268,16 +325,20 @@ export function SatelliteMapEngine({
       const i = activeEdgeIndex.current;
       const j = (i + 1) % poly.length;
 
-      poly[i] = {
+      const nextPoly = [...poly];
+      nextPoly[i] = {
         x: Math.max(2, Math.min(98, poly[i].x + deltaX)),
         y: Math.max(2, Math.min(98, poly[i].y + deltaY)),
       };
-      poly[j] = {
+      nextPoly[j] = {
         x: Math.max(2, Math.min(98, poly[j].x + deltaX)),
         y: Math.max(2, Math.min(98, poly[j].y + deltaY)),
       };
 
-      onRoofPolygonChanged(poly);
+      // Same validity guard as single-vertex dragging above.
+      if (isPolygonEditValid(nextPoly)) {
+        onRoofPolygonChanged(nextPoly);
+      }
       return;
     }
 
@@ -481,13 +542,22 @@ export function SatelliteMapEngine({
 
     // Data-Driven Outer Roof & Inner Usable Region Overlay
     if (stage >= 3 && visualMode !== 'SATELLITE') {
+      const ROOF_REVEAL_MS = 850;
+      let roofRevealProgress = 1;
+      if (stage === 3 && roofRevealStartRef.current !== null) {
+        const elapsed = performance.now() - roofRevealStartRef.current;
+        const t = Math.min(1, elapsed / ROOF_REVEAL_MS);
+        roofRevealProgress = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      }
+
       drawRoofAnalysisOverlay(
         ctx,
         location.roofPolygon,
         location.exclusionPolygons || [],
         isScanning,
         scanProgress,
-        stage
+        stage,
+        roofRevealProgress
       );
     }
 
@@ -541,94 +611,145 @@ export function SatelliteMapEngine({
     exclusions: Point2D[][],
     isScanning: boolean,
     scanProgress: number,
-    currentStage: number
+    currentStage: number,
+    revealProgress: number = 1
   ) => {
     if (!poly || poly.length < 3) return;
 
     ctx.save();
     const pts = poly.map(normToCanvas);
 
-    // 1. Draw Outer Roof Polygon Boundary
-    ctx.beginPath();
-    pts.forEach((pt, i) => {
-      if (i === 0) ctx.moveTo(pt.x, pt.y);
-      else ctx.lineTo(pt.x, pt.y);
-    });
-    ctx.closePath();
-
     if (currentStage === 4) {
-      // STAGE 4 ADJUST ROOF: Glowing amber spatial edit line
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 2.5;
-      ctx.setLineDash([8, 4]);
-      ctx.stroke();
-    } else {
-      // CONFIRMED ROOF: Subtle cyan outer roof line
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([]);
-      ctx.stroke();
-    }
-
-    // 2. Draw Inner Usable Roof Region (Setback Inset Region - Emerald Green)
-    const innerPoly = computeInnerUsablePolygon(poly, 0.5, centerLat, geoZoom);
-    if (innerPoly.length >= 3) {
-      const innerPts = innerPoly.map(normToCanvas);
-
+      // STAGE 4 ADJUST ROOF: amber dashed edit line — already actively
+      // being edited, so no reveal delay here.
       ctx.beginPath();
-      innerPts.forEach((pt, i) => {
+      pts.forEach((pt, i) => {
         if (i === 0) ctx.moveTo(pt.x, pt.y);
         else ctx.lineTo(pt.x, pt.y);
       });
       ctx.closePath();
-
-      ctx.strokeStyle = '#10b981'; // Vibrant emerald stroke
+      ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 2;
-      ctx.setLineDash([6, 3]);
+      ctx.setLineDash([7, 4]);
+      ctx.stroke();
+    } else {
+      // CONFIRMED ROOF: a crisp white line that traces itself around the
+      // perimeter instead of appearing instantly, fully-formed — a
+      // boundary that was just "detected" should look detected, not
+      // pre-existing. No glow — a clean architectural line, not a scanner.
+      const tracedPts = getTracedPerimeterPoints(pts, revealProgress);
+      ctx.beginPath();
+      tracedPts.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 1.75;
+      ctx.setLineDash([]);
       ctx.stroke();
 
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)'; // Restrained 8% emerald tint
-      ctx.fill();
+      // Small leading tip while actively tracing — plain, no glow.
+      if (revealProgress < 1 && tracedPts.length > 0) {
+        const tip = tracedPts[tracedPts.length - 1];
+        ctx.beginPath();
+        ctx.arc(tip.x, tip.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      }
+    }
+
+    // 2. Draw Inner Usable Roof Region (Setback Inset Region - Emerald Green)
+    // — held back until the outer boundary finishes tracing in, so the
+    // "usable area" reads as computed from a confirmed boundary rather than
+    // appearing simultaneously with it.
+    if (revealProgress >= 1) {
+      const innerPoly = computeInnerUsablePolygon(poly, 0.5, centerLat, geoZoom);
+      if (innerPoly.length >= 3) {
+        const innerPts = innerPoly.map(normToCanvas);
+
+        ctx.beginPath();
+        innerPts.forEach((pt, i) => {
+          if (i === 0) ctx.moveTo(pt.x, pt.y);
+          else ctx.lineTo(pt.x, pt.y);
+        });
+        ctx.closePath();
+
+        ctx.strokeStyle = '#10b981'; // Vibrant emerald stroke
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 3]);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.08)'; // Restrained 8% emerald tint
+        ctx.fill();
+      }
     }
 
     // 3. Draw Premium Handles strictly ONLY in STAGE 4 (ADJUST ROOF MODE)
     if (currentStage === 4) {
       ctx.setLineDash([]);
 
-      // Draw Edge Midpoint '+' handles for vertex insertion
+      // Edge Midpoint "add point" markers — a small crosshair inside a
+      // faint ring in a neutral tone, so they read as a quiet secondary
+      // affordance rather than competing with the corner handles.
       for (let i = 0; i < pts.length; i++) {
         const j = (i + 1) % pts.length;
         const midX = (pts[i].x + pts[j].x) / 2;
         const midY = (pts[i].y + pts[j].y) / 2;
 
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         ctx.beginPath();
-        ctx.arc(midX, midY, 4, 0, Math.PI * 2);
+        ctx.arc(midX, midY, 6, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(midX, midY, 6, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(midX - 2.5, midY);
+        ctx.lineTo(midX + 2.5, midY);
+        ctx.moveTo(midX, midY - 2.5);
+        ctx.lineTo(midX, midY + 2.5);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+        ctx.lineWidth = 1.2;
         ctx.stroke();
       }
 
-      // Draw Premium Corner Handles '●' (Small core + subtle outer halo)
+      // Corner vertex handles — a small target-reticle: a crisp amber ring
+      // with four short crosshair ticks and a white core. No glow — flat,
+      // precise, like a real measurement tool rather than a screen effect.
       pts.forEach((pt, i) => {
         const isDraggingThis = activeVertexIndex.current === i;
+        const ringR = isDraggingThis ? 8 : 6.5;
+        const accent = isDraggingThis ? '#fbbf24' : '#f59e0b';
 
-        // Outer halo ring
-        ctx.fillStyle = isDraggingThis ? 'rgba(251, 191, 36, 0.45)' : 'rgba(245, 158, 11, 0.25)';
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, isDraggingThis ? 9 : 7, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.arc(pt.x, pt.y, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.stroke();
 
-        // Inner solid core
+        // Four short crosshair ticks just outside the ring
+        const tickInner = ringR + 2;
+        const tickOuter = ringR + 5.5;
+        ctx.strokeStyle = isDraggingThis ? accent : 'rgba(245, 158, 11, 0.7)';
+        ctx.lineWidth = 1.4;
+        ([[0, -1], [0, 1], [-1, 0], [1, 0]] as const).forEach(([dx, dy]) => {
+          ctx.beginPath();
+          ctx.moveTo(pt.x + dx * tickInner, pt.y + dy * tickInner);
+          ctx.lineTo(pt.x + dx * tickOuter, pt.y + dy * tickOuter);
+          ctx.stroke();
+        });
+
+        // Solid white core
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(pt.x, pt.y, isDraggingThis ? 5 : 4, 0, Math.PI * 2);
+        ctx.arc(pt.x, pt.y, isDraggingThis ? 3.5 : 3, 0, Math.PI * 2);
         ctx.fill();
-
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 1;
         ctx.stroke();
       });
     }

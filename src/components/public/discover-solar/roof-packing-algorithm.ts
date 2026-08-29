@@ -22,6 +22,110 @@ export function isPointInPolygon(point: Point2D, polygon: Point2D[]): boolean {
 }
 
 /**
+ * Signed area of the triangle (a, b, c) x2 — positive if c is left of a→b,
+ * negative if right, zero if collinear. Standard orientation test used by
+ * the segment-intersection check below.
+ */
+function orientation(a: Point2D, b: Point2D, c: Point2D): number {
+  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+}
+
+/**
+ * True if segment (p1,p2) properly crosses segment (p3,p4) — i.e. each
+ * segment's endpoints lie on opposite sides of the other segment's line.
+ * Endpoint-touching/collinear cases are intentionally not flagged; the
+ * caller only ever tests non-adjacent polygon edges, so a proper crossing
+ * is exactly the "bowtie" condition we care about.
+ */
+function segmentsProperlyIntersect(p1: Point2D, p2: Point2D, p3: Point2D, p4: Point2D): boolean {
+  const d1 = orientation(p3, p4, p1);
+  const d2 = orientation(p3, p4, p2);
+  const d3 = orientation(p1, p2, p3);
+  const d4 = orientation(p1, p2, p4);
+
+  return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
+}
+
+/**
+ * True if the polygon's edges cross each other anywhere (a "bowtie"/
+ * self-intersecting shape). The shoelace area formula used below is only
+ * valid for simple (non-self-intersecting) polygons — for a crossing shape
+ * it silently returns a much smaller number than the shape's visual area,
+ * since the crossing loops cancel each other out. Used to reject roof-edit
+ * drags that would produce a shape whose displayed area no longer matches
+ * what's visually drawn.
+ */
+export function isPolygonSelfIntersecting(polygon: Point2D[]): boolean {
+  const n = polygon.length;
+  if (n < 4) return false; // a triangle can never self-intersect
+
+  for (let i = 0; i < n; i++) {
+    const a1 = polygon[i];
+    const a2 = polygon[(i + 1) % n];
+    for (let j = i + 1; j < n; j++) {
+      // Skip the edge itself and both edges adjacent to it (they share a
+      // vertex with edge i, which is not a "crossing").
+      if (j === i || j === (i + 1) % n || (j + 1) % n === i) continue;
+      const b1 = polygon[j];
+      const b2 = polygon[(j + 1) % n];
+      if (segmentsProperlyIntersect(a1, a2, b1, b2)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * True if the polygon's shoelace area is a suspiciously small fraction of
+ * its own axis-aligned bounding box — the signature of a degenerate
+ * "sliver"/"spike" shape produced by dragging one vertex most of the way
+ * across the others. This is a *different* failure mode from
+ * self-intersection: the polygon stays simple (no crossing edges), so its
+ * area is mathematically correct for the shape as drawn — but that shape
+ * is a razor-thin needle, not a usable roof outline, and its
+ * correct-but-tiny area reads exactly like a bug to anyone looking at the
+ * number. A well-formed building footprint (rectangle, L-shape, octagon,
+ * etc.) fills at least ~20% of its bounding box; a collapsed sliver falls
+ * far below that.
+ */
+export function isPolygonTooThin(polygon: Point2D[]): boolean {
+  if (!polygon || polygon.length < 3) return true;
+
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  polygon.forEach((pt) => {
+    if (pt.x < minX) minX = pt.x;
+    if (pt.x > maxX) maxX = pt.x;
+    if (pt.y < minY) minY = pt.y;
+    if (pt.y > maxY) maxY = pt.y;
+  });
+  const bboxArea = (maxX - minX) * (maxY - minY);
+  if (bboxArea <= 0) return true;
+
+  // Only the fill *ratio* matters here, so the plain normalized-space
+  // shoelace area is enough — the physical meters-per-pixel scaling used
+  // by calculateGeographicPolygonAreaM2 would cancel out anyway.
+  let area = 0;
+  for (let i = 0; i < polygon.length; i++) {
+    const j = (i + 1) % polygon.length;
+    area += polygon[i].x * polygon[j].y;
+    area -= polygon[j].x * polygon[i].y;
+  }
+  area = Math.abs(area) / 2;
+
+  return area / bboxArea < 0.2;
+}
+
+/**
+ * Single validity gate for interactive roof-boundary edits — a drag is
+ * rejected if it would either cross the shape's own edges
+ * (isPolygonSelfIntersecting) or collapse it into a degenerate sliver
+ * (isPolygonTooThin). Both failure modes produce a technically-computed
+ * area that no longer matches what's visually drawn.
+ */
+export function isPolygonEditValid(polygon: Point2D[]): boolean {
+  return !isPolygonSelfIntersecting(polygon) && !isPolygonTooThin(polygon);
+}
+
+/**
  * Calculates true physical polygon area in square meters (m²) using Web Mercator geographic resolution at reference zoom 19
  */
 export function calculateGeographicPolygonAreaM2(
@@ -176,7 +280,6 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
 } {
   // Hash seed from lat/lng
   const seed = Math.abs(Math.sin(lat * 12.9898 + lng * 78.233) * 43758.5453) % 1;
-  const seed2 = Math.abs(Math.sin(lat * 38.293 + lng * 48.121) * 23421.123) % 1;
 
   // Roof orientation / ridge angle (0 to 45 deg, or -30 to +30 deg off South)
   const roofOrientationDeg = Math.round((seed * 60 - 30) * 10) / 10;
@@ -218,17 +321,12 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
     ];
   }
 
-  // Exclusion Zone 1: Stairwell headroom or Water Tank
-  const exX1 = 52 + seed2 * 10;
-  const exY1 = 32 + seed * 10;
-  const exclusion1: Point2D[] = [
-    { x: exX1, y: exY1 },
-    { x: exX1 + 10, y: exY1 },
-    { x: exX1 + 10, y: exY1 + 10 },
-    { x: exX1, y: exY1 + 10 },
-  ];
-
-  const exclusionPolygons = [exclusion1];
+  // No obstacle is invented for a freshly detected roof — a stairwell or
+  // water tank isn't something the engine can actually see, so showing one
+  // unconditionally on every roof would be a fabricated detail, not a
+  // detection result. Obstacles now only exist once a user explicitly adds
+  // one via "+ Add Obstacle" while adjusting the boundary.
+  const exclusionPolygons: Point2D[][] = [];
 
   const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons, lat, 20.2, 24, 4.85);
 
