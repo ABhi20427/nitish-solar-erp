@@ -11,7 +11,7 @@ import { CheckCircle2, Send, Zap } from 'lucide-react';
 export default function DedicatedQuotePage() {
   const { addLead } = useSolarStore();
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [submittedData, setSubmittedData] = useState<{ quotNo?: string; pdfBase64?: string; email?: string; name?: string } | null>(null);
+  const [submittedData, setSubmittedData] = useState<{ email?: string; name?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -33,7 +33,7 @@ export default function DedicatedQuotePage() {
     if (!form.name || !form.phone) return;
 
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      setErrorMessage('Please enter a valid email address to receive your solar proposal PDF.');
+      setErrorMessage('Please enter a valid email address so we can confirm your enquiry.');
       return;
     }
 
@@ -77,10 +77,10 @@ export default function DedicatedQuotePage() {
           source: 'nitish solar Dedicated Quote Page',
           priority: 'HIGH',
         });
-        setSubmittedData({ quotNo: data.quotNo, pdfBase64: data.pdfBase64, email: form.email, name: form.name });
+        setSubmittedData({ email: form.email, name: form.name });
         setFormSubmitted(true);
       } else {
-        setErrorMessage(data.error || "We couldn't send your proposal. Please verify your email address and try again.");
+        setErrorMessage(data.error || "We couldn't send your enquiry. Please verify your email address and try again.");
       }
     } catch (err) {
       setErrorMessage("Could not connect to the proposal server. Please try again.");
@@ -146,29 +146,13 @@ export default function DedicatedQuotePage() {
                 <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-9 h-9" />
                 </div>
-                <h3 className="font-display text-2xl font-semibold text-white">Proposal Emailed & Received</h3>
+                <h3 className="font-display text-2xl font-semibold text-white">Enquiry Received</h3>
                 <p className="text-sm text-slate-400 max-w-sm mx-auto font-light leading-relaxed">
-                  {submittedData?.quotNo
-                    ? <>Your official Solar Proposal & Quotation PDF (<span className="text-amber-400 font-semibold">{submittedData.quotNo}</span>) has been generated and sent to <span className="text-white font-semibold">{submittedData.email}</span>.</>
+                  {submittedData?.email
+                    ? <>Thank you. A confirmation email has been sent to <span className="text-white font-semibold">{submittedData.email}</span>. Our team will get back to you shortly with your personalized solar proposal.</>
                     : 'Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.'}
                 </p>
                 <div className="pt-2 flex items-center justify-center gap-3">
-                  {submittedData?.pdfBase64 && (
-                    <Button
-                      variant="accent"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = `data:application/pdf;base64,${submittedData.pdfBase64}`;
-                        link.download = `Solar_Proposal_${submittedData.quotNo || 'Quotation'}.pdf`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                    >
-                      Download Proposal PDF
-                    </Button>
-                  )}
                   <Button
                     variant="accent"
                     className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold"

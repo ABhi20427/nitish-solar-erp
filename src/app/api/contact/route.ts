@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendLeadEmail, sendCustomerProposalEmail } from '@/lib/mailer';
-import { generateProposalHtml } from '@/lib/proposal-generator';
-import { renderHtmlToPdfBuffer } from '@/lib/pdf-generator';
+import { sendLeadEmail, sendCustomerThankYouEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
   try {
@@ -44,7 +42,7 @@ export async function POST(req: NextRequest) {
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
-        { success: false, error: 'Please enter a valid email address to receive your solar proposal PDF.' },
+        { success: false, error: 'Please enter a valid email address so we can confirm your enquiry.' },
         { status: 400 }
       );
     }
@@ -62,40 +60,31 @@ export async function POST(req: NextRequest) {
       source,
     };
 
-    console.log(`[API CONTACT] Processing proposal PDF generation & email delivery for: ${email}`);
+    console.log(`[API CONTACT] Processing enquiry for: ${email}`);
 
-    // 4. Generate Personalized Solar Proposal HTML
-    const { html, specs } = generateProposalHtml(emailData);
+    // 4. Send Thank-You Email to Customer
+    console.log(`[API CONTACT] Sending thank-you email to customer ${email}...`);
+    await sendCustomerThankYouEmail(emailData);
 
-    // 5. Convert Proposal HTML to High-Resolution A4 PDF Buffer
-    console.log(`[API CONTACT] Rendering A4 PDF for ${specs.quotNo}...`);
-    const pdfBuffer = await renderHtmlToPdfBuffer(html);
-
-    // 6. Deliver Proposal PDF as Attachment to Customer's Email Address
-    console.log(`[API CONTACT] Transmitting PDF email to customer ${email}...`);
-    await sendCustomerProposalEmail(emailData, pdfBuffer, specs.quotNo);
-
-    // 7. Internal Admin Notification (Non-blocking fallback)
+    // 5. Internal Admin Notification (Non-blocking fallback)
     try {
       await sendLeadEmail(emailData);
     } catch (adminErr: any) {
       console.warn('[API CONTACT] Internal admin lead notification notice:', adminErr?.message || adminErr);
     }
 
-    // 8. Return Success ONLY after PDF generation & customer email delivery succeed!
+    // 6. Return Success ONLY after customer thank-you email delivery succeeds!
     return NextResponse.json({
       success: true,
-      message: `Your personalized solar proposal PDF (${specs.quotNo}) has been generated and sent to your email (${email})!`,
-      quotNo: specs.quotNo,
-      pdfBase64: pdfBuffer.toString('base64'),
+      message: `Thank you! Your enquiry has been received and a confirmation has been sent to your email (${email}).`,
     });
 
   } catch (err: any) {
-    console.error('[API CONTACT PROPOSAL ERROR]', err?.message || err);
+    console.error('[API CONTACT ERROR]', err?.message || err);
     return NextResponse.json(
       {
         success: false,
-        error: `Could not send proposal to your email: ${err?.message || 'SMTP or PDF generation error.'}. Please verify your email address.`,
+        error: `Could not send confirmation to your email: ${err?.message || 'SMTP error.'}. Please verify your email address.`,
       },
       { status: 500 }
     );

@@ -29,7 +29,6 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
   const [submittedLead, setSubmittedLead] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [pdfBase64Data, setPdfBase64Data] = useState<string | null>(null);
 
   const calcEst = calculateSolarSystem({
     monthlyBillAmount: formData.monthlyBillAmount,
@@ -42,13 +41,12 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
     if (!formData.fullName || !formData.phone) return;
 
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      setErrorMessage('Please enter a valid email address to receive your solar proposal PDF.');
+      setErrorMessage('Please enter a valid email address so we can confirm your enquiry.');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMessage('');
-    setPdfBase64Data(null);
 
     try {
       const res = await fetch('/api/contact', {
@@ -89,33 +87,19 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           source: 'nitish solar Web Quote Form',
           priority: 'HIGH',
         });
-        setSubmittedLead({ ...created, quotNo: data.quotNo });
-        if (data.pdfBase64) {
-          setPdfBase64Data(data.pdfBase64);
-        }
+        setSubmittedLead(created);
       } else {
-        setErrorMessage(data.error || "We couldn't send your proposal. Please verify your email address and try again.");
+        setErrorMessage(data.error || "We couldn't send your enquiry. Please verify your email address and try again.");
       }
     } catch (err: any) {
-      setErrorMessage("Could not connect to the proposal server. Please try again.");
+      setErrorMessage("Could not connect to the server. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const downloadProposalPdf = () => {
-    if (!pdfBase64Data) return;
-    const link = document.createElement('a');
-    link.href = `data:application/pdf;base64,${pdfBase64Data}`;
-    link.download = `Solar_Proposal_${submittedLead?.quotNo || 'Quotation'}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
   const handleReset = () => {
     setSubmittedLead(null);
-    setPdfBase64Data(null);
     onClose();
   };
 
@@ -126,7 +110,7 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       title={
         submittedLead ? (
           <span className="flex items-center gap-2 text-emerald-700">
-            <CheckCircle2 className="w-5 h-5" /> Proposal Emailed & Received
+            <CheckCircle2 className="w-5 h-5" /> Enquiry Received
           </span>
         ) : (
           <span className="flex items-center gap-2">
@@ -136,7 +120,7 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       }
       subtitle={
         submittedLead
-          ? `Proposal Ref: ${submittedLead.quotNo || submittedLead.leadNumber}`
+          ? `Reference: ${submittedLead.leadNumber}`
           : 'Get an engineering system recommendation, payback estimate, & free site survey.'
       }
       maxWidth="lg"
@@ -149,15 +133,11 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           <div>
             <h4 className="text-xl font-bold text-white">Thank You, {submittedLead.fullName}!</h4>
             <p className="text-xs text-slate-300 mt-1 max-w-md mx-auto">
-              Your official Solar Proposal & Quotation PDF (<strong className="text-amber-400 font-bold">{submittedLead.quotNo}</strong>) has been generated and sent to your email address: <strong className="text-white font-bold">{formData.email}</strong>.
+              We've received your enquiry and sent a confirmation to your email address: <strong className="text-white font-bold">{formData.email}</strong>. Our engineering team will be in touch shortly with your personalized solar proposal.
             </p>
           </div>
 
           <div className="bg-[#0B0F17] border border-slate-800 rounded-xl p-4 text-left max-w-md mx-auto text-xs space-y-2">
-            <div className="flex justify-between border-b border-slate-800 pb-2">
-              <span className="text-slate-400">Quotation No:</span>
-              <span className="font-bold text-white">{submittedLead.quotNo}</span>
-            </div>
             <div className="flex justify-between border-b border-slate-800 pb-2">
               <span className="text-slate-400">Recommended Capacity:</span>
               <span className="font-bold text-white">{submittedLead.proposedCapacityKw} kWp System</span>
@@ -167,17 +147,12 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               <span className="font-bold text-emerald-400">₹{calcEst.subsidyEstimate.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">PDF Delivery Status:</span>
+              <span className="text-slate-400">Confirmation Email:</span>
               <span className="font-bold text-emerald-400">Sent to {formData.email}</span>
             </div>
           </div>
 
           <div className="pt-2 flex items-center justify-center gap-3">
-            {pdfBase64Data && (
-              <Button type="button" onClick={downloadProposalPdf} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6">
-                ⬇ Download Proposal PDF
-              </Button>
-            )}
             <Button variant="accent" onClick={handleReset} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-8">
               Done
             </Button>
@@ -239,7 +214,7 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-300 mb-1">Email Address * (PDF Attachment Sent Here)</label>
+              <label className="block font-semibold text-slate-300 mb-1">Email Address * (Confirmation Sent Here)</label>
               <input
                 type="email"
                 required
@@ -309,7 +284,7 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
               Cancel
             </Button>
             <Button variant="accent" type="submit" disabled={isSubmitting} className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold disabled:opacity-50">
-              {isSubmitting ? '⏳ Generating PDF & Emailing...' : '⚡ Get Proposal PDF via Email'}
+              {isSubmitting ? '⏳ Sending Enquiry...' : '⚡ Request a Quote'}
             </Button>
           </div>
         </form>

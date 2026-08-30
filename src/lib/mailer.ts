@@ -168,11 +168,7 @@ ${data.message || 'No additional message provided.'}
   }
 }
 
-export async function sendCustomerProposalEmail(
-  data: EmailData,
-  pdfBuffer: Buffer,
-  quotNo: string
-) {
+export async function sendCustomerThankYouEmail(data: EmailData) {
   const primaryHost = process.env.ZOHO_SMTP_HOST || 'smtp.zoho.in';
   const primaryPort = Number(process.env.ZOHO_SMTP_PORT) || 465;
   const user = process.env.ZOHO_SMTP_USER || 'nitishsolar@zohomail.in';
@@ -183,10 +179,9 @@ export async function sendCustomerProposalEmail(
   }
 
   const customerEmail = data.email.trim();
-  const filename = `Solar_Proposal_${quotNo}.pdf`;
-  const subject = `Your Custom Solar EPC Proposal & Quotation (${quotNo})`;
+  const subject = `Thank You for Your Enquiry — Nitish Solar`;
 
-  console.log(`[CUSTOMER MAILER] Sending proposal PDF to customer: ${customerEmail}`);
+  console.log(`[CUSTOMER MAILER] Sending thank-you email to customer: ${customerEmail}`);
 
   let logoDataUri = '';
   try {
@@ -238,19 +233,18 @@ export async function sendCustomerProposalEmail(
     <div class="header">
       ${logoLockup(30, 21, 22)}
       <p class="tagline">Renewable Energy &middot; Turnkey EPC Solutions</p>
-      <span class="ref-badge">Ref&nbsp;#${quotNo}</span>
     </div>
     <div class="content">
       <p class="greeting">Dear ${data.name || 'Valued Customer'},</p>
-      <p class="lead">Thank you for requesting a custom Solar EPC proposal. We're pleased to share your personalized Solar Proposal & Quotation, attached as a PDF and tailored specifically to your site requirements.</p>
+      <p class="lead">Thank you for your interest in Nitish Solar. We've received your enquiry and our engineering team is already reviewing your requirements.</p>
 
       <div class="highlight-box">
-        <strong>What's Inside Your Proposal</strong>
+        <strong>What Happens Next</strong>
         <ul>
-          <li>Recommended Solar PV system capacity & specification</li>
-          <li>Itemized equipment & turnkey EPC cost breakdown</li>
-          <li>PM Surya Ghar government subsidy & net out-of-pocket investment</li>
-          <li>Estimated monthly generation, bill savings & payback period</li>
+          <li>Our solar engineering team reviews your site & energy requirements</li>
+          <li>We prepare a tailored system capacity & cost recommendation</li>
+          <li>A member of our team reaches out to confirm details & next steps</li>
+          <li>We schedule a free on-site technical inspection, if required</li>
         </ul>
       </div>
 
@@ -268,7 +262,7 @@ export async function sendCustomerProposalEmail(
       </table>
     </div>
     <div class="footer">
-      Automated Proposal Delivery &middot; Nitish Solar Engineering Portal
+      Automated Enquiry Confirmation &middot; Nitish Solar Engineering Portal
     </div>
   </div>
 </body>
@@ -280,24 +274,17 @@ export async function sendCustomerProposalEmail(
     to: customerEmail,
     subject,
     html: htmlContent,
-    attachments: [
-      {
-        filename: filename,
-        content: pdfBuffer,
-        contentType: 'application/pdf'
-      },
-      ...(logoDataUri
-        ? [
-            {
-              filename: 'nitish-solar-logo.png',
-              content: logoDataUri,
-              encoding: 'base64' as const,
-              cid: 'nitishlogo',
-              contentDisposition: 'inline' as const,
-            },
-          ]
-        : []),
-    ],
+    attachments: logoDataUri
+      ? [
+          {
+            filename: 'nitish-solar-logo.png',
+            content: logoDataUri,
+            encoding: 'base64' as const,
+            cid: 'nitishlogo',
+            contentDisposition: 'inline' as const,
+          },
+        ]
+      : [],
   };
 
   // Attempt delivery
@@ -312,6 +299,6 @@ export async function sendCustomerProposalEmail(
   });
 
   const info = await transporter.sendMail(mailOptions);
-  console.log(`[CUSTOMER MAILER SUCCESS] Delivered proposal PDF to ${customerEmail}. Message ID:`, info.messageId);
+  console.log(`[CUSTOMER MAILER SUCCESS] Delivered thank-you email to ${customerEmail}. Message ID:`, info.messageId);
   return info;
 }
