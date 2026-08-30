@@ -124,40 +124,79 @@ body {
 }
 
 /* Ambient exploded solar-panel visual (Inside a Solar Plant stage card).
-   Two layered animations: the outer stack gets an obvious right-to-left
-   rotate()+skewX() sweep (a flat rotateY on a thin CSS card barely reads as
-   "turning" — the 2D rotate/skew combo is what actually looks like rotation),
-   while each layer separately grows its own depth (--depth, set per-layer via
-   inline style) along the same timeline — so separation and rotation are
-   always simultaneous, never sequential phases. Transform/opacity only. */
+   3D CAD Exploded View Animation:
+   - Panel continuously rotates RIGHT-TO-LEFT across the 3D Y-axis (from positive rotateY to negative rotateY)
+   - Explodes outward into separated component layers and contracts back together seamlessly. */
 @keyframes panelStackRotate {
-  0%, 100% {
-    transform: rotate(-15deg) skewX(-8deg) scale(1);
+  0% {
+    transform: rotateY(38deg) rotateX(18deg) rotateZ(-4deg) scale(0.96);
   }
   50% {
-    transform: rotate(13deg) skewX(7deg) scale(1.04);
+    transform: rotateY(-38deg) rotateX(12deg) rotateZ(4deg) scale(1.04);
+  }
+  100% {
+    transform: rotateY(38deg) rotateX(18deg) rotateZ(-4deg) scale(0.96);
   }
 }
 
 @keyframes panelLayerExplode {
   0%, 100% {
+    /* Contracted / Assembled state */
     transform: translate3d(0, 0, 0) scale(1);
     opacity: 0.92;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  }
+  25%, 70% {
+    /* Exploded state: layers separate dramatically along 3D depth vectors */
+    transform: translate3d(
+      calc(var(--depth, 0) * -0.45px),
+      calc(var(--depth, 0) * -0.95px),
+      calc(var(--depth, 0) * 1.35px)
+    ) scale(1.02);
+    opacity: 1;
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.6));
+  }
+}
+
+@keyframes solarPulseGlow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scaleX(0.95);
   }
   50% {
-    transform: translate3d(calc(var(--depth, 0) * 0.3px), calc(var(--depth, 0) * -0.9px), calc(var(--depth, 0) * 1px)) scale(1.015);
-    opacity: 1;
+    opacity: 0.95;
+    transform: scaleX(1.05);
   }
 }
 
 .animate-panel-stack {
-  animation: panelStackRotate 4.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  animation: panelStackRotate 6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
   will-change: transform;
 }
 
 .animate-panel-layer {
-  animation: panelLayerExplode 4.2s cubic-bezier(0.65, 0, 0.35, 1) infinite;
-  will-change: transform, opacity;
+  animation: panelLayerExplode 6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  will-change: transform, opacity, filter;
+}
+
+.animate-solar-pulse {
+  animation: solarPulseGlow 3s ease-in-out infinite;
+}
+
+/* Sunlight shaft raking onto the exploded-panel visual — a slow breathing
+   glow, not a moving sweep, so it reads as ambient daylight rather than a
+   loading effect competing with the panel's own rotation. */
+@keyframes sunbeamBreathe {
+  0%, 100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-sunbeam {
+  animation: sunbeamBreathe 4s ease-in-out infinite;
 }
 
 /* Closing-section value strip: a small light travelling along the connecting
@@ -217,6 +256,7 @@ body {
   .hero-animate-4,
   .animate-panel-stack,
   .animate-panel-layer,
+  .animate-sunbeam,
   .animate-value-flow,
   .animate-scroll-current {
     animation: none !important;

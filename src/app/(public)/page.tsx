@@ -107,11 +107,12 @@ const PLANT_STAGES = [
 // (see .animate-panel-layer / --depth in globals.css) — a plain data array,
 // not component state, so it never triggers re-renders.
 const PANEL_LAYERS = [
-  { id: 'backsheet', depth: 0, extra: 'bg-gradient-to-br from-slate-300/90 to-slate-400/80 border-slate-400/50' },
-  { id: 'encapsulant', depth: 8, extra: 'bg-white/10 border-white/15' },
-  { id: 'cells', depth: 16, extra: 'bg-[#0b1329] border-slate-700/80' },
-  { id: 'glass', depth: 24, extra: 'bg-gradient-to-br from-sky-100/20 to-white/5 border-white/20' },
-  { id: 'frame', depth: 32, extra: 'bg-transparent border-[1.5px] border-slate-400/60' },
+  { id: 'backsheet', depth: 0, extra: 'bg-[#131f3d] border-slate-600/80' },
+  { id: 'back-eva', depth: 12, extra: 'bg-sky-400/10 border-sky-300/25 backdrop-blur-[1px]' },
+  { id: 'cells', depth: 26, extra: 'bg-[#0d1a3a] border-blue-700/90 shadow-[0_0_18px_rgba(59,130,246,0.45)]' },
+  { id: 'front-eva', depth: 40, extra: 'bg-white/10 border-white/25 backdrop-blur-[1px]' },
+  { id: 'glass', depth: 54, extra: 'bg-gradient-to-br from-sky-100/35 via-white/15 to-transparent border-sky-100/50 shadow-inner' },
+  { id: 'frame', depth: 68, extra: 'bg-transparent border-[2px] border-slate-100/90 shadow-lg' },
 ] as const;
 
 // Closing-section value strip — what we actually promise, not fabricated
@@ -959,18 +960,34 @@ export default function HomePage() {
                   sits in the reserved padding zone above the circle row no matter how
                   tall the card ends up being, and never gets clipped by the card's own
                   overflow-hidden. */}
-              <div className="relative pt-0 sm:pt-24 lg:pt-[116px]">
+              <div className="relative pt-0 sm:pt-40 lg:pt-44">
 
                 {/* Wide ambient wash across the whole reserved top band — ties the
                     corner panel to the rest of the card instead of leaving the area
                     above stages 2-5 looking like dead space. Purely a soft gradient,
                     no new objects competing with the circles for attention. */}
-                <div className="hidden sm:block absolute top-0 left-0 right-0 h-20 lg:h-28 z-0 pointer-events-none">
+                <div className="hidden sm:block absolute top-0 left-0 right-0 h-32 lg:h-36 z-0 pointer-events-none">
                   <div
                     className="absolute inset-0 transition-opacity duration-700"
                     style={{
                       background: 'linear-gradient(90deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.04) 35%, transparent 75%)',
                       opacity: plantStageIdx === 0 ? 1 : 0.4,
+                    }}
+                  />
+                </div>
+
+                {/* Sunlight shaft — a soft diagonal beam raking down from the card's
+                    top-right corner onto the panel, the literal visual of the section
+                    headline ("See how sunlight becomes power."). Pure gradient + a slow
+                    opacity breathe, no new geometry to maintain. */}
+                <div
+                  className="hidden sm:block absolute -top-4 left-0 right-0 h-40 lg:h-48 z-0 pointer-events-none overflow-hidden transition-opacity duration-700"
+                  style={{ opacity: plantStageIdx === 0 ? 1 : 0.3 }}
+                >
+                  <div
+                    className="animate-sunbeam absolute -top-16 -right-10 w-[140%] h-[220%] origin-top-right"
+                    style={{
+                      background: 'linear-gradient(200deg, rgba(253,224,71,0.22) 0%, rgba(245,158,11,0.10) 22%, transparent 45%)',
                     }}
                   />
                 </div>
@@ -982,40 +999,106 @@ export default function HomePage() {
                     the other four stages. */}
                 <div
                   className={`hidden sm:block absolute top-0 left-0 z-[1] pointer-events-none transition-opacity duration-700 ${
-                    plantStageIdx === 0 ? 'opacity-95' : 'opacity-25'
+                    plantStageIdx === 0 ? 'opacity-100' : 'opacity-30'
                   }`}
-                  style={{ perspective: '600px' }}
+                  style={{ perspective: '900px' }}
                 >
                   <div
-                    className={`animate-panel-stack relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 transition-transform duration-700 ${
+                    className={`animate-panel-stack relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 transition-transform duration-700 ${
                       plantStageIdx === 0 ? 'scale-100' : 'scale-[0.7]'
                     }`}
-                    style={{ transformStyle: 'preserve-3d', filter: 'drop-shadow(0 12px 16px rgba(0,0,0,0.45))' }}
+                    style={{
+                      transformStyle: 'preserve-3d',
+                      filter: 'drop-shadow(0 16px 22px rgba(0,0,0,0.55)) drop-shadow(0 0 26px rgba(245,158,11,0.25))',
+                    }}
                   >
                     {PANEL_LAYERS.map((layer, i) => (
                       <div
                         key={layer.id}
-                        className={`animate-panel-layer absolute inset-0 rounded-[5px] border overflow-hidden ${layer.extra}`}
-                        style={{ transformStyle: 'preserve-3d', animationDelay: `${i * 70}ms`, '--depth': layer.depth } as React.CSSProperties}
+                        className={`animate-panel-layer absolute inset-0 rounded-lg border overflow-hidden ${layer.extra}`}
+                        style={{ transformStyle: 'preserve-3d', animationDelay: `${i * 60}ms`, '--depth': layer.depth } as React.CSSProperties}
                       >
-                        {layer.id === 'cells' && (
+                        {/* Frame Layer: Anodized aluminum metallic corners */}
+                        {layer.id === 'frame' && (
                           <>
-                            <div
-                              className="absolute inset-0 opacity-40"
-                              style={{
-                                backgroundImage:
-                                  'linear-gradient(to right, rgba(148,163,184,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.35) 1px, transparent 1px)',
-                                backgroundSize: '34% 34%',
-                              }}
-                            />
-                            <div className="absolute left-[15%] right-[15%] top-1/2 h-px bg-amber-400/70 -translate-y-1/2" />
+                            <div className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-white" />
+                            <div className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-white" />
+                            <div className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-white" />
+                            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-white" />
+                            <span className="absolute top-1.5 left-2.5 text-[8px] font-mono text-slate-100 uppercase tracking-widest pointer-events-none select-none">
+                              AL FRAME
+                            </span>
                           </>
                         )}
+
+                        {/* Glass Layer: Glare streak reflection */}
                         {layer.id === 'glass' && (
-                          <div
-                            className="absolute inset-0"
-                            style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.28) 0%, transparent 45%)' }}
-                          />
+                          <>
+                            <div
+                              className="absolute inset-0"
+                              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 35%, transparent 65%)' }}
+                            />
+                            <span className="absolute bottom-1.5 right-2.5 text-[8px] font-mono text-sky-100 uppercase tracking-wider pointer-events-none select-none">
+                              TEMPERED GLASS
+                            </span>
+                          </>
+                        )}
+
+                        {/* Front EVA Layer: Translucent sheen */}
+                        {layer.id === 'front-eva' && (
+                          <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-white/10" />
+                        )}
+
+                        {/* TOPCon PV Silicon Cells Layer: Silicon grid + busbars + energy glow */}
+                        {layer.id === 'cells' && (
+                          <div className="absolute inset-0 flex flex-col justify-between p-1">
+                            <div className="grid grid-cols-3 grid-rows-2 gap-0.5 h-full w-full">
+                              {[...Array(6)].map((_, cIdx) => (
+                                <div
+                                  key={cIdx}
+                                  className="bg-[#0b1633] border border-slate-700/60 rounded-[2px] relative overflow-hidden"
+                                >
+                                  <div
+                                    className="absolute inset-0 opacity-35"
+                                    style={{
+                                      backgroundImage:
+                                        'linear-gradient(to right, rgba(148,163,184,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.4) 1px, transparent 1px)',
+                                      backgroundSize: '25% 25%',
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            <div className="absolute left-2 right-2 top-1/3 h-[1.5px] bg-gradient-to-r from-amber-400/90 via-slate-200 to-amber-400/90 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+                            <div className="absolute left-2 right-2 top-2/3 h-[1.5px] bg-gradient-to-r from-amber-400/90 via-slate-200 to-amber-400/90 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+                            <div className="animate-solar-pulse absolute left-0 right-0 top-1/2 h-1 bg-gradient-to-r from-transparent via-amber-400/80 to-transparent -translate-y-1/2 blur-[1px]" />
+                          </div>
+                        )}
+
+                        {/* Rear EVA Layer */}
+                        {layer.id === 'back-eva' && (
+                          <div className="absolute inset-0 bg-sky-900/10" />
+                        )}
+
+                        {/* Tedlar Backsheet Layer: Circuit traces & technical specs */}
+                        {layer.id === 'backsheet' && (
+                          <div className="absolute inset-0 p-1.5 flex flex-col justify-between">
+                            <div className="flex justify-between items-center opacity-80">
+                              <span className="text-[6px] font-mono text-amber-400 font-bold">1500V DC</span>
+                              <span className="text-[6px] font-mono text-slate-300">TOPCON</span>
+                            </div>
+                            <div
+                              className="absolute inset-0 opacity-20 pointer-events-none"
+                              style={{
+                                backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
+                                backgroundSize: '10px 10px',
+                              }}
+                            />
+                            <div className="flex justify-center gap-2.5 z-10 pb-0.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-500/90 border border-slate-900" />
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900 border border-slate-600" />
+                            </div>
+                          </div>
                         )}
                       </div>
                     ))}
@@ -1026,7 +1109,7 @@ export default function HomePage() {
                   <div
                     className="absolute left-1/2 top-full w-px transition-opacity duration-700"
                     style={{
-                      height: '28px',
+                      height: '24px',
                       background: 'linear-gradient(to bottom, rgba(245,158,11,0.5), transparent)',
                       opacity: plantStageIdx === 0 ? 1 : 0,
                     }}
