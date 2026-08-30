@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import fs from 'fs';
+import path from 'path';
 
 export interface EmailData {
   name: string;
@@ -182,54 +184,91 @@ export async function sendCustomerProposalEmail(
 
   const customerEmail = data.email.trim();
   const filename = `Solar_Proposal_${quotNo}.pdf`;
-  const subject = `☀️ Your Official Solar EPC Proposal & Quotation (${quotNo}) — Nitish Solar`;
+  const subject = `Your Custom Solar EPC Proposal & Quotation (${quotNo})`;
 
   console.log(`[CUSTOMER MAILER] Sending proposal PDF to customer: ${customerEmail}`);
+
+  let logoDataUri = '';
+  try {
+    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+    logoDataUri = fs.readFileSync(logoPath).toString('base64');
+  } catch {
+    logoDataUri = '';
+  }
+
+  const logoLockup = (logoHeight: number, textSize: number, dividerHeight: number) => `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+      <tr>
+        <td style="padding-right: 9px;">${logoDataUri ? `<img src="cid:nitishlogo" alt="nitish" height="${logoHeight}" style="height:${logoHeight}px; width:auto; display:block;" />` : `<span style="font-size:${textSize}px; font-weight:800; color:#ffffff;">nitish</span>`}</td>
+        <td style="padding-right: 9px;"><div style="width:1.5px; height:${dividerHeight}px; background:rgba(255,255,255,0.4); line-height:${dividerHeight}px; font-size:1px;">&nbsp;</div></td>
+        <td><span style="font-size:${textSize}px; font-weight:500; color:#ffffff; font-family:'Segoe UI', Arial, sans-serif; letter-spacing: 0.01em;">Solar</span></td>
+      </tr>
+    </table>`;
 
   const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; line-height: 1.6; color: #334155; background-color: #f8fafc; margin: 0; padding: 20px; }
-    .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); }
-    .header { background: linear-gradient(135deg, #0B3E73 0%, #165A9E 100%); color: #ffffff; padding: 24px; text-align: center; }
-    .header h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: 1px; }
-    .header p { margin: 4px 0 0; font-size: 12px; color: #FFC78A; }
-    .content { padding: 24px; }
-    .highlight-box { background: #f0f7ff; border-left: 4px solid #F39A4A; padding: 14px; border-radius: 6px; margin: 18px 0; font-size: 13.5px; }
-    .footer { text-align: center; padding: 14px; font-size: 11px; color: #64748b; background: #f1f5f9; border-top: 1px solid #e2e8f0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #334155; background-color: #eef2f7; margin: 0; padding: 24px 16px; }
+    .card { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 30px -8px rgba(11, 62, 115, 0.18); border: 1px solid #e2e8f0; }
+    .header { padding: 32px 32px 24px; text-align: center; background: linear-gradient(135deg, #0B3E73 0%, #165A9E 100%); border-bottom: 3px solid #F39A4A; }
+    .header .tagline { margin: 14px 0 0; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #FFC78A; font-weight: 600; }
+    .ref-badge { display: inline-block; margin-top: 14px; padding: 5px 14px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; font-size: 11.5px; font-weight: 700; color: #ffffff; letter-spacing: 0.03em; }
+    .content { padding: 30px 32px; }
+    .greeting { font-size: 16px; font-weight: 700; color: #0B3E73; margin: 0 0 12px; }
+    .lead { margin: 0 0 18px; font-size: 14.5px; color: #475569; }
+    .highlight-box { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #F39A4A; padding: 18px 20px; border-radius: 8px; margin: 22px 0; }
+    .highlight-box strong { display: block; margin-bottom: 10px; color: #0B3E73; font-size: 13.5px; letter-spacing: 0.02em; text-transform: uppercase; }
+    .highlight-box ul { margin: 0; padding: 0; list-style: none; }
+    .highlight-box li { position: relative; padding: 5px 0 5px 22px; font-size: 13.5px; color: #475569; }
+    .highlight-box li:before { content: ''; position: absolute; left: 0; top: 13px; width: 7px; height: 7px; border-radius: 50%; background: #F39A4A; }
+    .contact-line { margin: 20px 0 0; font-size: 13.5px; color: #475569; }
+    .contact-line a { color: #165A9E; text-decoration: none; font-weight: 600; }
+    .signature { margin-top: 28px; padding-top: 20px; border-top: 1px solid #eef2f7; }
+    .signature .sig-text p { margin: 0; }
+    .signature .sig-name { font-weight: 700; color: #0B3E73; font-size: 14px; }
+    .signature .sig-role { font-size: 12px; color: #64748b; }
+    .footer { text-align: center; padding: 18px; font-size: 11px; color: #94a3b8; background: #f8fafc; border-top: 1px solid #e2e8f0; letter-spacing: 0.02em; }
   </style>
 </head>
 <body>
   <div class="card">
     <div class="header">
-      <h1>NITISH SOLAR EPC</h1>
-      <p>Your Trusted Partner in Renewable Energy Solutions</p>
+      ${logoLockup(30, 21, 22)}
+      <p class="tagline">Renewable Energy &middot; Turnkey EPC Solutions</p>
+      <span class="ref-badge">Ref&nbsp;#${quotNo}</span>
     </div>
     <div class="content">
-      <p style="font-size: 16px; font-weight: 700; color: #0B3E73;">Dear ${data.name || 'Valued Customer'},</p>
-      <p>Thank you for requesting a customized Solar EPC Proposal from <strong>Nitish Solar</strong>.</p>
-      <p>We are pleased to attach your official Solar Proposal & Quotation PDF (Ref: <strong>${quotNo}</strong>) tailored specifically for your site requirements.</p>
+      <p class="greeting">Dear ${data.name || 'Valued Customer'},</p>
+      <p class="lead">Thank you for requesting a custom Solar EPC proposal. We're pleased to share your personalized Solar Proposal & Quotation, attached as a PDF and tailored specifically to your site requirements.</p>
 
       <div class="highlight-box">
-        <strong style="color: #0B3E73;">What's inside your PDF proposal:</strong>
-        <ul style="margin: 8px 0 0; padding-left: 20px; color: #475569;">
-          <li>Recommended Solar PV System Capacity & Specification</li>
-          <li>Itemized Equipment & Turnkey EPC Cost Breakdown</li>
-          <li>PM Surya Ghar Government Subsidy & Net Out-of-Pocket Investment</li>
-          <li>Estimated Monthly Generation, Bill Savings & Payback Period</li>
+        <strong>What's Inside Your Proposal</strong>
+        <ul>
+          <li>Recommended Solar PV system capacity & specification</li>
+          <li>Itemized equipment & turnkey EPC cost breakdown</li>
+          <li>PM Surya Ghar government subsidy & net out-of-pocket investment</li>
+          <li>Estimated monthly generation, bill savings & payback period</li>
         </ul>
       </div>
 
-      <p>If you have any questions or would like to schedule an on-site technical inspection, please call us at <strong>+91 7010899473</strong> or email <strong>nitishsolar@zohomail.in</strong>.</p>
-      <br>
-      <p style="margin: 0;">Warm regards,</p>
-      <p style="margin: 2px 0 0; font-weight: 700; color: #0B3E73;">Nitish Solar Team</p>
-      <p style="margin: 0; font-size: 12px; color: #64748b;">Chromepet, Chennai | GSTIN: 33AAYFN9905F1ZS</p>
+      <p class="contact-line">Have questions or want to schedule an on-site technical inspection? Call us at <a href="tel:+917010899473">+91 70108 99473</a> or email <a href="mailto:nitishsolar@zohomail.in">nitishsolar@zohomail.in</a>.</p>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="signature">
+        <tr>
+          <td style="background:#0B3E73; border-radius:8px; padding:9px 12px; vertical-align:middle;">${logoLockup(16, 13, 13)}</td>
+          <td style="width:14px;">&nbsp;</td>
+          <td class="sig-text" style="vertical-align:middle;">
+            <p class="sig-name">Nitish Solar Team</p>
+            <p class="sig-role">Chromepet, Chennai &middot; GSTIN 33AAYFN9905F1ZS</p>
+          </td>
+        </tr>
+      </table>
     </div>
     <div class="footer">
-      Automated Proposal Delivery — Nitish Solar Engineering Portal
+      Automated Proposal Delivery &middot; Nitish Solar Engineering Portal
     </div>
   </div>
 </body>
@@ -246,8 +285,19 @@ export async function sendCustomerProposalEmail(
         filename: filename,
         content: pdfBuffer,
         contentType: 'application/pdf'
-      }
-    ]
+      },
+      ...(logoDataUri
+        ? [
+            {
+              filename: 'nitish-solar-logo.png',
+              content: logoDataUri,
+              encoding: 'base64' as const,
+              cid: 'nitishlogo',
+              contentDisposition: 'inline' as const,
+            },
+          ]
+        : []),
+    ],
   };
 
   // Attempt delivery

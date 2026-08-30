@@ -60,6 +60,7 @@ export function QuoteModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           phone: formData.phone,
           email: formData.email,
           city: formData.city,
+          location: formData.notes,
           propertyType: formData.customerType,
           requiredCapacity: calcEst.recommendedCapacityKw,
           monthlyBill: formData.monthlyBillAmount,

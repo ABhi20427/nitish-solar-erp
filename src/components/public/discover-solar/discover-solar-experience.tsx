@@ -399,7 +399,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         <div className="flex items-center gap-5">
           <div className="flex items-center gap-2 text-white font-display font-black tracking-tight text-lg">
             <span>Solar</span><span className="text-amber-400">Vision</span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-slate-900 border border-slate-800 text-amber-400">
+            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-slate-900 border border-slate-800 text-amber-400 whitespace-nowrap">
               <Sparkles className="w-3 h-3 text-amber-400" />
               REAL GEOGRAPHIC ENGINE
             </span>
@@ -468,46 +468,46 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
       {/* FLOATING COMPACT EDITOR BAR (ONLY IN STAGE 4 ADJUST ROOF) */}
       {stage === 4 && (
-        <div className="relative z-30 flex items-center justify-center pt-3.5 pointer-events-none">
-          <div className="bg-slate-950/95 border border-slate-800 p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex items-center gap-2.5 pointer-events-auto animate-in slide-in-from-top-4 duration-300">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-amber-400 px-3 flex items-center gap-1.5 border-r border-slate-800">
+        <div className="relative z-30 flex items-center justify-center pt-3.5 px-3 pointer-events-none">
+          <div className="max-w-full bg-slate-950/95 border border-slate-800 p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex flex-wrap items-center justify-center gap-2 pointer-events-auto animate-in slide-in-from-top-4 duration-300">
+            <span className="hidden sm:flex text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-amber-400 px-3 items-center gap-1.5 border-r border-slate-800 whitespace-nowrap">
               <Edit3 className="w-3.5 h-3.5 text-amber-400" />
               <span>ADJUST ROOF BOUNDARY</span>
             </span>
 
             <button
               onClick={handleAddPoint}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-sky-300 font-semibold flex items-center gap-1.5 transition-all"
+              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-sky-300 font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap"
               title="Add Point"
             >
-              <PlusCircle className="w-3.5 h-3.5 text-sky-400" />
+              <PlusCircle className="w-3.5 h-3.5 text-sky-400 shrink-0" />
               <span>+ Add Point</span>
             </button>
 
             <button
               onClick={handleAddObstacle}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-rose-300 font-semibold flex items-center gap-1.5 transition-all"
+              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-rose-300 font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap"
               title="Add Obstacle"
             >
-              <PlusCircle className="w-3.5 h-3.5 text-rose-400" />
+              <PlusCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
               <span>+ Add Obstacle</span>
             </button>
 
             <button
               onClick={handleUndo}
               disabled={undoHistoryRef.current.length === 0}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40"
+              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 whitespace-nowrap"
               title="Undo"
             >
-              <Undo2 className="w-3.5 h-3.5 text-amber-400" />
+              <Undo2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>Undo</span>
             </button>
 
             <button
               onClick={handleConfirmRoof}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 whitespace-nowrap"
             >
-              <CheckCheck className="w-4 h-4 text-slate-950 stroke-[3]" />
+              <CheckCheck className="w-4 h-4 text-slate-950 stroke-[3] shrink-0" />
               <span>Confirm roof →</span>
             </button>
           </div>

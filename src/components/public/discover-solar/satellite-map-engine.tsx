@@ -36,6 +36,22 @@ function worldPixelToLatLng(x: number, y: number, zoom: number) {
   return { lat, lng };
 }
 
+// The roof polygon is stored in a fixed 0..100 normalized space that was
+// calibrated against the map's initial geoZoom (~20.2, integer part 20).
+// Its on-screen pixel scale must grow/shrink by the same power-of-two
+// factor the basemap tiles do as the user zooms, or the overlay drifts out
+// of registration with the satellite image — the roof looks smaller/larger
+// on screen than it actually is, so boundary edits meant to trace the real
+// rooftop silently produce a normalized polygon with the wrong area.
+// zoomFraction (applied separately via ctx.scale during render, and divided
+// out of mouse deltas during dragging) already accounts for the continuous
+// part of the zoom; this factor accounts for the integer-zoom part.
+const REFERENCE_INTEGER_ZOOM = 20;
+function getZoomScaleFactor(currentZoom: number): number {
+  const integerZoom = Math.min(19, Math.floor(currentZoom));
+  return Math.pow(2, integerZoom - REFERENCE_INTEGER_ZOOM);
+}
+
 // Returns the leading fraction of a closed polygon's perimeter, walked
 // vertex-by-vertex from the start and interpolated across whichever edge
 // `progress` currently falls on — used to "trace in" the confirmed-roof
@@ -163,39 +179,46 @@ export function SatelliteMapEngine({
   const scaleY = 3.6;
 
   const normToCanvas = useCallback(
-    (pt: Point2D) => ({
-      x: (pt.x - 50) * scaleX,
-      y: (pt.y - 50) * scaleY,
-    }),
-    [scaleX, scaleY]
+    (pt: Point2D) => {
+      const s = getZoomScaleFactor(geoZoom);
+      return {
+        x: (pt.x - 50) * scaleX * s,
+        y: (pt.y - 50) * scaleY * s,
+      };
+    },
+    [scaleX, scaleY, geoZoom]
   );
 
   const canvasToNorm = useCallback(
-    (cx: number, cy: number) => ({
-      x: cx / scaleX + 50,
-      y: cy / scaleY + 50,
-    }),
-    [scaleX, scaleY]
+    (cx: number, cy: number) => {
+      const s = getZoomScaleFactor(geoZoom);
+      return {
+        x: cx / (scaleX * s) + 50,
+        y: cy / (scaleY * s) + 50,
+      };
+    },
+    [scaleX, scaleY, geoZoom]
   );
 
-  // Mouse Handlers for Interactive Vertex & Edge Editing (Stage 4)
-  const handleMouseDown = (e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // Shared pointer (mouse + touch) hit-testing for vertex/edge handles at Stage 4.
+  // Returns true when the point/click was consumed by the roof editor so the
+  // caller (mouse or touch) skips falling through to map-pan behavior.
+  const hitTestAndActivate = useCallback(
+    (clientX: number, clientY: number, isRightClick: boolean): boolean => {
+      const canvas = canvasRef.current;
+      if (!canvas || stage !== 4) return false;
 
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left - rect.width / 2;
-    const mouseY = e.clientY - rect.top - rect.height / 2;
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = clientX - rect.left - rect.width / 2;
+      const mouseY = clientY - rect.top - rect.height / 2;
 
-    const currentZoom = geoZoom;
-    const integerZoom = Math.min(19, Math.floor(currentZoom));
-    const zoomFraction = Math.pow(2, currentZoom - integerZoom);
+      const currentZoom = geoZoom;
+      const integerZoom = Math.min(19, Math.floor(currentZoom));
+      const zoomFraction = Math.pow(2, currentZoom - integerZoom);
 
-    const unscaledMouseX = mouseX / zoomFraction;
-    const unscaledMouseY = mouseY / zoomFraction;
+      const unscaledMouseX = mouseX / zoomFraction;
+      const unscaledMouseY = mouseY / zoomFraction;
 
-    // STAGE 4: ADJUST ROOF MODE
-    if (stage === 4) {
       const poly = location.roofPolygon || [];
 
       // 1. Check if hit existing vertex handle (Generous 16px touch/mouse target)
@@ -204,18 +227,17 @@ export function SatelliteMapEngine({
         const dist = Math.hypot(pt.x - unscaledMouseX, pt.y - unscaledMouseY);
 
         if (dist <= 16) {
-          if (e.button === 2) {
+          if (isRightClick) {
             // Right-click to delete vertex (enforce >= 3 vertices minimum)
-            e.preventDefault();
             if (poly.length > 3 && onRoofPolygonChanged) {
               const updated = poly.filter((_, idx) => idx !== i);
               onRoofPolygonChanged(updated);
             }
-            return;
+            return true;
           }
 
           activeVertexIndex.current = i;
-          return;
+          return true;
         }
       }
 
@@ -234,7 +256,7 @@ export function SatelliteMapEngine({
           updated.splice(i + 1, 0, newNormPt);
           onRoofPolygonChanged(updated);
           activeVertexIndex.current = i + 1;
-          return;
+          return true;
         }
       }
 
@@ -256,10 +278,107 @@ export function SatelliteMapEngine({
         if (distToEdge <= 10) {
           activeEdgeIndex.current = i;
           edgeDragStart.current = canvasToNorm(unscaledMouseX, unscaledMouseY);
-          return;
+          return true;
         }
       }
-    }
+
+      return false;
+    },
+    [stage, geoZoom, location.roofPolygon, normToCanvas, canvasToNorm, onRoofPolygonChanged]
+  );
+
+  // Shared pointer (mouse + touch) drag-move for an active vertex/edge.
+  // Returns true when it moved something, so the caller skips map panning.
+  const moveActiveVertexOrEdge = useCallback(
+    (clientX: number, clientY: number): boolean => {
+      const canvas = canvasRef.current;
+      if (!canvas) return false;
+
+      if (stage === 4 && activeVertexIndex.current !== null && onRoofPolygonChanged) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = clientX - rect.left - rect.width / 2;
+        const mouseY = clientY - rect.top - rect.height / 2;
+
+        const currentZoom = geoZoom;
+        const integerZoom = Math.min(19, Math.floor(currentZoom));
+        const zoomFraction = Math.pow(2, currentZoom - integerZoom);
+
+        const unscaledMouseX = mouseX / zoomFraction;
+        const unscaledMouseY = mouseY / zoomFraction;
+
+        const newNormPt = canvasToNorm(unscaledMouseX, unscaledMouseY);
+        newNormPt.x = Math.max(2, Math.min(98, newNormPt.x));
+        newNormPt.y = Math.max(2, Math.min(98, newNormPt.y));
+
+        const poly = [...(location.roofPolygon || [])];
+        poly[activeVertexIndex.current] = newNormPt;
+
+        // Reject drags that would cross the shape's own edges or collapse it
+        // into a razor-thin sliver — either way the area formula stops
+        // matching what's visually drawn. The vertex simply stops following
+        // the cursor at the boundary instead.
+        if (isPolygonEditValid(poly)) {
+          onRoofPolygonChanged(poly);
+        }
+        return true;
+      }
+
+      // Active edge dragging (moves both adjacent vertices in tandem)
+      if (stage === 4 && activeEdgeIndex.current !== null && edgeDragStart.current && onRoofPolygonChanged) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = clientX - rect.left - rect.width / 2;
+        const mouseY = clientY - rect.top - rect.height / 2;
+
+        const currentZoom = geoZoom;
+        const integerZoom = Math.min(19, Math.floor(currentZoom));
+        const zoomFraction = Math.pow(2, currentZoom - integerZoom);
+
+        const unscaledMouseX = mouseX / zoomFraction;
+        const unscaledMouseY = mouseY / zoomFraction;
+
+        const currentMouseNorm = canvasToNorm(unscaledMouseX, unscaledMouseY);
+        const deltaX = currentMouseNorm.x - edgeDragStart.current.x;
+        const deltaY = currentMouseNorm.y - edgeDragStart.current.y;
+        edgeDragStart.current = currentMouseNorm;
+
+        const poly = [...(location.roofPolygon || [])];
+        const i = activeEdgeIndex.current;
+        const j = (i + 1) % poly.length;
+
+        const nextPoly = [...poly];
+        nextPoly[i] = {
+          x: Math.max(2, Math.min(98, poly[i].x + deltaX)),
+          y: Math.max(2, Math.min(98, poly[i].y + deltaY)),
+        };
+        nextPoly[j] = {
+          x: Math.max(2, Math.min(98, poly[j].x + deltaX)),
+          y: Math.max(2, Math.min(98, poly[j].y + deltaY)),
+        };
+
+        // Same validity guard as single-vertex dragging above.
+        if (isPolygonEditValid(nextPoly)) {
+          onRoofPolygonChanged(nextPoly);
+        }
+        return true;
+      }
+
+      return false;
+    },
+    [stage, geoZoom, location.roofPolygon, canvasToNorm, onRoofPolygonChanged]
+  );
+
+  // "Latest" refs so the native touch-event listeners (registered once per
+  // geoZoom/centerLng change, see effect below) always call the current
+  // closures without needing to be re-bound on every roof edit.
+  const hitTestAndActivateRef = useRef(hitTestAndActivate);
+  hitTestAndActivateRef.current = hitTestAndActivate;
+  const moveActiveVertexOrEdgeRef = useRef(moveActiveVertexOrEdge);
+  moveActiveVertexOrEdgeRef.current = moveActiveVertexOrEdge;
+
+  // Mouse Handlers for Interactive Vertex & Edge Editing (Stage 4)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    const consumed = hitTestAndActivate(e.clientX, e.clientY, e.button === 2);
+    if (consumed) return;
 
     // Default: Inertial map drag panning
     isDragging.current = true;
@@ -267,80 +386,8 @@ export function SatelliteMapEngine({
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    // 1. STAGE 4 ACTIVE VERTEX DRAGGING
-    if (stage === 4 && activeVertexIndex.current !== null && onRoofPolygonChanged) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left - rect.width / 2;
-      const mouseY = e.clientY - rect.top - rect.height / 2;
-
-      const currentZoom = geoZoom;
-      const integerZoom = Math.min(19, Math.floor(currentZoom));
-      const zoomFraction = Math.pow(2, currentZoom - integerZoom);
-
-      const unscaledMouseX = mouseX / zoomFraction;
-      const unscaledMouseY = mouseY / zoomFraction;
-
-      const newNormPt = canvasToNorm(unscaledMouseX, unscaledMouseY);
-      newNormPt.x = Math.max(2, Math.min(98, newNormPt.x));
-      newNormPt.y = Math.max(2, Math.min(98, newNormPt.y));
-
-      const poly = [...(location.roofPolygon || [])];
-      poly[activeVertexIndex.current] = newNormPt;
-
-      // Reject drags that would cross the shape's own edges or collapse it
-      // into a razor-thin sliver — either way the area formula stops
-      // matching what's visually drawn. The vertex simply stops following
-      // the cursor at the boundary instead.
-      if (isPolygonEditValid(poly)) {
-        onRoofPolygonChanged(poly);
-      }
-      return;
-    }
-
-    // 2. STAGE 4 ACTIVE EDGE DRAGGING (Moves both adjacent vertices in tandem)
-    if (stage === 4 && activeEdgeIndex.current !== null && edgeDragStart.current && onRoofPolygonChanged) {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left - rect.width / 2;
-      const mouseY = e.clientY - rect.top - rect.height / 2;
-
-      const currentZoom = geoZoom;
-      const integerZoom = Math.min(19, Math.floor(currentZoom));
-      const zoomFraction = Math.pow(2, currentZoom - integerZoom);
-
-      const unscaledMouseX = mouseX / zoomFraction;
-      const unscaledMouseY = mouseY / zoomFraction;
-
-      const currentMouseNorm = canvasToNorm(unscaledMouseX, unscaledMouseY);
-      const deltaX = currentMouseNorm.x - edgeDragStart.current.x;
-      const deltaY = currentMouseNorm.y - edgeDragStart.current.y;
-      edgeDragStart.current = currentMouseNorm;
-
-      const poly = [...(location.roofPolygon || [])];
-      const i = activeEdgeIndex.current;
-      const j = (i + 1) % poly.length;
-
-      const nextPoly = [...poly];
-      nextPoly[i] = {
-        x: Math.max(2, Math.min(98, poly[i].x + deltaX)),
-        y: Math.max(2, Math.min(98, poly[i].y + deltaY)),
-      };
-      nextPoly[j] = {
-        x: Math.max(2, Math.min(98, poly[j].x + deltaX)),
-        y: Math.max(2, Math.min(98, poly[j].y + deltaY)),
-      };
-
-      // Same validity guard as single-vertex dragging above.
-      if (isPolygonEditValid(nextPoly)) {
-        onRoofPolygonChanged(nextPoly);
-      }
-      return;
-    }
+    // 1 & 2. STAGE 4 ACTIVE VERTEX/EDGE DRAGGING
+    if (moveActiveVertexOrEdge(e.clientX, e.clientY)) return;
 
     // 3. INERTIAL MAP PANNING
     if (!isDragging.current) return;
@@ -386,6 +433,11 @@ export function SatelliteMapEngine({
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length === 1) {
+        // Stage 4: a single finger landing on a vertex/edge handle drives the
+        // roof editor instead of panning the map underneath it.
+        const consumed = hitTestAndActivateRef.current(e.touches[0].clientX, e.touches[0].clientY, false);
+        if (consumed) return;
+
         isDragging.current = true;
         dragStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
       } else if (e.touches.length === 2) {
@@ -396,6 +448,12 @@ export function SatelliteMapEngine({
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1 && (activeVertexIndex.current !== null || activeEdgeIndex.current !== null)) {
+        e.preventDefault();
+        moveActiveVertexOrEdgeRef.current(e.touches[0].clientX, e.touches[0].clientY);
+        return;
+      }
+
       if (e.touches.length === 1 && isDragging.current) {
         e.preventDefault();
         const dx = e.touches[0].clientX - dragStart.current.x;
@@ -422,6 +480,9 @@ export function SatelliteMapEngine({
     };
 
     const onTouchEnd = () => {
+      activeVertexIndex.current = null;
+      activeEdgeIndex.current = null;
+      edgeDragStart.current = null;
       isDragging.current = false;
       touchStartDist = 0;
     };
@@ -808,10 +869,11 @@ export function SatelliteMapEngine({
     visiblePanels.forEach((p, idx) => {
       if (idx > renderLimit) return;
 
-      const px = (p.x - 50) * scaleX;
-      const py = (p.y - 50) * scaleY;
-      const pW = p.width * scaleX;
-      const pH = p.length * scaleY;
+      const zs = getZoomScaleFactor(geoZoom);
+      const px = (p.x - 50) * scaleX * zs;
+      const py = (p.y - 50) * scaleY * zs;
+      const pW = p.width * scaleX * zs;
+      const pH = p.length * scaleY * zs;
 
       ctx.save();
       ctx.translate(px, py);

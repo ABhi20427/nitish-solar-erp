@@ -11,6 +11,7 @@ import { CheckCircle2, Send, Zap } from 'lucide-react';
 export default function DedicatedQuotePage() {
   const { addLead } = useSolarStore();
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [submittedData, setSubmittedData] = useState<{ quotNo?: string; pdfBase64?: string; email?: string; name?: string } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -76,7 +77,8 @@ export default function DedicatedQuotePage() {
           source: 'nitish solar Dedicated Quote Page',
           priority: 'HIGH',
         });
-        setFormSubmitted({ quotNo: data.quotNo, pdfBase64: data.pdfBase64, email: form.email, name: form.name });
+        setSubmittedData({ quotNo: data.quotNo, pdfBase64: data.pdfBase64, email: form.email, name: form.name });
+        setFormSubmitted(true);
       } else {
         setErrorMessage(data.error || "We couldn't send your proposal. Please verify your email address and try again.");
       }
@@ -144,15 +146,33 @@ export default function DedicatedQuotePage() {
                 <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-9 h-9" />
                 </div>
-                <h3 className="font-display text-2xl font-semibold text-white">Enquiry Received</h3>
+                <h3 className="font-display text-2xl font-semibold text-white">Proposal Emailed & Received</h3>
                 <p className="text-sm text-slate-400 max-w-sm mx-auto font-light leading-relaxed">
-                  Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.
+                  {submittedData?.quotNo
+                    ? <>Your official Solar Proposal & Quotation PDF (<span className="text-amber-400 font-semibold">{submittedData.quotNo}</span>) has been generated and sent to <span className="text-white font-semibold">{submittedData.email}</span>.</>
+                    : 'Thank you. Your enquiry has been sent successfully. Our team will get back to you shortly.'}
                 </p>
-                <div className="pt-2 flex justify-center">
+                <div className="pt-2 flex items-center justify-center gap-3">
+                  {submittedData?.pdfBase64 && (
+                    <Button
+                      variant="accent"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `data:application/pdf;base64,${submittedData.pdfBase64}`;
+                        link.download = `Solar_Proposal_${submittedData.quotNo || 'Quotation'}.pdf`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
+                      Download Proposal PDF
+                    </Button>
+                  )}
                   <Button
                     variant="accent"
                     className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold"
-                    onClick={() => setFormSubmitted(false)}
+                    onClick={() => { setFormSubmitted(false); setSubmittedData(null); }}
                   >
                     Submit Another Inquiry
                   </Button>
