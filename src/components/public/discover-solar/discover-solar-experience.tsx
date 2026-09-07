@@ -89,7 +89,6 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
     selectedLocation.roofPolygon,
     selectedLocation.exclusionPolygons || [],
     selectedLocation.lat,
-    selectedLocation.zoom || 20.2,
     panelCount,
     selectedLocation.solarIrradiance
   );
@@ -194,7 +193,6 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       prev.roofPolygon,
       prev.exclusionPolygons,
       selectedLocation.lat,
-      selectedLocation.zoom || 20.2,
       panelCount,
       selectedLocation.solarIrradiance
     );
@@ -215,7 +213,6 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       newPoly,
       selectedLocation.exclusionPolygons || [],
       selectedLocation.lat,
-      selectedLocation.zoom || 20.2,
       panelCount,
       selectedLocation.solarIrradiance
     );
@@ -243,7 +240,6 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
       poly,
       selectedLocation.exclusionPolygons || [],
       selectedLocation.lat,
-      selectedLocation.zoom || 20.2,
       panelCount,
       selectedLocation.solarIrradiance
     );
@@ -261,18 +257,19 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const handleAddObstacle = () => {
     pushUndoState();
     const currentEx = selectedLocation.exclusionPolygons || [];
+    // ~2.4m x 2m footprint (typical water tank / stairwell hatch), in
+    // normalized units via geo-constants.ts's real-world scale.
     const newEx: Point2D[] = [
-      { x: 44, y: 44 },
-      { x: 56, y: 44 },
-      { x: 56, y: 56 },
-      { x: 44, y: 56 },
+      { x: 48, y: 48 },
+      { x: 52, y: 48 },
+      { x: 52, y: 52 },
+      { x: 48, y: 52 },
     ];
     const updatedEx = [...currentEx, newEx];
     const newMetrics = recalculateRoofMetrics(
       selectedLocation.roofPolygon,
       updatedEx,
       selectedLocation.lat,
-      selectedLocation.zoom || 20.2,
       panelCount,
       selectedLocation.solarIrradiance
     );
@@ -767,7 +764,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                       selectedLocation.exclusionPolygons || [],
                       selectedLocation.roofOrientationDeg || 0,
                       100,
-                      0.5
+                      0.5,
+                      selectedLocation.lat
                     ).totalPositionsAvailable;
                     const isExceeded = count > maxAvail;
                     const isSelected = panelCount === count || (count === 30 && panelCount > maxAvail && panelCount === maxAvail);

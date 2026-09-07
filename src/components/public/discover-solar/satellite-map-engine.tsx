@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { SatelliteLocation, VisualMode, Point2D } from './types';
 import { computePanelPlacement, computeInnerUsablePolygon, isPointInPolygon, isPolygonEditValid } from './roof-packing-algorithm';
+import { REFERENCE_INTEGER_ZOOM, NORMALIZED_SCALE_X, NORMALIZED_SCALE_Y } from './geo-constants';
+
+// setOptions() is only valid to call once for the lifetime of the page (the
+// loader warns and ignores repeats) — guard it at module scope so React
+// Strict Mode's double-invoked mount effect doesn't trip that warning.
+let googleMapsOptionsSet = false;
 
 interface SatelliteMapEngineProps {
   location: SatelliteLocation;
@@ -46,7 +53,9 @@ function worldPixelToLatLng(x: number, y: number, zoom: number) {
 // zoomFraction (applied separately via ctx.scale during render, and divided
 // out of mouse deltas during dragging) already accounts for the continuous
 // part of the zoom; this factor accounts for the integer-zoom part.
-const REFERENCE_INTEGER_ZOOM = 20;
+// REFERENCE_INTEGER_ZOOM is imported from geo-constants.ts — roof-packing-
+// algorithm.ts's area math derives from the same constant so a traced
+// polygon's real-world size stays correct regardless of viewing zoom.
 function getZoomScaleFactor(currentZoom: number): number {
   const integerZoom = Math.min(19, Math.floor(currentZoom));
   return Math.pow(2, integerZoom - REFERENCE_INTEGER_ZOOM);
@@ -106,14 +115,14 @@ export function SatelliteMapEngine({
 }: SatelliteMapEngineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // Geographic Center Coordinates (Lat, Lng) & Float Zoom Level
   const [centerLat, setCenterLat] = useState(location.lat);
   const [centerLng, setCenterLng] = useState(location.lng);
   const [geoZoom, setGeoZoom] = useState(20.2);
-
-  // Tile Cache: Map<tileKey, HTMLImageElement>
-  const tileCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   // Interactive Vertex & Edge Dragging Editor State (Stage 4 ADJUST ROOF)
   const activeVertexIndex = useRef<number | null>(null);
@@ -174,9 +183,54 @@ export function SatelliteMapEngine({
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Load the Google Maps JS API once and create a non-interactive Map
+  // instance that serves purely as the satellite imagery background — all
+  // pan/zoom/vertex-editing gestures are still captured by the canvas on
+  // top and drive centerLat/centerLng/geoZoom exactly as before; this map
+  // instance just mirrors that state to render the base imagery underneath.
+  useEffect(() => {
+    let cancelled = false;
+    if (!googleMapsOptionsSet) {
+      googleMapsOptionsSet = true;
+      setOptions({
+        key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+        v: 'weekly',
+      });
+    }
+    importLibrary('maps').then(({ Map }) => {
+      if (cancelled || !mapDivRef.current || mapInstanceRef.current) return;
+      mapInstanceRef.current = new Map(mapDivRef.current, {
+        center: { lat: centerLat, lng: centerLng },
+        zoom: geoZoom,
+        mapTypeId: 'satellite',
+        tilt: 0,
+        heading: 0,
+        disableDefaultUI: true,
+        gestureHandling: 'none',
+        keyboardShortcuts: false,
+        draggable: false,
+        clickableIcons: false,
+        isFractionalZoomEnabled: true,
+      });
+      setMapReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Mirror centerLat/centerLng/geoZoom onto the underlying Google Map so its
+  // satellite imagery tracks the same camera state the canvas overlay uses.
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    mapInstanceRef.current.setCenter({ lat: centerLat, lng: centerLng });
+    mapInstanceRef.current.setZoom(geoZoom);
+  }, [centerLat, centerLng, geoZoom]);
+
   // Spatial coordinate mapping helpers (Normalized 0..100 space <-> Viewport canvas space)
-  const scaleX = 4.2;
-  const scaleY = 3.6;
+  const scaleX = NORMALIZED_SCALE_X;
+  const scaleY = NORMALIZED_SCALE_Y;
 
   const normToCanvas = useCallback(
     (pt: Point2D) => {
@@ -545,56 +599,20 @@ export function SatelliteMapEngine({
 
     ctx.clearRect(0, 0, width, height);
 
+    // Base satellite imagery is now rendered by the Google Map instance
+    // sitting behind this (transparent) canvas — see mapDivRef below. The
+    // canvas only draws the roof/panel overlay on top of it. zoomFraction
+    // keeps the overlay's own scale math (normToCanvas / getZoomScaleFactor)
+    // identical to before so it stays registered with the imagery.
     const currentZoom = geoZoom;
     const integerZoom = Math.min(19, Math.floor(currentZoom));
     const zoomFraction = Math.pow(2, currentZoom - integerZoom);
-
-    const centerWorldPx = latLngToWorldPixel(centerLat, centerLng, integerZoom);
-
-    const tileSize = 256;
-    const cols = Math.ceil(width / (tileSize * zoomFraction)) + 3;
-    const rows = Math.ceil(height / (tileSize * zoomFraction)) + 3;
-
-    const startTileX = Math.floor(centerWorldPx.x / tileSize) - Math.floor(cols / 2);
-    const startTileY = Math.floor(centerWorldPx.y / tileSize) - Math.floor(rows / 2);
 
     ctx.save();
     ctx.translate(width / 2, height / 2);
     ctx.scale(zoomFraction, zoomFraction);
 
-    let hasTileRendered = false;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        const tx = startTileX + c;
-        const ty = startTileY + r;
-
-        if (tx < 0 || ty < 0) continue;
-
-        const tileWorldX = tx * tileSize;
-        const tileWorldY = ty * tileSize;
-
-        const drawX = tileWorldX - centerWorldPx.x;
-        const drawY = tileWorldY - centerWorldPx.y;
-
-        const tileKey = `${integerZoom}/${ty}/${tx}`;
-        let img = tileCacheRef.current.get(tileKey);
-
-        if (!img) {
-          img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.src = `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${integerZoom}/${ty}/${tx}`;
-          tileCacheRef.current.set(tileKey, img);
-        }
-
-        if (img.complete && img.naturalWidth > 0) {
-          hasTileRendered = true;
-          ctx.drawImage(img, drawX, drawY, tileSize + 0.5, tileSize + 0.5);
-        }
-      }
-    }
-
-    if (!hasTileRendered) {
+    if (!mapReady) {
       drawAerialCanvasGrid(ctx, width, height);
     }
 
@@ -637,7 +655,7 @@ export function SatelliteMapEngine({
     }
 
     ctx.restore();
-  }, [centerLat, centerLng, geoZoom, screenDim, stage, visualMode, panelCount, sunTime, isScanning, scanProgress, location, normToCanvas]);
+  }, [centerLat, centerLng, geoZoom, screenDim, stage, visualMode, panelCount, sunTime, isScanning, scanProgress, location, normToCanvas, mapReady]);
 
   const drawAerialCanvasGrid = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.fillStyle = '#0f172a';
@@ -724,7 +742,7 @@ export function SatelliteMapEngine({
     // "usable area" reads as computed from a confirmed boundary rather than
     // appearing simultaneously with it.
     if (revealProgress >= 1) {
-      const innerPoly = computeInnerUsablePolygon(poly, 0.5, centerLat, geoZoom);
+      const innerPoly = computeInnerUsablePolygon(poly, 0.5, centerLat);
       if (innerPoly.length >= 3) {
         const innerPts = innerPoly.map(normToCanvas);
 
@@ -854,7 +872,7 @@ export function SatelliteMapEngine({
     ctx.save();
 
     // Run dynamic 2D packing algorithm strictly inside inner usable polygon & outside obstacles
-    const placement = computePanelPlacement(poly, exclusions, orientationDeg, count, 0.5);
+    const placement = computePanelPlacement(poly, exclusions, orientationDeg, count, 0.5, location.lat);
     const visiblePanels = placement.panels;
 
     let renderLimit = visiblePanels.length;
@@ -933,8 +951,11 @@ export function SatelliteMapEngine({
         stage === 4 ? 'cursor-crosshair' : 'cursor-grab active:cursor-grabbing'
       }`}
     >
-      {/* High-Resolution Fullscreen Map Canvas */}
-      <canvas ref={canvasRef} className="w-full h-full object-cover" />
+      {/* Google Maps satellite imagery — non-interactive; mirrors centerLat/centerLng/geoZoom */}
+      <div ref={mapDivRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+
+      {/* High-Resolution Fullscreen Overlay Canvas (roof/panel drawing on top of the map) */}
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full object-cover" />
 
       {/* Subtle Zoom Controls */}
       <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-2 pointer-events-auto">

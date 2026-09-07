@@ -1,4 +1,5 @@
 import { Point2D, PanelModulePosition, BuildingConfidenceType, CanonicalRoofMetrics } from './types';
+import { metersPerNormalizedUnitX, metersPerNormalizedUnitY } from './geo-constants';
 
 /**
  * 2D Ray-Casting Point-in-Polygon Test
@@ -126,52 +127,153 @@ export function isPolygonEditValid(polygon: Point2D[]): boolean {
 }
 
 /**
- * Calculates true physical polygon area in square meters (m²) using Web Mercator geographic resolution at reference zoom 19
+ * Converts a normalized-space polygon to real physical meters, using the
+ * same per-axis calibration the map engine renders with (geo-constants.ts)
+ * — this is what keeps a boundary traced against the real satellite image
+ * reporting its true square footage instead of an arbitrary number.
  */
-export function calculateGeographicPolygonAreaM2(
-  polygon: Point2D[],
-  lat: number = 18.559,
-  zoom: number = 20.2
-): number {
-  if (!polygon || polygon.length < 3) return 0;
-
-  // Web Mercator meters per pixel resolution at base reference zoom 19
-  const latRad = (lat * Math.PI) / 180;
-  const metersPerPixelAtZoom19 = (Math.cos(latRad) * 40075016.6855) / (256 * Math.pow(2, 19));
-
-  // Normalized 0..100 space coordinate scaling (calibration factors for physical m²)
-  const scaleXMeters = 1.12 * metersPerPixelAtZoom19;
-  const scaleYMeters = 1.00 * metersPerPixelAtZoom19;
-
-  // Convert each normalized 0..100 point to physical meters (origin at center (50, 50))
-  const pointsMeters = polygon.map((pt) => ({
-    x: (pt.x - 50) * scaleXMeters,
-    y: (pt.y - 50) * scaleYMeters,
+function polygonToMeters(polygon: Point2D[], lat: number): Point2D[] {
+  const metersPerUnitX = metersPerNormalizedUnitX(lat);
+  const metersPerUnitY = metersPerNormalizedUnitY(lat);
+  return polygon.map((pt) => ({
+    x: (pt.x - 50) * metersPerUnitX,
+    y: (pt.y - 50) * metersPerUnitY,
   }));
+}
 
-  // Shoelace formula for polygon area in m²
+function polygonFromMeters(pointsMeters: Point2D[], lat: number): Point2D[] {
+  const metersPerUnitX = metersPerNormalizedUnitX(lat);
+  const metersPerUnitY = metersPerNormalizedUnitY(lat);
+  return pointsMeters.map((pt) => ({
+    x: pt.x / metersPerUnitX + 50,
+    y: pt.y / metersPerUnitY + 50,
+  }));
+}
+
+function shoelaceAreaM2(pointsMeters: Point2D[]): number {
   let areaM2 = 0;
   for (let i = 0; i < pointsMeters.length; i++) {
     const j = (i + 1) % pointsMeters.length;
     areaM2 += pointsMeters[i].x * pointsMeters[j].y;
     areaM2 -= pointsMeters[j].x * pointsMeters[i].y;
   }
-
   return Math.abs(areaM2) / 2;
 }
 
 /**
+ * Calculates true physical polygon area in square meters (m²), using the
+ * same normalized-space-to-meters calibration the renderer draws with
+ * (geo-constants.ts) — so this number always matches what's actually
+ * traced on the satellite image, at any latitude or viewing zoom.
+ */
+export function calculateGeographicPolygonAreaM2(polygon: Point2D[], lat: number = 18.559): number {
+  if (!polygon || polygon.length < 3) return 0;
+  return shoelaceAreaM2(polygonToMeters(polygon, lat));
+}
+
+/**
+ * True if polygon (in meters space, any winding) is wound counter-clockwise
+ * in standard math orientation (y-up). Used to pick which perpendicular of
+ * an edge points into the polygon's interior.
+ */
+function isCounterClockwise(pointsMeters: Point2D[]): boolean {
+  let signedArea = 0;
+  for (let i = 0; i < pointsMeters.length; i++) {
+    const j = (i + 1) % pointsMeters.length;
+    signedArea += pointsMeters[i].x * pointsMeters[j].y - pointsMeters[j].x * pointsMeters[i].y;
+  }
+  return signedArea > 0;
+}
+
+/**
+ * Offsets a simple polygon inward by `distanceMeters` along each edge's
+ * normal, then re-intersects consecutive offset edges to find the new
+ * vertices — the standard straight-skeleton-adjacent "polygon erosion"
+ * technique, done here in real meters space (not the display's normalized
+ * space, whose X/Y scales differ) so the setback is geometrically correct
+ * regardless of the roof's aspect ratio or the display's screen coordinate
+ * quirks. Falls back to null for a vertex whose neighboring edges are
+ * parallel (no unique intersection) or that inverts across the polygon
+ * (shape too small/thin for this setback) — callers fall back to the
+ * simpler centroid-scaling approximation in that case.
+ */
+function offsetPolygonInward(pointsMeters: Point2D[], distanceMeters: number): Point2D[] | null {
+  const n = pointsMeters.length;
+  if (n < 3 || distanceMeters <= 0) return pointsMeters;
+
+  const ccw = isCounterClockwise(pointsMeters);
+
+  // For each edge, the offset line: a point on it plus its inward normal.
+  const edgeOffsetLines = pointsMeters.map((p1, i) => {
+    const p2 = pointsMeters[(i + 1) % n];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const len = Math.hypot(dx, dy);
+    if (len === 0) return null;
+    // Perpendicular to (dx,dy); sign chosen so it points into a CCW polygon's
+    // interior (and flipped for CW).
+    const nx = (ccw ? -dy : dy) / len;
+    const ny = (ccw ? dx : -dx) / len;
+    return {
+      point: { x: p1.x + nx * distanceMeters, y: p1.y + ny * distanceMeters },
+      dir: { x: dx, y: dy },
+    };
+  });
+
+  if (edgeOffsetLines.some((e) => e === null)) return null;
+
+  const result: Point2D[] = [];
+  for (let i = 0; i < n; i++) {
+    const prev = edgeOffsetLines[(i - 1 + n) % n]!;
+    const curr = edgeOffsetLines[i]!;
+
+    // Intersect the two offset lines: prev.point + t*prev.dir == curr.point + s*curr.dir
+    const denom = prev.dir.x * curr.dir.y - prev.dir.y * curr.dir.x;
+    if (Math.abs(denom) < 1e-9) return null; // parallel neighboring edges
+
+    const ex = curr.point.x - prev.point.x;
+    const ey = curr.point.y - prev.point.y;
+    const t = (ex * curr.dir.y - ey * curr.dir.x) / denom;
+
+    const vertex = {
+      x: prev.point.x + t * prev.dir.x,
+      y: prev.point.y + t * prev.dir.y,
+    };
+
+    // Sanity check: the offset vertex must have moved toward the polygon's
+    // original centroid-ward side, not flipped past it — a flip means this
+    // setback is too large for the shape at this corner (thin/small roof).
+    const original = pointsMeters[i];
+    const movedDist = Math.hypot(vertex.x - original.x, vertex.y - original.y);
+    if (movedDist > distanceMeters * 4) return null;
+
+    result.push(vertex);
+  }
+
+  return isPolygonSelfIntersecting(result) ? null : result;
+}
+
+/**
  * COMPUTES INNER USABLE POLYGON INSET BY SETBACK DISTANCE (e.g. 0.5 meters)
+ * — a true geometric edge offset computed in real meters (see
+ * offsetPolygonInward), with the old flat centroid-scaling as a safety-net
+ * fallback for shapes the offset can't handle (e.g. too thin/small, or
+ * concave corners where the offset would invert).
  */
 export function computeInnerUsablePolygon(
   roofPolygon: Point2D[],
   setbackMeters: number = 0.5,
-  lat: number = 18.559,
-  zoom: number = 20.2
+  lat: number = 18.559
 ): Point2D[] {
   if (!roofPolygon || roofPolygon.length < 3) return [];
 
-  // Calculate roof center centroid
+  const pointsMeters = polygonToMeters(roofPolygon, lat);
+  const offsetMeters = offsetPolygonInward(pointsMeters, setbackMeters);
+  if (offsetMeters) {
+    return polygonFromMeters(offsetMeters, lat);
+  }
+
+  // Fallback: scale vertices inward toward centroid by a flat percentage.
   let cx = 0,
     cy = 0;
   roofPolygon.forEach((pt) => {
@@ -181,16 +283,11 @@ export function computeInnerUsablePolygon(
   cx /= roofPolygon.length;
   cy /= roofPolygon.length;
 
-  // Inset scale factor (~0.5m setback corresponds to ~5% inward scaling towards centroid)
   const insetFactor = Math.min(0.12, (setbackMeters * 1.6) / 100);
-
-  // Scale vertices inward toward centroid by insetFactor
-  const innerPolygon = roofPolygon.map((pt) => ({
+  return roofPolygon.map((pt) => ({
     x: pt.x + (cx - pt.x) * insetFactor,
     y: pt.y + (cy - pt.y) * insetFactor,
   }));
-
-  return innerPolygon;
 }
 
 /**
@@ -200,26 +297,25 @@ export function recalculateRoofMetrics(
   roofPolygon: Point2D[],
   exclusionPolygons: Point2D[][] = [],
   lat: number = 18.559,
-  zoom: number = 20.2,
   requestedPanelCount: number = 24,
   solarIrradiance: number = 4.85
 ): CanonicalRoofMetrics {
   const SQM_TO_SQFT = 10.7639104;
 
   // 1. Total Physical Roof Area
-  const totalRoofAreaM2 = calculateGeographicPolygonAreaM2(roofPolygon, lat, zoom);
+  const totalRoofAreaM2 = calculateGeographicPolygonAreaM2(roofPolygon, lat);
   const totalRoofAreaSqFt = Math.round(totalRoofAreaM2 * SQM_TO_SQFT);
 
   // 2. Obstacle Exclusion Area
   let obstructionAreaM2 = 0;
   exclusionPolygons.forEach((ex) => {
-    obstructionAreaM2 += calculateGeographicPolygonAreaM2(ex, lat, zoom);
+    obstructionAreaM2 += calculateGeographicPolygonAreaM2(ex, lat);
   });
   const obstructionAreaSqFt = Math.round(obstructionAreaM2 * SQM_TO_SQFT);
 
   // 3. Inner Usable Polygon inset by 0.5m setback
-  const innerUsablePoly = computeInnerUsablePolygon(roofPolygon, 0.5, lat, zoom);
-  let rawUsableAreaM2 = calculateGeographicPolygonAreaM2(innerUsablePoly, lat, zoom);
+  const innerUsablePoly = computeInnerUsablePolygon(roofPolygon, 0.5, lat);
+  let rawUsableAreaM2 = calculateGeographicPolygonAreaM2(innerUsablePoly, lat);
   let usableRoofAreaM2 = Math.max(5, rawUsableAreaM2 - obstructionAreaM2);
   let usableRoofAreaSqFt = Math.round(usableRoofAreaM2 * SQM_TO_SQFT);
 
@@ -246,7 +342,7 @@ export function recalculateRoofMetrics(
   // Development Diagnostic Log
   if (process.env.NODE_ENV !== 'production') {
     console.log(
-      `[Canonical Roof Metrics] lat=${lat}, zoom=${zoom} | Vertices: ${roofPolygon.length} | ` +
+      `[Canonical Roof Metrics] lat=${lat} | Vertices: ${roofPolygon.length} | ` +
       `Total: ${totalRoofAreaM2.toFixed(2)} m² (${totalRoofAreaSqFt} sq.ft) | ` +
       `Usable: ${usableRoofAreaM2.toFixed(2)} m² (${usableRoofAreaSqFt} sq.ft) | ` +
       `Panels: ${activePanels} (${capacityKw} kW)`
@@ -289,35 +385,40 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
 
   let roofPolygon: Point2D[] = [];
 
+  // Vertex extents below are calibrated against geo-constants.ts's real
+  // meters-per-normalized-unit so each style lands close to its labeled
+  // square footage — before calculateGeographicPolygonAreaM2 was corrected
+  // to match the renderer's actual scale, these shapes were unknowingly
+  // reporting several times their intended size.
   if (style === 0) {
     // L-Shaped Building Footprint (~1,050 sq.ft)
     roofPolygon = [
-      { x: 28, y: 26 },
-      { x: 72, y: 26 },
-      { x: 72, y: 50 },
+      { x: 41, y: 40.2 },
+      { x: 59, y: 40.2 },
+      { x: 59, y: 50 },
       { x: 50, y: 50 },
-      { x: 50, y: 74 },
-      { x: 28, y: 74 },
+      { x: 50, y: 59.8 },
+      { x: 41, y: 59.8 },
     ];
   } else if (style === 1) {
     // Irregular Hip Roof with Chamfered Corners (~1,120 sq.ft)
     roofPolygon = [
-      { x: 30, y: 26 },
-      { x: 70, y: 26 },
-      { x: 76, y: 34 },
-      { x: 76, y: 66 },
-      { x: 68, y: 74 },
-      { x: 32, y: 74 },
-      { x: 24, y: 66 },
-      { x: 24, y: 34 },
+      { x: 41.8, y: 40.2 },
+      { x: 58.2, y: 40.2 },
+      { x: 60.6, y: 43.5 },
+      { x: 60.6, y: 56.5 },
+      { x: 57.4, y: 59.8 },
+      { x: 42.6, y: 59.8 },
+      { x: 39.4, y: 56.5 },
+      { x: 39.4, y: 43.5 },
     ];
   } else {
-    // Standard High-Efficiency Rectangular Roof (~980 sq.ft)
+    // Standard High-Efficiency Rectangular Roof (~1,000 sq.ft)
     roofPolygon = [
-      { x: 28, y: 27 },
-      { x: 72, y: 27 },
-      { x: 72, y: 73 },
-      { x: 28, y: 73 },
+      { x: 41, y: 41 },
+      { x: 59, y: 41 },
+      { x: 59, y: 59 },
+      { x: 41, y: 59 },
     ];
   }
 
@@ -328,7 +429,7 @@ export function generateRealisticRoofGeometry(lat: number, lng: number): {
   // one via "+ Add Obstacle" while adjusting the boundary.
   const exclusionPolygons: Point2D[][] = [];
 
-  const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons, lat, 20.2, 24, 4.85);
+  const metrics = recalculateRoofMetrics(roofPolygon, exclusionPolygons, lat, 24, 4.85);
 
   return {
     roofPolygon,
@@ -348,7 +449,8 @@ export function computePanelPlacement(
   exclusionPolygons: Point2D[][] = [],
   roofOrientationDeg: number = 0,
   requestedCount: number = 24,
-  setbackMeters: number = 0.5
+  setbackMeters: number = 0.5,
+  lat: number = 18.559
 ): {
   panels: PanelModulePosition[];
   totalPositionsAvailable: number;
@@ -376,7 +478,7 @@ export function computePanelPlacement(
   }
 
   // Compute inner usable polygon inset by setback distance
-  const usablePoly = computeInnerUsablePolygon(roofPolygon, setbackMeters);
+  const usablePoly = computeInnerUsablePolygon(roofPolygon, setbackMeters, lat);
 
   // Find bounding box of inner usable polygon
   let minX = 100,
@@ -390,10 +492,15 @@ export function computePanelPlacement(
     if (pt.y > maxY) maxY = pt.y;
   });
 
-  // Panel Module Specifications in normalized space (~6.6 x 4.0 units)
-  const pW = 6.6;
-  const pH = 4.0;
-  const gap = 0.6;
+  // Panel module footprint: ~2.1m x 1.05m (typical 450W residential module),
+  // expressed in normalized units via geo-constants.ts's real-world scale —
+  // previously these were tuned against the area math's old, uncorrected
+  // meters conversion and worked out to a physically oversized ~4m x 2m panel.
+  const metersPerUnitX = metersPerNormalizedUnitX(lat);
+  const metersPerUnitY = metersPerNormalizedUnitY(lat);
+  const pW = 2.1 / metersPerUnitX;
+  const pH = 1.05 / metersPerUnitY;
+  const gap = 0.3 / metersPerUnitX;
 
   // Rotation transform helpers
   const rad = (dominantAngleDeg * Math.PI) / 180;
