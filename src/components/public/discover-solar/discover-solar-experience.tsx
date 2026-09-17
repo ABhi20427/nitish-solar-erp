@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   X,
-  MapPin,
   Sparkles,
   ArrowRight,
   Sun,
@@ -14,18 +14,15 @@ import {
   IndianRupee,
   TreePine,
   Activity,
-  Layers,
-  Sliders,
-  Compass,
   Check,
   ShieldCheck,
   Edit3,
   PlusCircle,
   CheckCheck,
   Undo2,
-  TrendingUp,
-  Cpu,
+  Radio,
 } from 'lucide-react';
+import { BrandLogo } from '@/components/public/brand-logo';
 import { AddressAutocomplete, PRESET_SATELLITE_LOCATIONS } from './address-autocomplete';
 import { SatelliteMapEngine } from './satellite-map-engine';
 import { CountUp } from './count-up';
@@ -35,7 +32,8 @@ import { useSolarStore } from '@/lib/store-context';
 
 interface DiscoverSolarExperienceProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
+  isStandalonePage?: boolean;
 }
 
 // Header step navigator ranges
@@ -46,7 +44,11 @@ const HEADER_STEPS = [
   { label: 'Array Design', min: 8, max: 999 },
 ] as const;
 
-export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperienceProps) {
+export function DiscoverSolarExperience({
+  isOpen,
+  onClose,
+  isStandalonePage = false,
+}: DiscoverSolarExperienceProps) {
   const { addLead } = useSolarStore();
 
   const initialLoc: SatelliteLocation = PRESET_SATELLITE_LOCATIONS[0];
@@ -96,6 +98,15 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const STAGE_ORDER = [1, 2, 3, 4, 6, 7, 8, 11, 12];
   const stageOrderIdx = STAGE_ORDER.indexOf(stage as number);
   const overallProgressPct = stageOrderIdx === -1 ? 0 : (stageOrderIdx / (STAGE_ORDER.length - 1)) * 100;
+
+  // Exit Handler
+  const handleExit = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      window.location.href = '/';
+    }
+  };
 
   // Stage 2 Property Zoom Controller
   useEffect(() => {
@@ -257,8 +268,6 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
   const handleAddObstacle = () => {
     pushUndoState();
     const currentEx = selectedLocation.exclusionPolygons || [];
-    // ~2.4m x 2m footprint (typical water tank / stairwell hatch), in
-    // normalized units via geo-constants.ts's real-world scale.
     const newEx: Point2D[] = [
       { x: 48, y: 48 },
       { x: 52, y: 48 },
@@ -348,10 +357,10 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             <img
               src="/images/solar-vision-hero.jpg"
               alt="Solar Vision Sunset Landscape"
-              className="w-full h-full object-cover object-[85%_center] animate-in fade-in duration-500"
+              className="w-full h-full object-cover object-[85%_center] animate-in fade-in duration-500 opacity-60"
             />
-            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#070A0F] via-[#070A0F]/70 to-transparent pointer-events-none" />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/40 to-transparent pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-[#070A0F] via-[#070A0F]/80 to-transparent pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#070A0F]/90 via-[#070A0F]/50 to-transparent pointer-events-none" />
           </div>
         ) : (
           <SatelliteMapEngine
@@ -384,51 +393,113 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         />
       </div>
 
-      {/* TOP HEADER NAVIGATION BAR */}
-      <header className="relative z-20 flex items-center justify-between px-6 py-3.5 bg-slate-950/90 border-b border-slate-800 backdrop-blur-2xl shadow-xl">
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 transition-all duration-700 ease-out"
-            style={{ width: `${overallProgressPct}%` }}
-          />
+      {/* TOP HEADER NAVIGATION CONTAINER WITH WEBSITE NAVBAR & STEP INDICATOR */}
+      <header className="relative z-20 flex flex-col bg-[#0B0F17]/95 border-b border-white/10 backdrop-blur-xl shadow-xl shrink-0">
+        {/* TOP ROW: WEBSITE NAVIGATION BAR */}
+        <div className="w-full px-5 sm:px-8 lg:px-12 py-3.5 flex items-center justify-between border-b border-white/5">
+          {/* Website Brand Logo */}
+          <Link
+            href="/"
+            className="shrink-0 transition-transform duration-300 ease-out hover:scale-[1.03] active:scale-[0.97]"
+          >
+            <BrandLogo variant="light" />
+          </Link>
+
+          {/* Website Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-1 text-sm font-medium">
+            {[
+              { label: 'Home', href: '/' },
+              { label: 'About', href: '/about' },
+              { label: 'Solutions', href: '/solutions' },
+              { label: 'Calculator', href: '/calculator' },
+              { label: 'Contact', href: '/contact' },
+            ].map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="px-4 py-2 text-xs xl:text-sm font-medium rounded-full text-slate-300 hover:text-white hover:bg-white/[0.07] transition-all duration-200"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Controls */}
+          <div className="flex items-center gap-3">
+            {stage >= 3 && (
+              <button
+                onClick={() => setStage(1)}
+                className="text-xs font-semibold text-slate-300 hover:text-white px-3.5 py-2 rounded-full border border-white/10 hover:bg-white/10 transition-all flex items-center gap-1.5 shadow-sm"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                <span>Change Location</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleExit}
+              className="p-2.5 rounded-full bg-white/5 border border-white/10 text-slate-300 hover:text-white hover:bg-white/15 hover:border-white/20 transition-all shadow-sm"
+              aria-label="Close experience"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-5">
-          <div className="flex items-center gap-2 text-white font-display font-black tracking-tight text-lg">
-            <span>Solar</span><span className="text-amber-400">Vision</span>
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-widest uppercase bg-slate-900 border border-slate-800 text-amber-400 whitespace-nowrap">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              REAL GEOGRAPHIC ENGINE
-            </span>
+        {/* BOTTOM ROW: STEP PROGRESS INDICATOR BAR */}
+        <div className="relative flex items-center justify-between px-5 sm:px-8 lg:px-12 py-3 bg-[#070A0F]/60">
+          {/* Animated progress bar line */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-white/5 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 transition-all duration-700 ease-out shadow-[0_0_12px_rgba(245,158,11,0.6)]"
+              style={{ width: `${overallProgressPct}%` }}
+            />
           </div>
 
-          <div className="hidden md:flex items-center border-l border-slate-800/90 pl-5">
+          {/* Steps */}
+          <div className="flex items-center gap-3 sm:gap-8 overflow-x-auto no-scrollbar py-0.5 max-w-full">
             {HEADER_STEPS.map((step, i) => {
               const status = stage > step.max ? 'complete' : stage >= step.min ? 'active' : 'upcoming';
               return (
                 <React.Fragment key={step.label}>
-                  <div className="flex items-center gap-2">
+                  <div
+                    onClick={() => {
+                      if (status === 'complete') {
+                        if (i === 0) setStage(1);
+                        else if (i === 1) setStage(3);
+                        else if (i === 2) setStage(6);
+                        else if (i === 3) setStage(8);
+                      }
+                    }}
+                    className={`flex items-center gap-2.5 transition-all ${
+                      status === 'complete' ? 'cursor-pointer hover:opacity-80' : ''
+                    }`}
+                  >
                     <span
-                      className={`flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-black shrink-0 transition-all duration-500 ${
+                      className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold shrink-0 transition-all duration-500 ${
                         status === 'complete'
-                          ? 'bg-amber-500 text-slate-950'
+                          ? 'bg-amber-500 text-slate-950 font-black shadow-[0_0_10px_rgba(245,158,11,0.4)]'
                           : status === 'active'
-                          ? 'bg-amber-500/20 border border-amber-400 text-amber-400'
-                          : 'bg-slate-900 border border-slate-800 text-slate-500'
+                          ? 'bg-amber-500/20 border border-amber-400 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.2)]'
+                          : 'bg-white/5 border border-white/10 text-slate-500'
                       }`}
                     >
-                      {status === 'complete' ? <Check className="w-3 h-3 text-slate-950 stroke-[3]" /> : i + 1}
+                      {status === 'complete' ? <Check className="w-3.5 h-3.5 text-slate-950 stroke-[3]" /> : i + 1}
                     </span>
                     <span
-                      className={`text-[11px] font-bold uppercase tracking-[0.1em] whitespace-nowrap transition-colors duration-500 ${
-                        status === 'upcoming' ? 'text-slate-500' : 'text-slate-100'
+                      className={`text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-colors duration-500 ${
+                        status === 'active'
+                          ? 'text-amber-400 font-semibold'
+                          : status === 'complete'
+                          ? 'text-slate-200'
+                          : 'text-slate-500'
                       }`}
                     >
                       {step.label}
                     </span>
                   </div>
                   {i < HEADER_STEPS.length - 1 && (
-                    <span className="relative w-7 h-[2px] mx-2.5 bg-slate-800 overflow-hidden shrink-0">
+                    <span className="relative w-6 sm:w-12 h-[2px] bg-white/10 overflow-hidden shrink-0">
                       <span
                         className={`absolute inset-y-0 left-0 bg-amber-400 transition-all duration-500 ${
                           stage > step.max ? 'w-full' : 'w-0'
@@ -440,41 +511,26 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               );
             })}
           </div>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {stage >= 3 && (
-            <button
-              onClick={() => setStage(1)}
-              className="text-xs font-semibold text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl border border-slate-800 hover:bg-slate-900 transition-all flex items-center gap-1.5 shadow-sm"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-              <span>Change Location</span>
-            </button>
-          )}
-
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-slate-800 transition-all"
-            aria-label="Close experience"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-400 shrink-0">
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>STEP {stageOrderIdx + 1} OF {STAGE_ORDER.length}</span>
+          </div>
         </div>
       </header>
 
       {/* FLOATING COMPACT EDITOR BAR (ONLY IN STAGE 4 ADJUST ROOF) */}
       {stage === 4 && (
         <div className="relative z-30 flex items-center justify-center pt-3.5 px-3 pointer-events-none">
-          <div className="max-w-full bg-slate-950/95 border border-slate-800 p-2.5 rounded-2xl shadow-2xl backdrop-blur-2xl flex flex-wrap items-center justify-center gap-2 pointer-events-auto animate-in slide-in-from-top-4 duration-300">
-            <span className="hidden sm:flex text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-amber-400 px-3 items-center gap-1.5 border-r border-slate-800 whitespace-nowrap">
+          <div className="max-w-full bg-[#0B0F17]/95 border border-white/10 p-2.5 rounded-2xl shadow-2xl backdrop-blur-xl flex flex-wrap items-center justify-center gap-2 pointer-events-auto animate-in slide-in-from-top-4 duration-300">
+            <span className="hidden sm:flex text-[11px] font-mono font-bold uppercase tracking-[0.1em] text-amber-400 px-3 items-center gap-1.5 border-r border-white/10 whitespace-nowrap">
               <Edit3 className="w-3.5 h-3.5 text-amber-400" />
               <span>ADJUST ROOF BOUNDARY</span>
             </span>
 
             <button
               onClick={handleAddPoint}
-              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-sky-300 font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-sky-300 font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap"
               title="Add Point"
             >
               <PlusCircle className="w-3.5 h-3.5 text-sky-400 shrink-0" />
@@ -483,7 +539,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
             <button
               onClick={handleAddObstacle}
-              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-rose-300 font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-rose-300 font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap"
               title="Add Obstacle"
             >
               <PlusCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
@@ -493,7 +549,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             <button
               onClick={handleUndo}
               disabled={undoHistoryRef.current.length === 0}
-              className="px-3 sm:px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 whitespace-nowrap"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs text-slate-300 font-semibold flex items-center gap-1.5 transition-all disabled:opacity-40 whitespace-nowrap"
               title="Undo"
             >
               <Undo2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -502,7 +558,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
             <button
               onClick={handleConfirmRoof}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 whitespace-nowrap"
+              className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs flex items-center gap-1.5 transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] active:scale-95 whitespace-nowrap"
             >
               <CheckCheck className="w-4 h-4 text-slate-950 stroke-[3] shrink-0" />
               <span>Confirm roof →</span>
@@ -530,7 +586,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               Enter your address, coordinates, or Google Maps link to measure your actual roof geometry and design your solar system.
             </p>
 
-            <div className="pt-2">
+            <div className="pt-2 bg-[#0B0F17]/90 p-5 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl">
               <AddressAutocomplete onSelectLocation={handleSelectLocation} initialValue={selectedLocation.address} />
             </div>
           </div>
@@ -538,13 +594,14 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
         {/* STATE 2: PROPERTY FOUND (CINEMATIC SATELLITE TRANSITION) */}
         {stage === 2 && (
-          <div className="my-auto text-center space-y-5 pointer-events-auto bg-slate-950/95 px-8 py-8 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-300 max-w-md w-full">
+          <div className="my-auto text-center space-y-5 pointer-events-auto bg-[#0B0F17]/95 px-8 py-8 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300 max-w-md w-full">
             <div className="relative w-14 h-14 mx-auto flex items-center justify-center">
               <div className="absolute inset-0 rounded-full border-2 border-slate-800 border-t-amber-400 animate-spin" />
               <Activity className="w-6 h-6 text-amber-400 animate-pulse" />
             </div>
 
             <div className="text-[11px] font-mono font-bold text-amber-400 uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+              <Radio className="w-3.5 h-3.5 text-amber-400 animate-ping" />
               <span>SATELLITE POSITIONING FEED</span>
             </div>
             <div className="font-display text-2xl sm:text-3xl font-black text-white tracking-tight">
@@ -560,7 +617,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         {/* STATE 3: ROOF DETECTED */}
         {stage === 3 && (
           <div className="w-full flex justify-between items-start pointer-events-none">
-            <div className="bg-slate-950/95 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl pointer-events-auto max-w-sm w-full space-y-4 animate-in fade-in slide-in-from-left-6 duration-500">
+            <div className="bg-[#0B0F17]/95 p-6 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm w-full space-y-4 animate-in fade-in slide-in-from-left-6 duration-500">
               <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-[0.15em] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                 <span>{selectedLocation.buildingConfidence || 'ESTIMATED ROOF'}</span>
@@ -568,7 +625,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               <h2 className="font-display text-2xl font-black text-white tracking-tight">Roof detected</h2>
               <p className="text-xs text-slate-400 font-medium line-clamp-2">{selectedLocation.address}</p>
 
-              <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 text-xs space-y-2">
+              <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400">Total Roof Area:</span>
                   <span className="text-amber-400 font-mono font-bold tabular-nums">{metrics.totalRoofAreaSqFt} sq.ft ({metrics.totalRoofAreaM2} m²)</span>
@@ -582,7 +639,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               <div className="pt-1 flex flex-col gap-2.5">
                 <button
                   onClick={handleConfirmRoof}
-                  className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md hover:scale-[1.02]"
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:scale-[1.02]"
                 >
                   <CheckCheck className="w-4 h-4 text-slate-950 stroke-[3]" />
                   <span>Confirm roof boundary →</span>
@@ -590,7 +647,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
                 <button
                   onClick={() => setStage(4)}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold py-2.5 px-4 rounded-xl border border-slate-800 text-xs flex items-center justify-center gap-2 transition-all"
+                  className="w-full bg-white/5 hover:bg-white/10 text-slate-200 font-bold py-2.5 px-4 rounded-xl border border-white/10 text-xs flex items-center justify-center gap-2 transition-all"
                 >
                   <Edit3 className="w-3.5 h-3.5 text-amber-400" />
                   <span>Adjust roof boundary</span>
@@ -598,7 +655,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               </div>
             </div>
 
-            <div className="bg-slate-950/90 px-4 py-2.5 rounded-xl border border-slate-800 text-xs font-semibold text-slate-300 pointer-events-auto flex items-center gap-2 animate-in fade-in slide-in-from-right-6 duration-500 shadow-xl">
+            <div className="bg-[#0B0F17]/90 px-4 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-slate-300 pointer-events-auto flex items-center gap-2 animate-in fade-in slide-in-from-right-6 duration-500 shadow-xl">
               <Eye className="w-4 h-4 text-amber-400" />
               <span>Review boundary • Click Adjust to refine vertices</span>
             </div>
@@ -608,8 +665,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         {/* STATE 4: ADJUST ROOF (LIVE AREA TELEMETRY HUD) */}
         {stage === 4 && (
           <div className="w-full flex justify-between items-start pointer-events-none">
-            <div className="bg-slate-950/95 p-6 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl pointer-events-auto max-w-sm w-full space-y-4 animate-in fade-in zoom-in-95 duration-300">
-              <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-[0.15em] bg-slate-900 border border-slate-800 px-3 py-1 rounded-full">
+            <div className="bg-[#0B0F17]/95 p-6 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl pointer-events-auto max-w-sm w-full space-y-4 animate-in fade-in zoom-in-95 duration-300">
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-amber-400 uppercase tracking-[0.15em] bg-white/5 border border-white/10 px-3 py-1 rounded-full">
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>SPATIAL ROOF EDITOR ACTIVE</span>
               </div>
@@ -626,7 +683,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 </li>
               </ul>
 
-              <div className="bg-slate-900/90 p-3.5 rounded-2xl border border-slate-800 text-xs space-y-2">
+              <div className="bg-white/5 p-3.5 rounded-2xl border border-white/10 text-xs space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 font-semibold">Total Roof Area:</span>
                   <span className="text-amber-400 font-mono font-bold text-sm tabular-nums">{metrics.totalRoofAreaSqFt} sq.ft ({metrics.totalRoofAreaM2} m²)</span>
@@ -640,7 +697,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               <div className="pt-1 flex flex-col gap-2">
                 <button
                   onClick={handleConfirmRoof}
-                  className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md hover:scale-[1.02]"
+                  className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(245,158,11,0.25)] hover:scale-[1.02]"
                 >
                   <CheckCheck className="w-4 h-4 text-slate-950 stroke-[3]" />
                   <span>Confirm roof →</span>
@@ -648,7 +705,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               </div>
             </div>
 
-            <div className="bg-slate-950/90 px-4 py-2.5 rounded-xl border border-slate-800 text-xs font-bold text-amber-400 pointer-events-auto flex items-center gap-2 animate-in fade-in slide-in-from-right-6 duration-500 shadow-xl">
+            <div className="bg-[#0B0F17]/90 px-4 py-2.5 rounded-xl border border-white/10 text-xs font-bold text-amber-400 pointer-events-auto flex items-center gap-2 animate-in fade-in slide-in-from-right-6 duration-500 shadow-xl">
               <Sparkles className="w-4 h-4 text-amber-400" />
               <span>Drag corners or edges to edit shape</span>
             </div>
@@ -657,7 +714,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
         {/* STATE 6 & 7: CALCULATING SOLAR POTENTIAL */}
         {stage >= 6 && stage <= 7 && (
-          <div className="relative my-auto text-center space-y-4 pointer-events-auto bg-slate-950/95 px-8 py-7 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 max-w-md w-full">
+          <div className="relative my-auto text-center space-y-4 pointer-events-auto bg-[#0B0F17]/95 px-8 py-7 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-300 max-w-md w-full">
             <div className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-[0.2em] flex items-center justify-center gap-2">
               <Activity className="w-4 h-4 animate-spin text-amber-400" />
               <span>DYNAMIC 2D ROOF PACKING ENGINE</span>
@@ -683,8 +740,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
         {stage === 8 && (
           <div className="w-full flex flex-col md:flex-row items-end justify-between gap-4 pointer-events-none mt-auto">
             {/* Left Information Instrument Panel */}
-            <div className="bg-slate-950/95 p-5.5 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl pointer-events-auto w-full md:max-w-sm space-y-3.5 animate-in fade-in slide-in-from-bottom-6 duration-500">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div className="bg-[#0B0F17]/95 p-5.5 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl pointer-events-auto w-full md:max-w-sm space-y-3.5 animate-in fade-in slide-in-from-bottom-6 duration-500">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div>
                   <span className="text-[9px] font-mono font-bold text-amber-400 uppercase tracking-[0.15em] block">
                     {selectedLocation.buildingConfidence || 'USER-CONFIRMED ROOF'}
@@ -719,25 +776,25 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
               {/* CANONICAL METRICS INSTRUMENT GRID */}
               <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                <div className="bg-white/5 p-2.5 rounded-xl border border-white/10">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-[0.08em] font-sans">Total Roof Area</span>
                   <span className="text-sm font-bold text-slate-200 tabular-nums"><CountUp value={metrics.totalRoofAreaSqFt} /> sq.ft</span>
                 </div>
-                <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                <div className="bg-white/5 p-2.5 rounded-xl border border-white/10">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-[0.08em] font-sans">Usable Roof Area</span>
                   <span className="text-sm font-bold text-amber-400 tabular-nums"><CountUp value={metrics.usableRoofAreaSqFt} /> sq.ft</span>
                 </div>
-                <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                <div className="bg-white/5 p-2.5 rounded-xl border border-white/10">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-[0.08em] font-sans">Panel Count</span>
                   <span className="text-sm font-bold text-white tabular-nums"><CountUp value={metrics.panelCount} /> Modules</span>
                 </div>
-                <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                <div className="bg-white/5 p-2.5 rounded-xl border border-white/10">
                   <span className="text-slate-400 block text-[9px] uppercase tracking-[0.08em] font-sans">Est. Annual Gen.</span>
                   <span className="text-sm font-bold text-amber-400 tabular-nums">
                     <CountUp value={metrics.annualGenKwh} /> kWh
                   </span>
                 </div>
-                <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 col-span-2">
+                <div className="bg-white/5 p-2.5 rounded-xl border border-white/10 col-span-2">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 text-[9px] uppercase tracking-[0.08em] font-sans">Est. Annual Savings</span>
                     <span className="text-sm font-black text-emerald-400 tabular-nums">₹<CountUp value={metrics.annualSavings} /></span>
@@ -776,10 +833,10 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                         onClick={() => setPanelCount(Math.min(count, Math.max(1, maxAvail)))}
                         className={`py-2 text-xs font-mono font-bold tabular-nums rounded-xl transition-all relative ${
                           isSelected
-                            ? 'bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 shadow-md'
+                            ? 'bg-amber-500 text-slate-950 font-extrabold shadow-[0_0_12px_rgba(245,158,11,0.3)]'
                             : isExceeded
-                            ? 'bg-slate-900/50 text-slate-500 hover:bg-slate-900 border border-slate-800/60 line-through'
-                            : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'
+                            ? 'bg-white/5 text-slate-500 border border-white/5 line-through opacity-50'
+                            : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
                         }`}
                         title={isExceeded ? `Maximum ${maxAvail} panels fit on usable roof` : `${count} Panels`}
                       >
@@ -791,7 +848,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
               </div>
 
               {/* Sun Position Control */}
-              <div className="space-y-1.5 pt-2 border-t border-slate-800/80">
+              <div className="space-y-1.5 pt-2 border-t border-white/10">
                 <div className="flex items-center justify-between text-xs text-slate-300">
                   <span className="flex items-center gap-1.5 text-amber-400 font-bold uppercase tracking-[0.1em] text-[10px] font-mono">
                     <Sun className="w-3.5 h-3.5" />
@@ -819,7 +876,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
             {/* Right Controls: Visual Modes & Payoff CTA */}
             <div className="flex flex-col gap-3 pointer-events-auto w-full md:w-auto animate-in fade-in slide-in-from-bottom-6 duration-500">
-              <div className="bg-slate-950/95 p-2 rounded-2xl border border-slate-800 backdrop-blur-2xl flex items-center gap-1 shadow-2xl">
+              <div className="bg-[#0B0F17]/95 p-2 rounded-2xl border border-white/10 backdrop-blur-xl flex items-center gap-1 shadow-2xl">
                 {(
                   [
                     { id: 'SATELLITE', label: 'Satellite' },
@@ -833,8 +890,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                     onClick={() => setVisualMode(m.id)}
                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
                       visualMode === m.id
-                        ? 'bg-amber-500 text-slate-950 shadow-md'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                        ? 'bg-amber-500 text-slate-950 font-extrabold shadow-[0_0_12px_rgba(245,158,11,0.3)]'
+                        : 'text-slate-400 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {m.label}
@@ -844,7 +901,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
               <button
                 onClick={() => setStage(11 as any)}
-                className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold py-4 px-8 rounded-2xl shadow-xl text-sm flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-4 px-8 rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.3)] text-sm flex items-center justify-center gap-3 transition-all hover:scale-[1.02] active:scale-95"
               >
                 <span>See final savings payoff</span>
                 <ArrowRight className="w-5 h-5 text-slate-950 stroke-[3]" />
@@ -855,7 +912,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
         {/* STAGE 11: THE FINAL MOMENT REVEAL SCREEN */}
         {((stage as any) === 11) && (
-          <div className="my-auto w-full max-w-3xl pointer-events-auto bg-slate-950/95 p-8 sm:p-12 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl text-center space-y-8 animate-in zoom-in-95 duration-300">
+          <div className="my-auto w-full max-w-3xl pointer-events-auto bg-[#0B0F17]/95 p-8 sm:p-12 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl text-center space-y-8 animate-in zoom-in-95 duration-300">
             <div className="space-y-3">
               <span className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-amber-400 block">
                 CONFIRMED ROOF ENERGY POTENTIAL SUMMARY
@@ -866,26 +923,26 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '0ms' }}>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '0ms' }}>
                 <Zap className="w-5 h-5 text-amber-400 mx-auto" />
                 <span className="font-mono text-2xl font-black text-white block tabular-nums"><CountUp value={metrics.capacityKw} decimals={1} /> kW</span>
                 <span className="text-[10px] text-slate-400 uppercase font-mono tracking-[0.08em] block">System Capacity</span>
               </div>
-              <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '80ms' }}>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '80ms' }}>
                 <Sun className="w-5 h-5 text-amber-400 mx-auto" />
                 <span className="font-mono text-2xl font-black text-white block tabular-nums">
                   ~<CountUp value={metrics.annualGenKwh} />
                 </span>
                 <span className="text-[10px] text-slate-400 uppercase font-mono tracking-[0.08em] block">kWh / Year (Est.)</span>
               </div>
-              <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '160ms' }}>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '160ms' }}>
                 <IndianRupee className="w-5 h-5 text-amber-400 mx-auto" />
                 <span className="font-mono text-2xl font-black text-amber-400 block tabular-nums">
                   ₹<CountUp value={metrics.annualSavings} />
                 </span>
                 <span className="text-[10px] text-slate-400 uppercase font-mono tracking-[0.08em] block">Est. Annual Savings</span>
               </div>
-              <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '240ms' }}>
+              <div className="bg-white/5 p-4 rounded-2xl border border-white/10 space-y-1 animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '240ms' }}>
                 <TreePine className="w-5 h-5 text-emerald-400 mx-auto" />
                 <span className="font-mono text-2xl font-black text-emerald-400 block tabular-nums"><CountUp value={metrics.co2Offset} decimals={1} /> t</span>
                 <span className="text-[10px] text-slate-400 uppercase font-mono tracking-[0.08em] block">Est. CO₂ Offset</span>
@@ -895,13 +952,13 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               <button
                 onClick={() => setStage(12 as any)}
-                className="w-full sm:w-auto bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold py-4 px-8 rounded-2xl shadow-xl text-sm flex items-center justify-center gap-3 transition-all hover:scale-105"
+                className="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-4 px-8 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.3)] text-sm flex items-center justify-center gap-3 transition-all hover:scale-105"
               >
                 <span>Get my detailed solar plan →</span>
               </button>
               <button
                 onClick={() => setStage(8)}
-                className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold py-4 px-6 rounded-2xl border border-slate-800 text-sm transition-all"
+                className="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-slate-300 font-bold py-4 px-6 rounded-2xl border border-white/10 text-sm transition-all"
               >
                 Explore roof again
               </button>
@@ -911,7 +968,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
         {/* STAGE 12: LEAD GENERATION FORM */}
         {((stage as any) === 12) && (
-          <div className="my-auto w-full max-w-xl pointer-events-auto bg-slate-950/95 p-8 sm:p-10 rounded-3xl border border-slate-800 shadow-2xl backdrop-blur-2xl space-y-6 animate-in zoom-in-95 duration-300">
+          <div className="my-auto w-full max-w-xl pointer-events-auto bg-[#0B0F17]/95 p-8 sm:p-10 rounded-3xl border border-white/10 shadow-2xl backdrop-blur-xl space-y-6 animate-in zoom-in-95 duration-300">
             {!leadSuccess ? (
               <>
                 <div className="space-y-2">
@@ -933,7 +990,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                       value={leadForm.name}
                       onChange={(e) => setLeadForm({ ...leadForm, name: e.target.value })}
                       placeholder="e.g. Rajesh Kumar"
-                      className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20"
+                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                     />
                   </div>
 
@@ -946,7 +1003,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
                         placeholder="+91 98765 43210"
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                       />
                     </div>
                     <div>
@@ -956,7 +1013,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                         value={leadForm.email}
                         onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                         placeholder="rajesh@example.com"
-                        className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20"
+                        className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                       />
                     </div>
                   </div>
@@ -969,14 +1026,14 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                       onChange={(e) =>
                         setSelectedLocation({ ...selectedLocation, address: e.target.value })
                       }
-                      className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20"
+                      className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold py-4 px-6 rounded-2xl shadow-lg text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] disabled:hover:scale-100"
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-4 px-6 rounded-2xl shadow-[0_0_20px_rgba(245,158,11,0.25)] text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02] disabled:hover:scale-100"
                   >
                     {isSubmitting ? (
                       <span>Generating proposal...</span>
@@ -995,7 +1052,7 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
                 <p className="text-slate-300 text-sm font-medium">
                   Thank you, <strong className="text-amber-400 font-bold">{leadForm.name}</strong>. Our solar engineering team is preparing your DISCOM net metering proposal for {selectedLocation.address}.
                 </p>
-                <div className="bg-slate-900/90 p-4 rounded-2xl border border-slate-800 text-left text-xs space-y-2 text-slate-300 font-mono">
+                <div className="bg-white/5 p-4 rounded-2xl border border-white/10 text-left text-xs space-y-2 text-slate-300 font-mono">
                   <div className="flex justify-between">
                     <span>System Capacity:</span>
                     <span className="text-amber-400 font-bold tabular-nums">{metrics.capacityKw} kW ({metrics.panelCount} Modules)</span>
@@ -1012,8 +1069,8 @@ export function DiscoverSolarExperience({ isOpen, onClose }: DiscoverSolarExperi
 
                 <div className="pt-2 flex gap-3">
                   <button
-                    onClick={onClose}
-                    className="w-full bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-colors shadow-md"
+                    onClick={handleExit}
+                    className="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold py-3.5 rounded-xl text-xs transition-colors shadow-md"
                   >
                     Return to website
                   </button>

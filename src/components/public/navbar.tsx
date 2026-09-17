@@ -9,6 +9,7 @@ import { ArrowRight } from 'lucide-react';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
+  { label: 'Discover Solar', href: '/discover-solar' },
   { label: 'About', href: '/about' },
   { label: 'Solutions', href: '/solutions' },
   { label: 'Calculator', href: '/calculator' },
