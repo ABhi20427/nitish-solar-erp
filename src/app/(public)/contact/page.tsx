@@ -11,13 +11,13 @@ import { useSolarStore } from '@/lib/store-context';
 import { COMPANY_INFO } from '@/config/site';
 
 const CONTACT_DETAILS = [
-  { icon: MapPin, label: 'Office Location', value: COMPANY_INFO.address },
   { icon: Phone, label: 'Phone Lines', value: COMPANY_INFO.phone },
   { icon: Mail, label: 'Email Desk', value: COMPANY_INFO.email },
   { icon: Clock, label: 'Business Hours', value: COMPANY_INFO.hours },
 ];
 
 const DIRECTIONS_URL = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(COMPANY_INFO.address)}`;
+const MAP_EMBED_URL = `https://www.google.com/maps?q=${encodeURIComponent(COMPANY_INFO.address)}&t=k&z=17&output=embed`;
 
 export default function ContactPage() {
   const { addLead } = useSolarStore();
@@ -164,32 +164,44 @@ export default function ContactPage() {
                 ))}
               </div>
 
-              {/* Office Location card — blueprint texture + pulsing map pin,
-                  replaces the old flat "Interactive Map Placeholder" box. */}
-              <div className="relative overflow-hidden rounded-2xl border border-slate-800/70 bg-[#131B2E] p-6">
-                <div
-                  className="absolute inset-0 opacity-[0.06]"
-                  style={{
-                    backgroundImage:
-                      'linear-gradient(to right, #64748b 1px, transparent 1px), linear-gradient(to bottom, #64748b 1px, transparent 1px)',
-                    backgroundSize: '28px 28px',
-                  }}
-                />
-                <div className="relative flex flex-col items-center text-center gap-3 py-4">
-                  <span className="relative flex items-center justify-center w-11 h-11">
-                    <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400/30 animate-ping" />
-                    <span className="relative inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#0B0F17] border border-amber-400/40 text-amber-400">
-                      <MapPin className="w-4 h-4" />
+              {/* Office Location card — a live satellite view of the office
+                  instead of a static placeholder pin, echoing the aerial-scan
+                  visuals used across the site's solar tools. */}
+              <div className="group relative overflow-hidden rounded-2xl border border-slate-800/70 bg-[#131B2E]">
+                <div className="relative h-52 sm:h-60 w-full overflow-hidden">
+                  <iframe
+                    src={MAP_EMBED_URL}
+                    className="absolute inset-0 h-full w-full border-0 transition-transform duration-700 ease-out group-hover:scale-[1.05]"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="nitish solar office — live satellite location"
+                  />
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#131B2E] via-[#131B2E]/5 to-transparent" />
+                  <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#0B0F17]/55 via-transparent to-transparent" />
+
+                  <div className="absolute top-3.5 left-3.5 inline-flex items-center gap-1.5 rounded-full border border-slate-800 bg-[#0B0F17]/85 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-400 backdrop-blur-sm">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
                     </span>
-                  </span>
-                  <p className="text-xs text-slate-300 font-light max-w-xs leading-relaxed">{COMPANY_INFO.address}</p>
+                    Live Satellite View
+                  </div>
+                </div>
+
+                <div className="relative flex items-center justify-between gap-4 p-5">
+                  <div className="min-w-0">
+                    <h4 className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      <MapPin className="w-3 h-3 text-amber-400" /> Office Location
+                    </h4>
+                    <p className="mt-1 text-sm font-light leading-relaxed text-white">{COMPANY_INFO.address}</p>
+                  </div>
                   <a
                     href={DIRECTIONS_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-amber-400 hover:text-amber-300 transition-colors"
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-amber-500 px-3.5 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-950 transition-all hover:scale-[1.03] hover:bg-amber-400"
                   >
-                    <Navigation className="w-3.5 h-3.5" /> Get Directions
+                    <Navigation className="w-3.5 h-3.5" /> Directions
                   </a>
                 </div>
               </div>
