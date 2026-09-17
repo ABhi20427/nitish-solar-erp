@@ -196,7 +196,7 @@ export default function SolutionsPage() {
               'Non-Penetrative Ballast Frames',
               'Statutory CEIG Electrical Safety Compliance',
             ]}
-            image="/images/industrial_light.png"
+            image="/images/commercial_light.png"
             imageAlt="nitish solar commercial rooftop array"
             cta="Explore Commercial Solar"
             href="/commercial"

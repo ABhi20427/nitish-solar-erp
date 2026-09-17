@@ -164,18 +164,37 @@ export default function HomePage() {
   const [solutionsStep, setSolutionsStep] = useState(0);
   const [solutionsProgress, setSolutionsProgress] = useState(0);
   const [plantStageIdx, setPlantStageIdx] = useState(0);
+  // Continuous scroll position (0..1) across the Solar Plant journey's 5
+  // stages, smoothed the same way as solutionsProgress — drives the stage
+  // image crossfade and the connecting-line width every frame, while
+  // plantStageIdx (above) stays the discrete "nearest stage" used for the
+  // text/label/node-highlight, which can't meaningfully blend.
+  const [plantProgress, setPlantProgress] = useState(0);
 
   // Section Refs
   const solutionsRef = useRef<HTMLDivElement>(null);
+  // Raw scroll-derived progress for the Solutions conveyor (0..1), updated every
+  // scroll tick. solutionsProgress (state, below) chases this target once per
+  // frame via a critically-damped lerp so the cards glide instead of snapping
+  // to each discrete scroll/wheel event.
+  const solutionsTargetProgress = useRef(0);
   const plantSectionRef = useRef<HTMLDivElement>(null);
   const plantVideoRef = useRef<HTMLVideoElement>(null);
   const hasPlayedPlantVideo = useRef(false);
+  // Raw scroll-derived target for plantProgress, and a synchronous mirror of
+  // its current smoothed value (read+written directly in the lerp loop, since
+  // the discrete plantStageIdx needs to be derived from it within the same
+  // frame rather than waiting a render cycle).
+  const plantTargetProgress = useRef(0);
+  const plantProgressRef = useRef(0);
 
   const jumpToPlantStage = (idx: number) => {
-    setPlantStageIdx(idx);
     if (plantSectionRef.current) {
       const totalDist = plantSectionRef.current.offsetHeight - window.innerHeight;
-      const targetScrollTop = plantSectionRef.current.offsetTop + (idx / 4) * totalDist;
+      // idx/5 (not idx/4) lands exactly on that stage's full-opacity scroll
+      // position — the 5 stages occupy 5 equal scroll buckets ([0,.2), [.2,.4)…),
+      // so stage idx is centered at progress = idx/5.
+      const targetScrollTop = plantSectionRef.current.offsetTop + (idx / 5) * totalDist;
       window.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
     }
   };
@@ -196,6 +215,12 @@ export default function HomePage() {
 
   const quickCalc = calculateSolarSystem({ monthlyBillAmount: quickBill });
 
+  // Continuous 0..4 position across the Solar Plant journey's 5 stages,
+  // derived from the smoothed plantProgress (0..1) each render — drives the
+  // stage-image crossfade and connecting-line width so both track the
+  // scrollbar continuously rather than jumping at each of the 5 thresholds.
+  const plantStagePos = Math.max(0, Math.min(4, plantProgress * 5));
+
   // Optimized Scroll progress handler with requestAnimationFrame throttle
   useEffect(() => {
     let ticking = false;
@@ -209,7 +234,7 @@ export default function HomePage() {
             const totalDist = solutionsRef.current.offsetHeight - window.innerHeight;
             if (totalDist > 0) {
               const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
-              setSolutionsProgress(progress);
+              solutionsTargetProgress.current = progress;
               let nextStep = 0;
               if (progress < 0.35) nextStep = 0;
               else if (progress < 0.7) nextStep = 1;
@@ -244,8 +269,7 @@ export default function HomePage() {
 
             if (totalDist > 0 && rect.top <= 0 && rect.bottom >= 0) {
               const progress = Math.max(0, Math.min(0.999, -rect.top / totalDist));
-              const computedStage = Math.min(4, Math.floor(progress * 5));
-              setPlantStageIdx((prev) => (prev !== computedStage ? computedStage : prev));
+              plantTargetProgress.current = progress;
             }
           }
 
@@ -258,6 +282,48 @@ export default function HomePage() {
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Continuous lerp loop: eases solutionsProgress toward solutionsTargetProgress
+  // every animation frame using a time-constant (frame-rate independent) decay,
+  // rather than snapping straight to the raw scroll value. This is what makes
+  // the Solutions card conveyor read as fluid motion instead of chasing each
+  // wheel/trackpad tick — especially on fast flicks where scroll deltas arrive
+  // in large, uneven jumps.
+  useEffect(() => {
+    let rafId: number;
+    let lastTime = performance.now();
+    const TAU_MS = 120; // lower = snappier, higher = silkier/more lag
+
+    const tick = (now: number) => {
+      const dt = Math.min(1000, now - lastTime);
+      lastTime = now;
+      const smoothing = 1 - Math.exp(-dt / TAU_MS);
+
+      setSolutionsProgress((prev) => {
+        const target = solutionsTargetProgress.current;
+        const next = prev + (target - prev) * smoothing;
+        return Math.abs(next - target) < 0.0005 ? target : next;
+      });
+
+      // Solar Plant journey — mirrored in a ref (rather than a functional
+      // setState) because the discrete "nearest stage" below needs this
+      // frame's settled value synchronously, not on the next render.
+      const plantTarget = plantTargetProgress.current;
+      const plantPrev = plantProgressRef.current;
+      const plantNext = plantPrev + (plantTarget - plantPrev) * smoothing;
+      const plantSettled = Math.abs(plantNext - plantTarget) < 0.0005 ? plantTarget : plantNext;
+      plantProgressRef.current = plantSettled;
+      setPlantProgress(plantSettled);
+
+      const nearestStage = Math.max(0, Math.min(4, Math.round(plantSettled * 5)));
+      setPlantStageIdx((prev) => (prev !== nearestStage ? nearestStage : prev));
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
@@ -340,7 +406,7 @@ export default function HomePage() {
       statLabel: 'Accelerated tax depreciation',
       heading: 'Energy infrastructure built for business.',
       desc: 'Engineered for commercial office buildings, hospitals, hotels, shopping complexes. Slash operational electricity overheads and capitalize on 40% accelerated tax depreciation.',
-      image: '/images/industrial_light.png',
+      image: '/images/commercial_light.png',
       link: '/commercial',
       cta: 'Explore Commercial',
       bullets: ['40% Accelerated tax depreciation benefit', 'Non-penetrative ballast mounting structures', 'High financial return on investment (IRR)'],
@@ -385,7 +451,7 @@ export default function HomePage() {
       location: 'GIDC Industrial Park, Ahmedabad',
       capacity: '450 kWp',
       desc: 'Non-penetrative ballast framework solar system reducing corporate head office grid power draw by 75%.',
-      image: '/images/hero_light.png',
+      image: '/images/commercial_light.png',
     },
     {
       title: '25 kWp Modern Luxury Villa System',
@@ -606,7 +672,7 @@ export default function HomePage() {
               }}
             />
             <div
-              className="absolute left-1/2 top-1/2 w-[900px] h-[560px] rounded-full bg-slate-800/25 blur-[120px] transition-transform duration-300 ease-out"
+              className="absolute left-1/2 top-1/2 w-[900px] h-[560px] rounded-full bg-slate-800/25 blur-[120px]"
               style={{
                 transform: `translate(-50%, -50%) translateX(${(0.5 - solutionsProgress) * -30}vw)`,
                 willChange: 'transform',
@@ -686,7 +752,7 @@ export default function HomePage() {
                 <div
                   key={story.type}
                   onClick={() => !isCentral && jumpToSolutionStory(idx)}
-                  className={`absolute left-1/2 top-1/2 transition-all duration-150 ease-out w-[88vw] max-w-[920px] ${
+                  className={`absolute left-1/2 top-1/2 w-[88vw] max-w-[920px] ${
                     !isCentral ? 'cursor-pointer' : ''
                   }`}
                   style={{
@@ -707,7 +773,7 @@ export default function HomePage() {
                   >
                     {/* LEFT SIDE — PHOTO WITH CLIP-PATH REVEAL + PARALLAX */}
                     <div
-                      className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner transition-[clip-path] duration-300 ease-out"
+                      className="w-full md:w-5/12 lg:w-1/2 aspect-[4/3] md:h-[270px] lg:h-[310px] relative rounded-2xl overflow-hidden shrink-0 border border-slate-700/50 shadow-inner"
                       style={{ clipPath, willChange: 'clip-path' }}
                     >
                       <Image
@@ -720,7 +786,7 @@ export default function HomePage() {
                           filter: `brightness(${isCentral ? 1.0 : 0.85})`,
                           willChange: 'transform, filter',
                         }}
-                        className="object-cover transition-transform duration-500 ease-out"
+                        className="object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
 
@@ -733,7 +799,7 @@ export default function HomePage() {
 
                     {/* RIGHT SIDE — CONTENT WITH MICRO-PARALLAX */}
                     <div
-                      className="w-full md:w-7/12 lg:w-1/2 space-y-3.5 text-left transition-transform duration-300 ease-out"
+                      className="w-full md:w-7/12 lg:w-1/2 space-y-3.5 text-left"
                       style={{
                         transform: `translateX(${relPos * -4}px)`,
                       }}
@@ -806,7 +872,7 @@ export default function HomePage() {
             </div>
             <div className="w-full h-[3px] bg-slate-800 rounded-full overflow-hidden relative">
               <div
-                className="h-full bg-amber-400 rounded-full transition-all duration-200 ease-out"
+                className="h-full bg-amber-400 rounded-full"
                 style={{ width: `${Math.max(12, Math.min(100, (solutionsProgress + 0.1) * 88))}%` }}
               />
             </div>
@@ -952,240 +1018,128 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* RIGHT 7-COL: Connected 5-Stage Circular Node Journey (Horizontal on Desktop) */}
-            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-center bg-slate-950/45 rounded-3xl border border-slate-700/50 p-6 sm:p-8 shadow-2xl backdrop-blur-md my-auto overflow-hidden">
+            {/* RIGHT 7-COL: Seamless Integrated Stage Visual & Journey Nodes */}
+            <div className="col-span-12 lg:col-span-7 relative flex flex-col justify-between bg-[#0B0F17]/80 rounded-3xl border border-white/10 p-6 sm:p-8 shadow-2xl backdrop-blur-xl my-auto overflow-hidden space-y-6">
+              
+              {/* Ambient Background Glow behind active stage */}
+              <div className="absolute inset-0 pointer-events-none z-0">
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[120px] transition-all duration-700" />
+                <div
+                  className="absolute inset-0 opacity-[0.04]"
+                  style={{
+                    backgroundImage: 'radial-gradient(circle, #f59e0b 1px, transparent 1px)',
+                    backgroundSize: '24px 24px',
+                  }}
+                />
+              </div>
 
-              {/* Row Wrapper — the exploded panel is anchored to THIS (via top-0, not
-                  bottom-full, which ignores a parent's padding entirely), so it always
-                  sits in the reserved padding zone above the circle row no matter how
-                  tall the card ends up being, and never gets clipped by the card's own
-                  overflow-hidden. */}
-              <div className="relative pt-0 sm:pt-40 lg:pt-44">
-
-                {/* Wide ambient wash across the whole reserved top band — ties the
-                    corner panel to the rest of the card instead of leaving the area
-                    above stages 2-5 looking like dead space. Purely a soft gradient,
-                    no new objects competing with the circles for attention. */}
-                <div className="hidden sm:block absolute top-0 left-0 right-0 h-32 lg:h-36 z-0 pointer-events-none">
-                  <div
-                    className="absolute inset-0 transition-opacity duration-700"
-                    style={{
-                      background: 'linear-gradient(90deg, rgba(245,158,11,0.10) 0%, rgba(245,158,11,0.04) 35%, transparent 75%)',
-                      opacity: plantStageIdx === 0 ? 1 : 0.4,
-                    }}
+              {/* Active Stage Cinematic Visual Frame — all 5 stage images are
+                  stacked and cross-faded by scroll position (plantStagePos),
+                  instead of hard-swapping the src at each threshold, so the
+                  visual tracks the scrollbar continuously like the Solutions
+                  conveyor above. */}
+              <div className="relative w-full aspect-[16/9] sm:h-[250px] lg:h-[280px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl z-10 group">
+                {PLANT_STAGES.map((stg, idx) => (
+                  <Image
+                    key={stg.id}
+                    src={stg.image}
+                    alt={stg.name}
+                    fill
+                    priority={idx === 0}
+                    sizes="(max-width: 1024px) 100vw, 55vw"
+                    className="object-cover object-center filter brightness-105 contrast-105"
+                    style={{ opacity: Math.max(0, 1 - Math.abs(plantStagePos - idx)), willChange: 'opacity' }}
                   />
+                ))}
+
+                {/* Dark Gradient Vignette Overlay to blend image edges into glass panel */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F17] via-transparent to-black/30 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0B0F17]/40 via-transparent to-transparent pointer-events-none" />
+
+                {/* Stage Indicator Badge Overlay */}
+                <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0B0F17]/80 backdrop-blur-md border border-white/15 text-xs font-mono font-bold text-amber-400">
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                  <span>{PLANT_STAGES[plantStageIdx].code} — {PLANT_STAGES[plantStageIdx].subtitle.toUpperCase()}</span>
                 </div>
 
-                {/* Sunlight shaft — a soft diagonal beam raking down from the card's
-                    top-right corner onto the panel, the literal visual of the section
-                    headline ("See how sunlight becomes power."). Pure gradient + a slow
-                    opacity breathe, no new geometry to maintain. */}
-                <div
-                  className="hidden sm:block absolute -top-4 left-0 right-0 h-40 lg:h-48 z-0 pointer-events-none overflow-hidden transition-opacity duration-700"
-                  style={{ opacity: plantStageIdx === 0 ? 1 : 0.3 }}
-                >
-                  <div
-                    className="animate-sunbeam absolute -top-16 -right-10 w-[140%] h-[220%] origin-top-right"
-                    style={{
-                      background: 'linear-gradient(200deg, rgba(253,224,71,0.22) 0%, rgba(245,158,11,0.10) 22%, transparent 45%)',
-                    }}
-                  />
-                </div>
-
-                {/* Ambient Exploded Solar-Panel Visual — sits in the padded zone
-                    reserved above the row, left-aligned with the first circle.
-                    `top-0` anchors it to that padding area. Pure CSS transform/opacity
-                    loop, no JS per-frame work. Most prominent for 01 SOLAR; quieter on
-                    the other four stages. */}
-                <div
-                  className={`hidden sm:block absolute top-0 left-0 z-[1] pointer-events-none transition-opacity duration-700 ${
-                    plantStageIdx === 0 ? 'opacity-100' : 'opacity-30'
-                  }`}
-                  style={{ perspective: '900px' }}
-                >
-                  <div
-                    className={`animate-panel-stack relative w-28 h-28 sm:w-32 sm:h-32 lg:w-36 lg:h-36 transition-transform duration-700 ${
-                      plantStageIdx === 0 ? 'scale-100' : 'scale-[0.7]'
-                    }`}
-                    style={{
-                      transformStyle: 'preserve-3d',
-                      filter: 'drop-shadow(0 16px 22px rgba(0,0,0,0.55)) drop-shadow(0 0 26px rgba(245,158,11,0.25))',
-                    }}
-                  >
-                    {PANEL_LAYERS.map((layer, i) => (
-                      <div
-                        key={layer.id}
-                        className={`animate-panel-layer absolute inset-0 rounded-lg border overflow-hidden ${layer.extra}`}
-                        style={{ transformStyle: 'preserve-3d', animationDelay: `${i * 60}ms`, '--depth': layer.depth } as React.CSSProperties}
-                      >
-                        {/* Frame Layer: Anodized aluminum metallic corners */}
-                        {layer.id === 'frame' && (
-                          <>
-                            <div className="absolute top-0 left-0 w-3.5 h-3.5 border-t-2 border-l-2 border-white" />
-                            <div className="absolute top-0 right-0 w-3.5 h-3.5 border-t-2 border-r-2 border-white" />
-                            <div className="absolute bottom-0 left-0 w-3.5 h-3.5 border-b-2 border-l-2 border-white" />
-                            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 border-b-2 border-r-2 border-white" />
-                            <span className="absolute top-1.5 left-2.5 text-[8px] font-mono text-slate-100 uppercase tracking-widest pointer-events-none select-none">
-                              AL FRAME
-                            </span>
-                          </>
-                        )}
-
-                        {/* Glass Layer: Glare streak reflection */}
-                        {layer.id === 'glass' && (
-                          <>
-                            <div
-                              className="absolute inset-0"
-                              style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.12) 35%, transparent 65%)' }}
-                            />
-                            <span className="absolute bottom-1.5 right-2.5 text-[8px] font-mono text-sky-100 uppercase tracking-wider pointer-events-none select-none">
-                              TEMPERED GLASS
-                            </span>
-                          </>
-                        )}
-
-                        {/* Front EVA Layer: Translucent sheen */}
-                        {layer.id === 'front-eva' && (
-                          <div className="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-white/10" />
-                        )}
-
-                        {/* TOPCon PV Silicon Cells Layer: Silicon grid + busbars + energy glow */}
-                        {layer.id === 'cells' && (
-                          <div className="absolute inset-0 flex flex-col justify-between p-1">
-                            <div className="grid grid-cols-3 grid-rows-2 gap-0.5 h-full w-full">
-                              {[...Array(6)].map((_, cIdx) => (
-                                <div
-                                  key={cIdx}
-                                  className="bg-[#0b1633] border border-slate-700/60 rounded-[2px] relative overflow-hidden"
-                                >
-                                  <div
-                                    className="absolute inset-0 opacity-35"
-                                    style={{
-                                      backgroundImage:
-                                        'linear-gradient(to right, rgba(148,163,184,0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(148,163,184,0.4) 1px, transparent 1px)',
-                                      backgroundSize: '25% 25%',
-                                    }}
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                            <div className="absolute left-2 right-2 top-1/3 h-[1.5px] bg-gradient-to-r from-amber-400/90 via-slate-200 to-amber-400/90 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-                            <div className="absolute left-2 right-2 top-2/3 h-[1.5px] bg-gradient-to-r from-amber-400/90 via-slate-200 to-amber-400/90 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-                            <div className="animate-solar-pulse absolute left-0 right-0 top-1/2 h-1 bg-gradient-to-r from-transparent via-amber-400/80 to-transparent -translate-y-1/2 blur-[1px]" />
-                          </div>
-                        )}
-
-                        {/* Rear EVA Layer */}
-                        {layer.id === 'back-eva' && (
-                          <div className="absolute inset-0 bg-sky-900/10" />
-                        )}
-
-                        {/* Tedlar Backsheet Layer: Circuit traces & technical specs */}
-                        {layer.id === 'backsheet' && (
-                          <div className="absolute inset-0 p-1.5 flex flex-col justify-between">
-                            <div className="flex justify-between items-center opacity-80">
-                              <span className="text-[6px] font-mono text-amber-400 font-bold">1500V DC</span>
-                              <span className="text-[6px] font-mono text-slate-300">TOPCON</span>
-                            </div>
-                            <div
-                              className="absolute inset-0 opacity-20 pointer-events-none"
-                              style={{
-                                backgroundImage: 'radial-gradient(circle, #94a3b8 1px, transparent 1px)',
-                                backgroundSize: '10px 10px',
-                              }}
-                            />
-                            <div className="flex justify-center gap-2.5 z-10 pb-0.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-red-500/90 border border-slate-900" />
-                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900 border border-slate-600" />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                {/* Stage Title Overlay on image */}
+                <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between z-10">
+                  <div>
+                    <span className="text-[10px] font-mono text-slate-300 uppercase tracking-widest block font-semibold">STAGE INFRASTRUCTURE</span>
+                    <h4 className="text-lg sm:text-xl font-bold text-white font-display tracking-tight">
+                      {PLANT_STAGES[plantStageIdx].name}
+                    </h4>
                   </div>
-                  {/* Connector: a faint line linking the panel down toward the row,
-                      reinforcing that it belongs to the active stage rather than
-                      floating as an isolated corner sticker. */}
-                  <div
-                    className="absolute left-1/2 top-full w-px transition-opacity duration-700"
-                    style={{
-                      height: '24px',
-                      background: 'linear-gradient(to bottom, rgba(245,158,11,0.5), transparent)',
-                      opacity: plantStageIdx === 0 ? 1 : 0,
-                    }}
-                  />
+                  <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
+                    <span>EFFICIENCY OPTIMIZED</span>
+                  </div>
                 </div>
+              </div>
 
-                {/* Connected horizontal energy flow line behind circles */}
-                <div className="hidden sm:block absolute top-[52%] left-12 right-12 h-px bg-slate-800 pointer-events-none z-0">
-                  {/* Active yellow energy progress indicator line */}
-                  <div
-                    className="h-full bg-amber-400/90 transition-all duration-700 ease-out shadow-[0_0_12px_rgba(245,158,11,0.5)]"
-                    style={{
-                      width: `${(plantStageIdx / 4) * 100}%`,
-                    }}
-                  />
-                </div>
+              {/* 5 Horizontal Connected Stage Nodes */}
+              <div className="relative z-10 space-y-3">
+                {/* Flow Connecting Line */}
+                <div className="relative flex items-center justify-between">
+                  <div className="absolute top-1/2 left-6 right-6 h-[2px] bg-white/10 -translate-y-1/2 pointer-events-none z-0">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-500 via-amber-400 to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.6)]"
+                      style={{ width: `${(plantStagePos / 4) * 100}%` }}
+                    />
+                  </div>
 
-                {/* 5 Horizontal Circular Node Cards (01 SOLAR → 02 DC → 03 INVERTER → 04 TRANSFORMER → 05 GRID) */}
-                <div className="relative z-10 grid grid-cols-1 sm:grid-cols-5 gap-6 sm:gap-3 items-center justify-between">
-                  {PLANT_STAGES.map((stage, idx) => {
-                    const isActive = idx === plantStageIdx;
-                    return (
-                      <div
-                        key={stage.id}
-                        onClick={() => jumpToPlantStage(idx)}
-                        className={`${isActive ? 'flex' : 'hidden sm:flex'} flex-col items-center cursor-pointer group transition-all duration-500 ease-out select-none ${
-                          isActive ? 'scale-110 sm:scale-115 z-20' : 'opacity-55 hover:opacity-100 hover:scale-105 z-10'
-                        }`}
-                      >
-                        {/* Stage Number & Title Above Circle */}
-                        <div className="text-center mb-3 space-y-0.5">
-                          <span className={`text-[10px] font-mono font-bold block transition-colors duration-300 ${
-                            isActive ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-400'
-                          }`}>
-                            {stage.code}
-                          </span>
-                          <span className={`text-xs font-extrabold tracking-wider block transition-colors duration-300 ${
-                            isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
-                          }`}>
-                            {stage.name}
-                          </span>
-                        </div>
-
-                        {/* Circular Image Node (◯) */}
-                        <div
-                          className={`relative w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full overflow-hidden border-2 transition-all duration-500 ${
+                  {/* 5 Stage Discs */}
+                  <div className="w-full grid grid-cols-5 gap-2 sm:gap-3 relative z-10">
+                    {PLANT_STAGES.map((stg, idx) => {
+                      const isActive = idx === plantStageIdx;
+                      const IconComp = stg.icon;
+                      return (
+                        <button
+                          key={stg.id}
+                          onClick={() => jumpToPlantStage(idx)}
+                          className={`group flex flex-col items-center gap-2 p-2 sm:p-2.5 rounded-2xl transition-all duration-500 relative select-none ${
                             isActive
-                              ? 'border-amber-400 shadow-[0_0_30px_rgba(245,158,11,0.35)] ring-4 ring-amber-400/20'
-                              : 'border-slate-800 group-hover:border-slate-600 filter contrast-90 group-hover:contrast-100'
+                              ? 'bg-amber-500/15 border-2 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)] -translate-y-1'
+                              : 'bg-white/5 border border-white/10 hover:border-amber-400/40 hover:bg-white/10'
                           }`}
                         >
-                          <Image
-                            src={stage.image}
-                            alt={stage.name}
-                            fill
-                            priority
-                            sizes="(max-width: 640px) 80px, 120px"
-                            className={`object-cover object-center transition-all duration-700 ${
-                              isActive ? 'scale-110 contrast-105 brightness-105' : 'scale-100 group-hover:scale-105'
-                            }`}
-                          />
-                          {/* Ambient Glass Highlight Overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent pointer-events-none" />
-                        </div>
+                          {/* Thumbnail Disc Container with smooth gradient mask */}
+                          <div className={`relative w-11 h-11 sm:w-14 sm:h-14 rounded-xl overflow-hidden border transition-all duration-500 ${
+                            isActive ? 'border-amber-400 shadow-md' : 'border-white/10 opacity-70 group-hover:opacity-100'
+                          }`}>
+                            <Image
+                              src={stg.image}
+                              alt={stg.name}
+                              fill
+                              sizes="60px"
+                              className={`object-cover transition-all duration-500 ${
+                                isActive ? 'scale-110 brightness-110' : 'scale-100 group-hover:scale-105'
+                              }`}
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0B0F17]/80 via-transparent to-transparent" />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-transparent transition-colors">
+                              <IconComp className={`w-4 h-4 sm:w-5 sm:h-5 transition-colors ${
+                                isActive ? 'text-amber-400' : 'text-white/80 group-hover:text-amber-300'
+                              }`} />
+                            </div>
+                          </div>
 
-                      {/* Active Node Indicator below circle */}
-                      <div className="mt-3 h-2 flex items-center justify-center">
-                        {isActive ? (
-                          <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b] animate-pulse" />
-                        ) : (
-                          <span className="w-1.5 h-1.5 rounded-full bg-slate-800 group-hover:bg-slate-600 transition-colors" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                          {/* Stage Code & Label */}
+                          <div className="text-center space-y-0.5">
+                            <span className={`text-[9px] font-mono font-bold block ${
+                              isActive ? 'text-amber-400' : 'text-slate-500 group-hover:text-slate-400'
+                            }`}>
+                              {stg.code}
+                            </span>
+                            <span className={`text-[10px] sm:text-xs font-bold tracking-tight block truncate max-w-[55px] sm:max-w-[75px] ${
+                              isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                            }`}>
+                              {stg.name}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>

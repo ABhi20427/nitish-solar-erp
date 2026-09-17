@@ -83,7 +83,7 @@ export default function CommercialSolarPage() {
       <section className="relative w-full min-h-[88vh] flex items-end overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/images/industrial_light.png"
+            src="/images/commercial_light.png"
             alt="Commercial rooftop solar installation"
             fill
             priority
