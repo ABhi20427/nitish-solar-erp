@@ -1,15 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { importLibrary } from '@googlemaps/js-api-loader';
+import { ensureGoogleMapsOptions } from './google-maps-loader';
 import { SatelliteLocation, VisualMode, Point2D } from './types';
 import { computePanelPlacement, computeInnerUsablePolygon, isPointInPolygon, isPolygonEditValid } from './roof-packing-algorithm';
 import { REFERENCE_INTEGER_ZOOM, NORMALIZED_SCALE_X, NORMALIZED_SCALE_Y } from './geo-constants';
-
-// setOptions() is only valid to call once for the lifetime of the page (the
-// loader warns and ignores repeats) — guard it at module scope so React
-// Strict Mode's double-invoked mount effect doesn't trip that warning.
-let googleMapsOptionsSet = false;
 
 interface SatelliteMapEngineProps {
   location: SatelliteLocation;
@@ -190,13 +186,7 @@ export function SatelliteMapEngine({
   // instance just mirrors that state to render the base imagery underneath.
   useEffect(() => {
     let cancelled = false;
-    if (!googleMapsOptionsSet) {
-      googleMapsOptionsSet = true;
-      setOptions({
-        key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-        v: 'weekly',
-      });
-    }
+    ensureGoogleMapsOptions();
     importLibrary('maps').then(({ Map }) => {
       if (cancelled || !mapDivRef.current || mapInstanceRef.current) return;
       mapInstanceRef.current = new Map(mapDivRef.current, {

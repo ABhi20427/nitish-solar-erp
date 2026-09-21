@@ -5,6 +5,8 @@ import { MapPin, Navigation, Sparkles, Building, ArrowRight, Link as LinkIcon, L
 import { SatelliteLocation } from './types';
 import { parseLocationInput, isValidLatLng } from './google-maps-parser';
 import { generateRealisticRoofGeometry } from './roof-packing-algorithm';
+import { importLibrary } from '@googlemaps/js-api-loader';
+import { ensureGoogleMapsOptions } from './google-maps-loader';
 
 interface AddressAutocompleteProps {
   onSelectLocation: (location: SatelliteLocation) => void;
@@ -85,6 +87,115 @@ export const PRESET_SATELLITE_LOCATIONS: SatelliteLocation[] = rawPresets.map((p
   };
 });
 
+interface PlaceInfo {
+  city: string;
+  district: string;
+  state: string;
+}
+
+const FALLBACK_PLACE: PlaceInfo = { city: 'Selected Location', district: 'Selected Location', state: 'India' };
+
+// Derives city/district/state from a Nominatim `address` object so the fly-in
+// text reflects the location the user actually entered.
+function placeFromNominatim(addr: Record<string, string> | undefined): PlaceInfo {
+  if (!addr) return FALLBACK_PLACE;
+  const locality = addr.suburb || addr.neighbourhood || addr.city_district || addr.village || addr.town || addr.hamlet;
+  const city = addr.city || addr.town || addr.municipality || addr.village || addr.county || addr.state_district;
+  const district = addr.state_district || addr.county || city || FALLBACK_PLACE.district;
+  const state = addr.state || addr.state_district || FALLBACK_PLACE.state;
+  const label = locality && city && locality !== city ? `${locality}, ${city}` : locality || city || FALLBACK_PLACE.city;
+  return { city: label, district, state };
+}
+
+interface GeocodeHit {
+  lat: number;
+  lng: number;
+  displayName?: string;
+  place: PlaceInfo;
+}
+
+const GOOGLE_GEOCODE_TIMEOUT_MS = 8000;
+
+// Runs a request through Google's Geocoder (Maps JS API, so the same
+// referrer-restricted key as the map works). Resolves to null on ANY failure
+// — missing key, API not enabled, quota, no results, timeout — so callers
+// can fall back to OpenStreetMap and the flow never breaks.
+async function googleGeocode(request: google.maps.GeocoderRequest): Promise<google.maps.GeocoderResult[] | null> {
+  if (!process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) return null;
+  try {
+    ensureGoogleMapsOptions();
+    const { Geocoder } = await importLibrary('geocoding');
+    const response = await Promise.race([
+      new Geocoder().geocode(request),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), GOOGLE_GEOCODE_TIMEOUT_MS)),
+    ]);
+    return response.results && response.results.length > 0 ? response.results : null;
+  } catch {
+    return null;
+  }
+}
+
+function placeFromGoogle(results: google.maps.GeocoderResult[]): PlaceInfo {
+  // Different results carry different components, so take the first result
+  // that has each type rather than assuming the top result has them all.
+  const find = (...types: string[]) => {
+    for (const result of results) {
+      for (const type of types) {
+        const comp = result.address_components.find((c) => c.types.includes(type));
+        if (comp) return comp.long_name;
+      }
+    }
+    return undefined;
+  };
+  const locality = find('sublocality_level_1', 'sublocality', 'neighborhood');
+  const city = find('locality', 'administrative_area_level_3', 'administrative_area_level_2');
+  const district = find('administrative_area_level_3', 'administrative_area_level_2') || city || FALLBACK_PLACE.district;
+  const state = find('administrative_area_level_1') || FALLBACK_PLACE.state;
+  const label = locality && city && locality !== city ? `${locality}, ${city}` : locality || city || FALLBACK_PLACE.city;
+  return { city: label, district, state };
+}
+
+async function reverseGeocodePlace(lat: number, lng: number): Promise<{ place: PlaceInfo; displayName?: string }> {
+  const googleResults = await googleGeocode({ location: { lat, lng } });
+  if (googleResults) {
+    return { place: placeFromGoogle(googleResults), displayName: googleResults[0].formatted_address };
+  }
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    return { place: placeFromNominatim(data?.address), displayName: data?.display_name };
+  } catch {
+    return { place: FALLBACK_PLACE };
+  }
+}
+
+// Google first; OpenStreetMap only if Google returned nothing. A network
+// error from the OpenStreetMap fallback propagates so the caller can show
+// its "could not complete search" message as before.
+async function forwardGeocode(address: string): Promise<GeocodeHit | null> {
+  const googleResults = await googleGeocode({ address, region: 'in' });
+  if (googleResults) {
+    const loc = googleResults[0].geometry.location;
+    return {
+      lat: loc.lat(),
+      lng: loc.lng(),
+      displayName: googleResults[0].formatted_address,
+      place: placeFromGoogle(googleResults),
+    };
+  }
+  const geoRes = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(address)}&limit=1`
+  );
+  const geoData = await geoRes.json();
+  if (!geoData || !geoData[0]) return null;
+  return {
+    lat: parseFloat(geoData[0].lat),
+    lng: parseFloat(geoData[0].lon),
+    displayName: geoData[0].display_name,
+    place: placeFromNominatim(geoData[0].address),
+  };
+}
+
 export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: AddressAutocompleteProps) {
   const [address, setAddress] = useState(initialValue || 'Chromepet, Chennai');
   const [isOpen, setIsOpen] = useState(false);
@@ -155,12 +266,16 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     setIsOpen(false);
 
     if (parsedInput.lat !== null && parsedInput.lng !== null && isValidLatLng(parsedInput.lat, parsedInput.lng)) {
+      setIsLocating(true);
+      setStatusMessage('Locating coordinates...');
+      const { place } = await reverseGeocodePlace(parsedInput.lat, parsedInput.lng);
+      setIsLocating(false);
       const geo = generateRealisticRoofGeometry(parsedInput.lat, parsedInput.lng);
       const normalizedLoc: SatelliteLocation = {
         address: parsedInput.displayAddress || address,
-        city: 'Chromepet, Chennai',
-        district: 'Chennai',
-        state: 'Tamil Nadu',
+        city: place.city,
+        district: place.district,
+        state: place.state,
         lat: parsedInput.lat,
         lng: parsedInput.lng,
         zoom: 20.2,
@@ -196,12 +311,13 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         if (data.success && isValidLatLng(data.lat, data.lng)) {
           setStatusMessage(`Location resolved (${data.lat.toFixed(4)}, ${data.lng.toFixed(4)})`);
 
+          const { place, displayName } = await reverseGeocodePlace(data.lat, data.lng);
           const geo = generateRealisticRoofGeometry(data.lat, data.lng);
           const resolvedLoc: SatelliteLocation = {
-            address: data.displayAddress || 'Chromepet, Chennai',
-            city: 'Chromepet, Chennai',
-            district: 'Chennai',
-            state: 'Tamil Nadu',
+            address: data.displayAddress || displayName || address,
+            city: place.city,
+            district: place.district,
+            state: place.state,
             lat: data.lat,
             lng: data.lng,
             zoom: 20.2,
@@ -244,22 +360,18 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
     setStatusMessage('Locating address...');
 
     try {
-      const geoRes = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`
-      );
-      const geoData = await geoRes.json();
+      const hit = await forwardGeocode(address);
       setIsLocating(false);
 
-      if (geoData && geoData[0]) {
-        const lat = parseFloat(geoData[0].lat);
-        const lng = parseFloat(geoData[0].lon);
+      if (hit) {
+        const { lat, lng, place } = hit;
         if (isValidLatLng(lat, lng)) {
           const geo = generateRealisticRoofGeometry(lat, lng);
           const addressLoc: SatelliteLocation = {
-            address: geoData[0].display_name || 'Chromepet, Chennai',
-            city: 'Chromepet, Chennai',
-            district: 'Chennai',
-            state: 'Tamil Nadu',
+            address: hit.displayName || address,
+            city: place.city,
+            district: place.district,
+            state: place.state,
             lat,
             lng,
             zoom: 20.2,
@@ -303,26 +415,15 @@ export function AddressAutocomplete({ onSelectLocation, initialValue = '' }: Add
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
 
-        let displayAddr = `Chromepet, Chennai (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
-        let city = 'Chromepet, Chennai';
-        let state = 'Tamil Nadu';
-
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-          const data = await res.json();
-          if (data && data.display_name) {
-            displayAddr = data.display_name;
-            city = 'Chromepet, Chennai';
-            state = 'Tamil Nadu';
-          }
-        } catch (e) {}
+        const { place, displayName } = await reverseGeocodePlace(lat, lng);
+        const displayAddr = displayName || `Current location (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
 
         const geo = generateRealisticRoofGeometry(lat, lng);
         const currentLocationLoc: SatelliteLocation = {
           address: displayAddr,
-          city,
-          district: 'Chennai',
-          state,
+          city: place.city,
+          district: place.district,
+          state: place.state,
           lat,
           lng,
           zoom: 20.2,
